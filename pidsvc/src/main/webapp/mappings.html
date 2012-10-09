@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Mappings</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.2.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.include.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.moreSelectors.pack.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+	
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/Mappings.js"></script>
+
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Search <span id="MenuResultsCount"></span>
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 200px; white-space: nowrap; overflow: hidden;">
+				Mapping Configuration
+			</div>
+		</div>
+		
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+			    <h2>URI Mapping Search</h2>
+			    <div id="UriSearchSection" style="background: #fafafa; width: 1000px;">
+			    	<div style="background: #fff; margin-bottom: 5px;">
+			    		<table border="0" cellpadding="5" cellspacing="1" width="100%">
+			    			<tr>
+			    				<td nowrap>URI pattern:</td>
+			    				<td width="50%"><input type="text" id="SearchUriPattern" maxlength="255" style="width: 400px;"/></td>
+			    				<td align="right" nowrap>Mapping type:</td>
+			    				<td width="50%">
+									<select id="SearchMappingType" class="input" style="width: 100px;">
+										<option value="">Any</option>
+										<option value="1:1">1:1</option>
+										<option value="Regex">Regex</option>
+									</select>
+								</td>
+			    			</tr>
+			    			<tr>
+			    				<td nowrap>Author:</td>
+			    				<td width="50%"><input type="text" id="SearchCreator" maxlength="50" style="width: 400px;"/></td>
+			    				<td align="right" nowrap></td>
+			    				<td width="50%">
+			    					<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.searchMapping();" style="width:100px;" />
+								</td>
+			    			</tr>
+							<tr valign="top">
+								<td></td>
+								<td>
+									<input type="checkbox" id="MappingDeprecatedInclude"/> <label for="MappingDeprecatedInclude" style="position: relative; top: -1px;">Include deprecated mappings</label><br/>
+									<input type="checkbox" id="MappingDeprecatedOnly"/> <label for="MappingDeprecatedOnly" style="position: relative; top: -1px;">Deprecated mappings only</label>
+								</td>
+								<td></td>
+								<td></td>
+							</tr>
+			    		</table>
+			    	</div>
+			    	<div id="MappingSearchResults" style="display: none;">
+					    <table id="MappingSearchResultsTable" border="0" cellpadding="5" cellspacing="1" width="1000">
+							<tr bgcolor="#e2e2e2">
+								<td width="55%">
+									<b>Mapping</b>
+								</td>
+								<td width="20%">
+									<b>Author</b>
+								</td>
+								<td width="25%">
+									<b>Date</b>
+								</td>
+							</tr>
+						</table>
+						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
+							<div style="position: relative; top: -2px;">
+								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -30px; top: 5px;"/></a>
+								Page <input type="text" id="PagerInput" style="width: 30px; font-size: 10px; text-align: center; padding: 0;" maxlength="3"/> / <span></span></span>
+								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -30px; top: 5px;"/></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Mapping Configuration</h2>
+				<div style="position: relative; top: -18px; left: 170px; width: 50px; height: 5px;">
+					<a href="javascript:Main.createMapping();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.deleteMapping();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="MappingConfigSection" style="width: 1050px;">
+				    <table border="0" cellpadding="1" cellspacing="5" width="100%">
+						<tr valign="top">
+							<td width="70%">
+								<b>URI pattern:</b>
+								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
+									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
+								</div>
+								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+									<b>Note:</b> This mapping has been reinstated and has not been saved yet.
+								</div>
+							    <table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr valign="top">
+										<td width="80%" style="position: relative;">
+											<input id="MappingPath" type="text" style="width: 545px;" />
+					    					<a id="OpenUriLink" href="#" target='_blank' class="__supersededLock"><img src='Images/earth-icon.png' title='Open in a new window' width='16' height='16' border='0' style='position: absolute; top: 6px; right: 4px;'/></a>
+										</td>
+										<td width="20%">
+											<select id="MappingType" class="input" style="width: 140px;">
+												<option value="1:1">1:1</option>
+												<option value="Regex">Regex</option>
+											</select>
+										</td>
+									</tr>
+								</table>
+							    <table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr valign="top">
+										<td width="20%" align="right">
+											Description:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingDescription" maxlength="500" style="width: 570px;" />
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="20%" align="right">
+											Author:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingCreator" maxlength="50" style="width: 570px;" />
+										</td>
+									</tr>
+								</table>
+								<b>Default action:</b>
+							    <table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
+								<b>Conditions:</b>
+								<div id="ConditionSection" style="margin-bottom: 5px;">
+								</div>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%">
+									<tr>
+										<td>
+											<a href="javascript:Main.addCondition();" class="tip __supersededLock"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+										</td>
+										<td align="right">
+											<input type="button" id="cmdSave" value="Save" class="__supersededLock" onclick="javascript:Main.saveMapping();" style="width:100px;" />
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td style="width: 10px"></td>
+							<!--td style="width: 2px; background: #bed600;"></td-->
+							<td width="30%">
+								<div id="ChangeHistory" style="display: none;">
+									<b class="caps">Change history:</b>
+									<div style="overflow: auto; height: 225px;"><ul></ul></div>
+								</div>
+								<div id="Tip" style="margin-top: 25px; padding: 3px; background: #bed600; display: none;">
+									<b class="caps">Tips:</b>
+									<div style="background: #fff; padding: 5px 3px 5px 3px;"></div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
