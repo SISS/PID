@@ -24,14 +24,14 @@ public class ManagerJson extends Manager
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
 		String				ret = null;
-		final int			pageSize = 4;
+		final int			pageSize = 10;
 		final String		sourceView = (includeDeprecated == 2 ? "vw_deprecated_mapping" : (includeDeprecated == 1 ? "vw_latest_mapping" : "vw_active_mapping"));
 
 		try
 		{
 			String query = "";
 			if (mappingPath != null && !mappingPath.isEmpty())
-				query += " AND \"mapping_path\" LIKE ?";
+				query += " AND \"mapping_path\" ILIKE ?";
 			if (type != null && !type.isEmpty())
 				query += " AND \"type\" = ?";
 			if (creator != null && !creator.isEmpty())
@@ -45,9 +45,9 @@ public class ManagerJson extends Manager
 			pst = _connection.prepareStatement(query);
 			for (int j = 0; j < 2; ++j)
 			{
-				// Bind parameters twise to two almost identical queries.
+				// Bind parameters twice to two almost identical queries.
 				if (!mappingPath.isEmpty())
-					pst.setString(i++, "%" + mappingPath + "%");
+					pst.setString(i++, "%" + mappingPath.replace("\\", "\\\\") + "%");
 				if (!type.isEmpty())
 					pst.setString(i++, type);
 				if (!creator.isEmpty())
@@ -60,7 +60,7 @@ public class ManagerJson extends Manager
 				rs.next();
 				ret = "{ \"count\": " + rs.getInt(1) +
 					", \"page\": " + page +
-					", \"pages\": " + (Math.ceil(rs.getFloat(1) / pageSize)) +
+					", \"pages\": " + ((int)Math.ceil(rs.getFloat(1) / pageSize)) +
 					", \"results\": [";
 				
 				for (pst.getMoreResults(), rs = pst.getResultSet(), i = 0; rs.next(); ++i)
