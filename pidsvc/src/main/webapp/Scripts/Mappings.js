@@ -71,14 +71,14 @@
 		switch (event.which)
 		{
 			case 37: // Left arrow
-				if (event.ctrlKey)
+				if (document.activeElement.tagName.toLowerCase() != "input" && event.ctrlKey)
 				{
 					Main.pagerPrev();
 					event.preventDefault();
 				}
 				break;
 			case 39: // Right arrow
-				if (event.ctrlKey)
+				if (document.activeElement.tagName.toLowerCase() != "input" && event.ctrlKey)
 				{
 					Main.pagerNext();
 					event.preventDefault();
