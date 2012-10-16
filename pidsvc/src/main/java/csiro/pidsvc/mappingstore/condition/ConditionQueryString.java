@@ -20,16 +20,45 @@ public class ConditionQueryString extends AbstractCondition
 	{
 		try
 		{
-			String[]	queryString = this.Match.split("=", 2);
-			String		queryStringParam = _uri.getQuerystringParameter(queryString[0]);
-			Pattern		re = Pattern.compile(queryString[1], Pattern.CASE_INSENSITIVE);
-			Matcher		m = re.matcher(queryStringParam);
+			String[]	qsPairs = this.Match.split("&");
+			String[]	queryString;
+			String		queryStringParam;
+			Boolean		optionalParam;
+			Pattern		re;
+			Matcher		m;
 
-			if (m.find())
+			NameValuePairSubstitutionGroup aux = new NameValuePairSubstitutionGroup(qsPairs.length); 
+			
+			for (String pair : qsPairs)
 			{
-				this.AuxiliaryData = m;
-				return true;
+				queryString = pair.split("=", 2);
+
+				// Check if query string parameter is optional.
+				if (optionalParam = queryString[0].endsWith("?"))
+					queryString[0] = queryString[0].substring(0, queryString[0].length() - 1);
+				
+				queryStringParam	= _uri.getQuerystringParameter(queryString[0]);
+				re					= Pattern.compile(queryString[1], Pattern.CASE_INSENSITIVE);
+
+				if (queryStringParam == null)
+				{
+					if (optionalParam)
+						continue;
+					else
+						return false;
+				}
+				m = re.matcher(queryStringParam);
+
+				// If at least one query string parameter doesn't match then return false.
+				if (!m.find())
+					return false;
+
+				// Save the Matcher for each query string parameters.
+				aux.put(queryString[0], m);
 			}
+
+			this.AuxiliaryData = aux;
+			return true;
 		}
 		catch (Exception e)
 		{

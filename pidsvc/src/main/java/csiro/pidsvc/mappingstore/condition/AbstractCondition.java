@@ -1,11 +1,29 @@
 package csiro.pidsvc.mappingstore.condition;
 
+import java.util.Hashtable;
+import java.util.regex.Matcher;
+
 import javax.servlet.http.HttpServletRequest;
 
 import csiro.pidsvc.helper.URI;
 
 public abstract class AbstractCondition
 {
+	public class NameValuePairSubstitutionGroup extends Hashtable<String, Matcher>
+	{
+		private static final long serialVersionUID = -5092377711359150527L;
+
+		public NameValuePairSubstitutionGroup()
+		{
+			super();
+		}
+
+		public NameValuePairSubstitutionGroup(int initialCapacity)
+		{
+			super(initialCapacity);
+		}
+	}
+
 	protected final URI _uri;
 	protected final HttpServletRequest _request;
 	public final int ID;
