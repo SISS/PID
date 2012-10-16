@@ -494,18 +494,15 @@
 		if (data.type == "1:1")
 			$J("#OpenUriLink").attr("href", data.mapping_path).show();
 
-		if (data.action)
-		{
-			$J("#DefaultAction")
-				.find("td.__actionType > select")
-					.val(data.action.type)
-				.end()
-				.find("input.__actionName")
-					.val(data.action.name)
-				.end()
-				.find("input.__actionValue")
-					.val(data.action.value);
-		}
+		$J("#DefaultAction")
+			.find("td.__actionType > select")
+				.val(data.action ? data.action.type : "")
+			.end()
+			.find("input.__actionName")
+				.val(data.action ? data.action.name : "")
+			.end()
+			.find("input.__actionValue")
+				.val(data.action ? data.action.value : "");
 
 		if (data.conditions)
 		{
