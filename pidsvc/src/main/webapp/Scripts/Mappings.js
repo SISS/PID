@@ -71,21 +71,21 @@
 		switch (event.which)
 		{
 			case 37: // Left arrow
-				if (document.activeElement.tagName.toLowerCase() != "input" && event.ctrlKey)
+				if (!$J(":focus").is(":input") && event.ctrlKey)
 				{
 					Main.pagerPrev();
 					event.preventDefault();
 				}
 				break;
 			case 39: // Right arrow
-				if (document.activeElement.tagName.toLowerCase() != "input" && event.ctrlKey)
+				if (!$J(":focus").is(":input") && event.ctrlKey)
 				{
 					Main.pagerNext();
 					event.preventDefault();
 				}
 				break;
 			case 8: // Backspace
-				if (document.activeElement.tagName.toLowerCase() != "input")
+				if (!$J(":focus").is(":input") && event.ctrlKey)
 				{
 					Main.openTab(-1);
 					event.preventDefault();
