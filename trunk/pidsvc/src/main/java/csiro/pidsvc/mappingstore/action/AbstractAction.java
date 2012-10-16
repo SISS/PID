@@ -28,7 +28,7 @@ public abstract class AbstractAction
 		// Matches from condition regex matching.
 		if (matchResult.Condition != null)
 		{
-			String q;
+			String q, val;
 			Matcher m;
 			if (matchResult.Condition.AuxiliaryData instanceof Matcher)
 			{
@@ -50,7 +50,8 @@ public abstract class AbstractAction
 
 					for (int i = 0; i <= m.groupCount(); ++i)
 					{
-						ret = ret.replace("%[[" + q + ":" + i + "]]", m.group(i));
+						val = m.group(i);
+						ret = ret.replace("%[[" + q + ":" + i + "]]", val == null ? "" : val);
 					}
 				}
 			}
