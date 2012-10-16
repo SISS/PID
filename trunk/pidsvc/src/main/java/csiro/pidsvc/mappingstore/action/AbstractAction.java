@@ -2,10 +2,12 @@ package csiro.pidsvc.mappingstore.action;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import csiro.pidsvc.mappingstore.action.Runner;
+import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
 
 public abstract class AbstractAction
@@ -14,7 +16,7 @@ public abstract class AbstractAction
 	
 	protected String substrituteCaptureParameters(String input, Descriptor actionDescriptor, MappingMatchResults matchResult) throws URISyntaxException, UnsupportedEncodingException
 	{
-		String actionValue = actionDescriptor.Value.replaceAll("\\$\\{C\\:(\\d+)\\}", "%[[$1]]");
+		String actionValue = actionDescriptor.Value.replaceAll("\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
 		String ret;
 
 		// Regex from URI matching.
@@ -24,15 +26,37 @@ public abstract class AbstractAction
 			ret = actionValue;
 
 		// Matches from condition regex matching.
-		if (matchResult.Condition != null && matchResult.Condition.AuxiliaryData instanceof Matcher)
+		if (matchResult.Condition != null)
 		{
-			Matcher m = (Matcher)matchResult.Condition.AuxiliaryData;
-			for (int i = 1; i <= m.groupCount(); ++i)
+			String q;
+			Matcher m;
+			if (matchResult.Condition.AuxiliaryData instanceof Matcher)
 			{
-				ret = ret.replace("%[[" + i + "]]", m.group(i));
+				m = (Matcher)matchResult.Condition.AuxiliaryData;
+				for (int i = 0; i <= m.groupCount(); ++i)
+				{
+					ret = ret.replace("%[[" + i + "]]", m.group(i));
+				}
+			}
+			else if (matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
+			{
+				NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)matchResult.Condition.AuxiliaryData;
+				Enumeration<String> keys = aux.keys();
+
+				while (keys.hasMoreElements())
+				{
+					q = (String)keys.nextElement();
+					m = aux.get(q);
+
+					for (int i = 0; i <= m.groupCount(); ++i)
+					{
+						ret = ret.replace("%[[" + q + ":" + i + "]]", m.group(i));
+					}
+				}
 			}
 		}
-		
-		return ret;
+
+		// Remove any non-expanded place holders.
+		return ret.replaceAll("%\\[\\[.+?\\]\\]|\\$\\d+", "");
 	}
 }
