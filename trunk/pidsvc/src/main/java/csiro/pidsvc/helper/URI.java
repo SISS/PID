@@ -9,7 +9,7 @@ public class URI
 {
 	protected final String _originalUri;
 	protected final java.net.URI _uri;
-	protected HashMap<String, String> _uriQueryString = new HashMap<String, String>();;
+	protected HashMap<String, String> _uriQueryString = new HashMap<String, String>();
 	protected String _pathNoExtension = null;
 	protected String _extension = null;
 
@@ -91,7 +91,9 @@ public class URI
 				String queryStringArgs[];
 				for (String pair : m.group(3).split("&"))
 				{
-					queryStringArgs = pair.split("=");
+					queryStringArgs = pair.split("=", 2);
+					if (queryStringArgs.length == 0)
+						continue;
 					_uriQueryString.put(queryStringArgs[0], queryStringArgs.length == 1 ? "" : queryStringArgs[1]);
 				}
 			}

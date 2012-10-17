@@ -4,9 +4,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import csiro.pidsvc.helper.URI;
 
-public class ConditionQueryString extends AbstractConditionCollectionSearch
+public class ConditionHttpHeader extends AbstractConditionCollectionSearch
 {
-	public ConditionQueryString(URI uri, HttpServletRequest request, int id, String match)
+	public ConditionHttpHeader(URI uri, HttpServletRequest request, int id, String match)
 	{
 		super(uri, request, id, match);
 	}
@@ -14,6 +14,6 @@ public class ConditionQueryString extends AbstractConditionCollectionSearch
 	@Override
 	public String getValue(String name)
 	{
-		return _uri.getQuerystringParameter(name);
+		return _request.getHeader(name);
 	}
 }

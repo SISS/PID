@@ -48,6 +48,7 @@ public abstract class AbstractAction
 					q = (String)keys.nextElement();
 					m = aux.get(q);
 
+					ret = ret.replace("%[[" + q + "]]", m.group(0));
 					for (int i = 0; i <= m.groupCount(); ++i)
 					{
 						val = m.group(i);

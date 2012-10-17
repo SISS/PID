@@ -221,6 +221,7 @@ INSERT INTO "condition_type" ("type") VALUES ('ContentType');
 INSERT INTO "condition_type" ("type") VALUES ('Extension');
 INSERT INTO "condition_type" ("type") VALUES ('PrioritizedContentType');
 INSERT INTO "condition_type" ("type") VALUES ('QueryString');
+INSERT INTO "condition_type" ("type") VALUES ('HttpHeader');
 
 INSERT INTO "action_type" ("type", "description") VALUES ('301', 'Moved permanently to a target URL');
 INSERT INTO "action_type" ("type", "description") VALUES ('302', 'Simple redirection to a target URL');
