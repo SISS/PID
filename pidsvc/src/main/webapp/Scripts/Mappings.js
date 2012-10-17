@@ -609,8 +609,9 @@
 				"		<td class='__conditionType'>" +
 				"			<select class='input' style='width: 200px;'>" +
 				"				<option value='ContentType'>ContentType</option>" +
-				"				<option value='PrioritizedContentType'>PrioritizedContentType</option>" +
 				"				<option value='Extension'>Extension</option>" +
+				"				<option value='HttpHeader'>HttpHeader</option>" +
+				"				<option value='PrioritizedContentType'>PrioritizedContentType</option>" +
 				"				<option value='QueryString'>QueryString</option>" +
 				"			</select>" +
 				"		</td>" +
