@@ -27,19 +27,22 @@ public class info extends HttpServlet
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
-	 *      response)
+	 *	  response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
 		response.setDateHeader("Expires", 0); 
 		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
 
+		String cmd = request.getParameter("cmd");
+		if (cmd == null || cmd.isEmpty())
+			return;
+
 		ManagerJson mgr = null;
 		try
 		{
 //			Thread.sleep(500);
 			
-			String cmd = request.getParameter("cmd");
 			mgr = new ManagerJson();
 			
 			if (cmd.equalsIgnoreCase("search"))
@@ -72,7 +75,7 @@ public class info extends HttpServlet
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
-	 *      response)
+	 *	  response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{

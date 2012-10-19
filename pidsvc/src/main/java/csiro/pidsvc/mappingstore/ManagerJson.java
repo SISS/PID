@@ -94,10 +94,10 @@ public class ManagerJson extends Manager
 		}
 		finally
 		{
-            if (rs != null)
-                rs.close();
-            if (pst != null)
-                pst.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
 		}
 		return ret;
 	}
@@ -244,16 +244,16 @@ public class ManagerJson extends Manager
 		}
 		finally
 		{
-            if (rsMapping != null)
-                rsMapping.close();
-            if (rsCondition != null)
-                rsCondition.close();
-            if (rsAction != null)
-            	rsAction.close();
-            if (rsHistory != null)
-            	rsHistory.close();
-            if (pst != null)
-                pst.close();
+			if (rsMapping != null)
+				rsMapping.close();
+			if (rsCondition != null)
+				rsCondition.close();
+			if (rsAction != null)
+				rsAction.close();
+			if (rsHistory != null)
+				rsHistory.close();
+			if (pst != null)
+				pst.close();
 		}
 		return ret;
 	}

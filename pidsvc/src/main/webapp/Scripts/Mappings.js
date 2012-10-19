@@ -17,7 +17,7 @@
 
 	init: function()
 	{
-        // Initialise UI elements.
+		// Initialise UI elements.
 		$J("#UriSearchSection")
 			.find("input:not(#PagerInput)")
 				.keypress(this.searchMappingOnKeyPress)
@@ -32,6 +32,17 @@
 
 		$J("#TopMenu > DIV.MenuButton").click(this.openTab);
 		this.openTab(0);
+
+		// Initialise context menus.
+		$J.contextMenu({
+			selector: '#cmdExport', 
+			trigger: 'left',
+			callback: Main.exportMapping,
+			items: {
+				"partial_export": { name: "Partial export (current only)", icon: "export", accesskey: "p" },
+				"full_export": { name: "<nobr>Full export (preserves history) &nbsp;</nobr>", icon: "export", accesskey: "f" },
+			}
+		});
 
 		// Allow either MappingDeprecatedInclude or MappingDeprecatedOnly to be checked.
 		$J("#UriSearchSection input:checkbox[id^='MappingDeprecated']")
@@ -61,6 +72,11 @@
 
 		// Reset mapping configuration.
 		this.createMapping(true);
+
+		// Automatically retrieve mapping configuration.
+		var qsMappingPath = location.href.getQueryParam("mapping_path");
+		if (qsMappingPath !== false)
+			this.getPidConfigByMappingPath(decodeURIComponent(qsMappingPath));
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -103,7 +119,7 @@
 			alert(jqXHR.status + " " + jqXHR.statusText);
 		else
 			alert(errorThrown.name + " (" + textStatus + ")\n" + errorThrown.message);
-		$J.unblockUI();
+		Main.unblockUI();
 	},
 
 	renderGenericError: function(jqEl, jqXHR, textStatus, errorThrown)
@@ -160,10 +176,10 @@
 					backgroundColor: '#fff'
 				},
 				css: {
-				      border: 'none',
-				      backgroundColor: '',
-				      color: '#fff'
-				   }
+					border: 'none',
+					backgroundColor: '',
+					color: '#fff'
+				}
 			};
 		if (jq)
 			jq.block(settings);
@@ -453,6 +469,13 @@
 			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderPidConfig).fail(Main.renderResultsError);
 	},
 
+	getPidConfigByMappingPath: function(mappingPath)
+	{
+		$J("#Tip").hide();
+		Main.openTab(1);
+		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderPidConfig).fail(Main.renderResultsError);
+	},
+
 	renderPidConfig: function(data)
 	{
 		// Reset configuration.
@@ -461,7 +484,7 @@
 			if (data != null && $J.isEmptyObject(data))
 				alert("Mapping is not found!");
 
-			$J("#MappingPath").val("").removeAttr("disabled");
+			$J("#MappingPath").val("").removeAttr("mapping_id").removeAttr("disabled");
 			$J("#MappingType").val("1:1").removeAttr("disabled");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val("");
@@ -486,7 +509,7 @@
 		}
 
 		// Show configuration.
-		$J("#MappingPath").val(data.mapping_path).attr("disabled", "disabled");
+		$J("#MappingPath").val(data.mapping_path).attr("mapping_id", data.mapping_id).attr("disabled", "disabled");
 		$J("#MappingType").val(data.type).attr("disabled", "disabled");
 		$J("#MappingDescription").val(data.description);
 		$J("#MappingCreator").val(data.creator);
@@ -928,5 +951,18 @@
 			return;
 		this.blockEditing(false);
 		$J("#ConfigSaveWarning").show();
+	},
+
+	exportMapping: function(key, options)
+	{
+		if (!Main.isSavingBlocked())
+		{
+			alert("You must save the mapping before exporting!");
+			return;
+		}
+		if (key == "full_export")
+			location.href = "controller?cmd=" + key + "&mapping_path=" + encodeURIComponent($J("#MappingPath").val());
+		else
+			location.href = "controller?cmd=partial_export&mapping_id=" + $J("#MappingPath").attr("mapping_id");
 	}
 });
