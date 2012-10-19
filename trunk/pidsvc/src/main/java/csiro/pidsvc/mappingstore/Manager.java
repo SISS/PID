@@ -1,5 +1,6 @@
 package csiro.pidsvc.mappingstore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -10,10 +11,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -29,6 +32,13 @@ import net.sf.saxon.s9api.XdmNode;
 import net.sf.saxon.s9api.XsltCompiler;
 import net.sf.saxon.s9api.XsltExecutable;
 import net.sf.saxon.s9api.XsltTransformer;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.lang.StringEscapeUtils;
+
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.Descriptor;
 import csiro.pidsvc.mappingstore.action.List;
@@ -102,12 +112,12 @@ public class Manager
 		}
 	}
 	
-	public void createMapping(InputStream inputStream) throws SaxonApiException, SQLException
+	public String createMapping(InputStream inputStream) throws SaxonApiException, SQLException
 	{
 		// Generate SQL query.
 		Processor			processor = new Processor(false);
 		XsltCompiler		xsltCompiler = processor.newXsltCompiler();
-		InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/execute_cmd_postgresql.xslt");
+		InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/import_mapping_postgresql.xslt");
 		XsltExecutable		xsltExec = xsltCompiler.compile(new StreamSource(inputSqlGen));
 		XsltTransformer		transformer = xsltExec.load();
 		XdmNode				source = processor.newDocumentBuilder().build(new StreamSource(inputStream));
@@ -117,20 +127,28 @@ public class Manager
 
 		transformer.setInitialContextNode(source);
 		transformer.setDestination(new Serializer(swSqlQuery));
-        transformer.transform();
-        
+		transformer.transform();
+
 		// Update mappings in the database.
-        Statement st = null;
-        try
-        {
-	        st = _connection.createStatement();
-	        st.execute(swSqlQuery.toString());
-        }
-        finally
-        {
-            if (st != null)
-                st.close();
-        }
+		Statement st = null;
+		try
+		{
+			String sqlQuery = swSqlQuery.toString();
+			st = _connection.createStatement();
+			st.execute(sqlQuery);
+
+			Pattern re = Pattern.compile("^--(OK: .*)", Pattern.CASE_INSENSITIVE);
+			Matcher m = re.matcher(sqlQuery);
+
+			if (m.find())
+				return m.group(1);
+		}
+		finally
+		{
+			if (st != null)
+			st.close();
+		}
+		return null;
 	}
 	
 	public boolean deleteMapping(String mappingPath) throws SQLException
@@ -144,8 +162,8 @@ public class Manager
 		}
 		finally
 		{
-            if (pst != null)
-                pst.close();
+			if (pst != null)
+				pst.close();
 		}
 	}
 	
@@ -183,10 +201,10 @@ public class Manager
 		}
 		finally
 		{
-            if (rs != null)
-                rs.close();
-            if (pst != null)
-                pst.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
 		}
 		return new MappingMatchResults(defaultActionId, retCondition, retAuxiliaryData);		
 	}
@@ -229,16 +247,16 @@ public class Manager
 		}
 		finally
 		{
-            if (rs != null)
-                rs.close();
-            if (pst != null)
-                pst.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
 		}
 		
 		return new MappingMatchResults(defaultActionId, retCondition, retAuxiliaryData);
 	}
 	
-	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request) throws SQLException
+	protected Vector<ConditionDescriptor> getConditions(int mappingId) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet 			rs = null;
@@ -254,10 +272,32 @@ public class Manager
 			// Get list of conditions.
 			Vector<ConditionDescriptor> conditions = new Vector<ConditionDescriptor>();
 			for (rs = pst.getResultSet(); rs.next(); conditions.add(new ConditionDescriptor(rs.getInt("condition_id"), rs.getString("type"), rs.getString("match"))));
-			rs.close();
-			rs = null;
+			return conditions;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return null;
+	}
+	
+	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request) throws SQLException
+	{
+		// Get list of conditions.
+		Vector<ConditionDescriptor> conditions = getConditions(mappingId);
+		if (conditions == null)
+			return null;
 
-			// Test conditions.
+		// Test conditions.
+		try
+		{
 			Vector<ConditionPrioritizedContentType> prioritizedConditions = null;
 			for (ConditionDescriptor descriptor : conditions)
 			{
@@ -270,7 +310,7 @@ public class Manager
 					// Skip if PrioritizedContentType conditions have already been processed.
 					if (prioritizedConditions != null)
 						continue;
-
+	
 					// Extract all PrioritizedContentType conditions.
 					prioritizedConditions = new Vector<ConditionPrioritizedContentType>();
 					for (ConditionDescriptor dctr : conditions)
@@ -283,12 +323,12 @@ public class Manager
 							prioritizedConditions.add((ConditionPrioritizedContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match));
 						}
 					}
-
+	
 					// Find matching conditions.
 					AbstractCondition matchingCondition = ConditionPrioritizedContentType.getMatchingCondition(prioritizedConditions);
 					if (matchingCondition != null)
 						return matchingCondition;
-
+	
 					// Continue if no matching conditions were found.
 					continue;
 				}
@@ -305,13 +345,6 @@ public class Manager
 		catch (Exception e)
 		{
 			e.printStackTrace();
-		}
-		finally
-		{
-            if (rs != null)
-                rs.close();
-            if (pst != null)
-            	pst.close();
 		}
 		return null;
 	}
@@ -332,10 +365,10 @@ public class Manager
 		}
 		finally
 		{
-            if (rs != null)
-                rs.close();
-	        if (pst != null)
-	            pst.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
 		}
 	}
 	
@@ -343,7 +376,7 @@ public class Manager
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		List			actions = new List();
+		List				actions = new List();
 		
 		try
 		{
@@ -358,11 +391,230 @@ public class Manager
 		}
 		finally
 		{
-            if (rs != null)
-                rs.close();
-	        if (pst != null)
-	            pst.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
 		}
 		return actions;
+	}
+
+	/**************************************************************************
+	 *  Export/import.
+	 */
+	
+	public String backupDataStore(boolean fullBackup, boolean includeDeprecated) throws SQLException
+	{
+		String source;
+		if (includeDeprecated)
+			source = fullBackup ? "mapping" : "vw_latest_mapping";
+		else
+			source = fullBackup ? "vw_full_mapping_activeonly" : "vw_active_mapping";
+		return exportMappingsImpl(null, "db", fullBackup, source, true);
+	}
+
+	public String exportMapping(int mappingId) throws SQLException
+	{
+		return exportMappingsImpl(mappingId, "record", false, "mapping", false);
+	}
+
+	public String exportMapping(String mappingPath, boolean fullBackup) throws SQLException
+	{
+		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false);
+	}
+
+	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\">";
+		int					defaultActionId;
+		List				actions;
+		Timestamp			timeStamp;
+		String				buf;
+
+		try
+		{
+			if (mappingIdentifier instanceof Integer)
+			{
+				pst = _connection.prepareStatement("SELECT * FROM " + source + " WHERE mapping_id = ? ORDER BY mapping_id");
+				pst.setInt(1, (Integer)mappingIdentifier);
+			}
+			else
+			{
+				pst = _connection.prepareStatement("SELECT * FROM " + source + (mappingIdentifier == null ? "" : " WHERE mapping_path = ?") + " ORDER BY mapping_id");
+				if (mappingIdentifier != null)
+					pst.setString(1, (String)mappingIdentifier);
+			}
+			
+			if (pst.execute())
+			{
+				for (rs = pst.getResultSet(); rs.next();)
+				{
+					ret += "<mapping>";
+					ret += "<path>" + StringEscapeUtils.escapeXml(rs.getString("mapping_path")) + "</path>";
+					ret += "<type>" + rs.getString("type") + "</type>";
+
+					buf = rs.getString("description");
+					if (buf != null)
+						ret += "<description>" + StringEscapeUtils.escapeXml(buf) + "</description>";
+					buf = rs.getString("creator");
+					if (buf != null)
+						ret += "<creator>" + StringEscapeUtils.escapeXml(buf) + "</creator>";
+
+					// Time stamps are only applicable for full backups and deprecated records.
+					if (fullBackup || !fullBackup && preserveDatesForDeprecatedMappings && rs.getTimestamp("date_end") != null)
+					{
+						timeStamp = rs.getTimestamp("date_start");
+						if (timeStamp != null)
+							ret += "<date_start>" + timeStamp + "</date_start>";
+						timeStamp = rs.getTimestamp("date_end");
+						if (timeStamp != null)
+							ret += "<date_end>" + timeStamp + "</date_end>";
+					}
+
+					// Default action.
+					defaultActionId = rs.getInt("default_action_id");
+					if (!rs.wasNull())
+					{
+						Descriptor action = getActionsByActionId(defaultActionId);
+						ret += "<action>";
+						ret += "<type>" + action.Type + "</type>";
+						if (action.Name != null)
+							ret += "<name>" + StringEscapeUtils.escapeXml(action.Name) + "</name>";
+						if (action.Value != null)
+							ret += "<value>" + StringEscapeUtils.escapeXml(action.Value) + "</value>";
+						ret += "</action>";
+					}
+					
+					// Conditions.
+					Vector<ConditionDescriptor> conditions = getConditions(rs.getInt("mapping_id"));
+					if (conditions != null && conditions.size() > 0)
+					{
+						ret += "<conditions>";
+						for (ConditionDescriptor condition : conditions)
+						{
+							ret += "<condition>";
+							ret += "<type>" + condition.Type + "</type>";
+							ret += "<match>" + StringEscapeUtils.escapeXml(condition.Match) + "</match>";
+							
+
+							actions = getActionsByConditionId(condition.ID);
+							if (actions != null && actions.size() > 0)
+							{
+								ret += "<actions>";
+								for (Descriptor action : actions)
+								{
+									ret += "<action>";
+									ret += "<type>" + action.Type + "</type>";
+									if (action.Name != null)
+										ret += "<name>" + StringEscapeUtils.escapeXml(action.Name) + "</name>";
+									if (action.Value != null)
+										ret += "<value>" + StringEscapeUtils.escapeXml(action.Value) + "</value>";
+									ret += "</action>";
+								};
+								ret += "</actions>";
+							}
+							ret += "</condition>";
+						}
+						ret += "</conditions>";
+					}
+					ret += "</mapping>";
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		ret += "</backup>";
+		return ret;
+	}
+	
+	public String importMappings(HttpServletRequest request)
+	{
+		java.util.List<FileItem> fileList = null;
+		GZIPInputStream gis = null;
+		try
+		{
+			DiskFileItemFactory fileItemFactory = new DiskFileItemFactory();
+
+			// Set the size threshold, above which content will be stored on disk.
+			fileItemFactory.setSizeThreshold(1 * 1024 * 1024); // 1 MB
+//			fileItemFactory.setSizeThreshold(100 * 1024); // 100 KB
+
+			// Set the temporary directory to store the uploaded files of size above threshold.
+			fileItemFactory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+
+			ServletFileUpload uploadHandler = new ServletFileUpload(fileItemFactory);
+
+			@SuppressWarnings("unchecked")
+			java.util.List<FileItem> items = uploadHandler.parseRequest(request);
+			fileList = items;
+
+			for (FileItem item : items)
+			{
+				if (item.isFormField())
+					continue;
+
+				gis = new GZIPInputStream(item.getInputStream());
+//				String fileContent = Stream.readInputStream(gis);
+				String ret = createMapping(gis);
+				gis.close();
+				
+				// Process the first uploaded file only.
+				return ret;
+			}
+		}
+		catch (Exception ex)
+		{
+			if (ex.getMessage().equalsIgnoreCase("Not in GZIP format"))
+				return "ERROR: Unknown file format.";
+			else
+				return "ERROR: " + ex.getMessage();
+		}
+		finally
+		{
+			try
+			{
+				// Close the stream;
+				gis.close();
+			}
+			catch (Exception ex)
+			{
+			}
+			if (fileList != null)
+			{
+				// Delete all uploaded files.
+				for (FileItem item : fileList)
+				{
+					if (!item.isFormField() && !item.isInMemory())
+						((DiskFileItem)item).delete();
+				}
+			}
+		}
+		return "ERROR: No file.";
+	}
+
+	public boolean purgeDataStore() throws SQLException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("TRUNCATE TABLE \"mapping\" CASCADE;");
+			return pst.execute();
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
 	}
 }

@@ -158,9 +158,9 @@ HR
 
 .MenuButton
 {
-	text-align:		center;
-	border:			solid 1px #bed600;
-	cursor:			pointer;
+	text-align:			center;
+	border:				solid 1px #bed600;
+	cursor:				pointer;
 }
 .MenuButtonActive
 {
@@ -178,6 +178,15 @@ HR
 	color:				#b3b3b3;
 	background-color:	#fff;
 	cursor:				auto;
+}
+
+DIV.ProgressBar
+{
+	border:				solid 1px #bed600;
+}
+DIV.ProgressBar > DIV
+{
+	background-color:	#bed600;
 }
 
 .ResultRowHighlight

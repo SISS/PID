@@ -30,7 +30,6 @@ public class dispatcher extends HttpServlet
 	public dispatcher()
 	{
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -42,10 +41,13 @@ public class dispatcher extends HttpServlet
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
-	 *      response)
+	 *	  response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
+		response.setDateHeader("Expires", 0); 
+		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
+
 		///////////////////////////////////////////////////////////////////////
 		//	Get and decode input URI.
 
@@ -118,7 +120,7 @@ public class dispatcher extends HttpServlet
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
-	 *      response)
+	 *	  response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{

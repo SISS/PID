@@ -1,8 +1,8 @@
 dbname=""
 if [ -z $1 ] ; then
-        dbname="pidsvc"
+	dbname="pidsvc"
 else
-        dbname=$1
+	dbname=$1
 fi
 
 #sudo su - postgres || exit 1

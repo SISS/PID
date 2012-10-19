@@ -213,6 +213,19 @@ CREATE OR REPLACE VIEW vw_deprecated_mapping AS
 ALTER TABLE vw_deprecated_mapping
   OWNER TO "pidsvc-admin";
 
+-- View: vw_full_mapping_activeonly
+-- DROP VIEW vw_full_mapping_activeonly;
+CREATE OR REPLACE VIEW vw_full_mapping_activeonly AS 
+ SELECT a.mapping_id, a.mapping_path, a.description, a.creator, a.type, a.default_action_id, a.date_start, a.date_end
+   FROM mapping a
+  WHERE (EXISTS ( SELECT 1
+           FROM mapping b
+          WHERE b.mapping_path::text = a.mapping_path::text AND b.date_end IS NULL
+         LIMIT 1));
+
+ALTER TABLE vw_full_mapping_activeonly
+  OWNER TO "pidsvc-admin";
+
 -- Populate with data
 INSERT INTO "mapping_type" ("type") VALUES ('1:1');
 INSERT INTO "mapping_type" ("type") VALUES ('Regex');
