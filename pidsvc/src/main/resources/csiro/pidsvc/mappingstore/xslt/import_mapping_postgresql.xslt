@@ -81,10 +81,10 @@
 		<xsl:choose>
 			<xsl:when test="/backup">
 				<!-- Allow date_start/date_end restore for backups only. -->
-				INSERT INTO "mapping" (mapping_path, description, creator, "type", default_action_id<xsl:if test="date_start">, date_start</xsl:if><xsl:if test="date_end">, date_end</xsl:if>)
+				INSERT INTO "mapping" (mapping_path, description, creator, "type", default_action_id<xsl:if test="@date_start">, date_start</xsl:if><xsl:if test="@date_end">, date_end</xsl:if>)
 				VALUES (E'<xsl:value-of select="$path"/>', <xsl:value-of select="$description"/>, <xsl:value-of select="$creator"/>, '<xsl:value-of select="type"/>', <xsl:value-of select="$default_action_id"/>
-					<xsl:if test="date_start">, '<xsl:value-of select="date_start"/>'</xsl:if>
-					<xsl:if test="date_end">, '<xsl:value-of select="date_end"/>'</xsl:if>);
+					<xsl:if test="@date_start">, '<xsl:value-of select="@date_start"/>'</xsl:if>
+					<xsl:if test="@date_end">, '<xsl:value-of select="@date_end"/>'</xsl:if>);
 			</xsl:when>
 			<xsl:otherwise>
 				INSERT INTO "mapping" (mapping_path, description, creator, "type", default_action_id)

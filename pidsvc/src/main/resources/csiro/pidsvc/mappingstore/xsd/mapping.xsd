@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0">
+	<xs:element name="mapping" type="MappingType"/>
+	<xs:complexType name="MappingType">
+		<xs:sequence>
+			<xs:element name="path" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Mapping URI pattern.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Mapping URI pattern type.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="1:1">
+							<xs:annotation>
+								<xs:documentation>Exact URI match.</xs:documentation>
+							</xs:annotation>
+						</xs:enumeration>
+						<xs:enumeration value="Regex">
+							<xs:annotation>
+								<xs:documentation>Uses regular expressions to recognise the URI pattern.</xs:documentation>
+							</xs:annotation>
+						</xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Textual descriptions of the URI mapping (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="creator" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Creator's note of the URI mapping (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="action" type="ActionType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Default fall back action for the URI mapping. Fired when no specific matching conditions were found.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditions" type="ConditionsType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>A set of request specific URI mapping conditions.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ActionType">
+		<xs:sequence>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Action type.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="301"/>
+						<xs:enumeration value="302"/>
+						<xs:enumeration value="303"/>
+						<xs:enumeration value="307"/>
+						<xs:enumeration value="404"/>
+						<xs:enumeration value="410"/>
+						<xs:enumeration value="415"/>
+						<xs:enumeration value="AddHttpHeader"/>
+						<xs:enumeration value="RemoveHttpHeader"/>
+						<xs:enumeration value="ClearHttpHeaders"/>
+						<xs:enumeration value="Proxy"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="name" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Action parameter name that depends on the action type (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Action parameter value that depends on the action type (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ConditionsType">
+		<xs:sequence>
+			<xs:element name="condition" type="ConditionType" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Request specific URI mapping condition.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ConditionType">
+		<xs:sequence>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Condition type.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="ContentType"/>
+						<xs:enumeration value="Extension"/>
+						<xs:enumeration value="PrioritizedContentType"/>
+						<xs:enumeration value="QueryString"/>
+						<xs:enumeration value="HttpHeader"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="match" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Parameter for the specific condition type that is used to find a match.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="actions" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>A set of actions that is executed when a specific condition is met.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="action" type="ActionType" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Action to be executed when a specific condition is met.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
