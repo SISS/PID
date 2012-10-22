@@ -3,6 +3,7 @@ package csiro.pidsvc.mappingstore;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -23,12 +24,16 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
+import javax.xml.XMLConstants;
+import javax.xml.bind.ValidationException;
 import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 
 import net.sf.saxon.s9api.Processor;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Serializer;
-import net.sf.saxon.s9api.XdmNode;
 import net.sf.saxon.s9api.XsltCompiler;
 import net.sf.saxon.s9api.XsltExecutable;
 import net.sf.saxon.s9api.XsltTransformer;
@@ -38,7 +43,11 @@ import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.w3c.dom.ls.LSInput;
+import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.SAXException;
 
+import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.Descriptor;
 import csiro.pidsvc.mappingstore.action.List;
@@ -112,20 +121,41 @@ public class Manager
 		}
 	}
 	
-	public String createMapping(InputStream inputStream) throws SaxonApiException, SQLException
+	public String createMapping(InputStream inputStream, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
+		String inputData = Stream.readInputStream(inputStream);
+
+		// Validate request.
+		try
+		{
+			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+			schemaFactory.setResourceResolver(new LSResourceResolver() {
+				@Override
+				public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI)
+				{
+					return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
+				}
+			});
+
+			Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream("xsd/" + (isBackup ? "backup" : "mapping") + ".xsd")));
+			Validator validator = schema.newValidator();
+			validator.validate(new StreamSource(new StringReader(inputData))); 
+		}
+		catch (SAXException ex)
+		{
+			ex.printStackTrace();
+			throw new ValidationException("Invalid mapping format.", ex);
+		}
+
 		// Generate SQL query.
 		Processor			processor = new Processor(false);
 		XsltCompiler		xsltCompiler = processor.newXsltCompiler();
 		InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/import_mapping_postgresql.xslt");
 		XsltExecutable		xsltExec = xsltCompiler.compile(new StreamSource(inputSqlGen));
 		XsltTransformer		transformer = xsltExec.load();
-		XdmNode				source = processor.newDocumentBuilder().build(new StreamSource(inputStream));
-		StringWriter		swSqlQuery = new StringWriter();
-		
-		// TODO: Add validation of the input request.
 
-		transformer.setInitialContextNode(source);
+		StringWriter swSqlQuery = new StringWriter();
+		transformer.setInitialContextNode(processor.newDocumentBuilder().build(new StreamSource(new StringReader(inputData))));
 		transformer.setDestination(new Serializer(swSqlQuery));
 		transformer.transform();
 
@@ -567,7 +597,7 @@ public class Manager
 
 				gis = new GZIPInputStream(item.getInputStream());
 //				String fileContent = Stream.readInputStream(gis);
-				String ret = createMapping(gis);
+				String ret = createMapping(gis, true);
 				gis.close();
 				
 				// Process the first uploaded file only.
@@ -576,10 +606,11 @@ public class Manager
 		}
 		catch (Exception ex)
 		{
-			if (ex.getMessage().equalsIgnoreCase("Not in GZIP format"))
+			String msg = ex.getMessage();
+			if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
 				return "ERROR: Unknown file format.";
 			else
-				return "ERROR: " + ex.getMessage();
+				return "ERROR: " + (msg == null ? "Something went wrong." : msg);
 		}
 		finally
 		{

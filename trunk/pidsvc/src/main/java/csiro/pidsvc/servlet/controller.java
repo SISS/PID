@@ -110,7 +110,7 @@ public class controller extends HttpServlet
 			mgr = new Manager();
 
 			if (cmd.equalsIgnoreCase("create_mapping"))
-				mgr.createMapping(request.getInputStream());
+				mgr.createMapping(request.getInputStream(), false);
 			else if (cmd.equalsIgnoreCase("delete_mapping"))
 				mgr.deleteMapping(request.getParameter("mapping_path"));
 			else if (cmd.equalsIgnoreCase("import"))
