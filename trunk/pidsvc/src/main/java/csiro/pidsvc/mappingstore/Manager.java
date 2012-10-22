@@ -144,7 +144,7 @@ public class Manager
 		catch (SAXException ex)
 		{
 			ex.printStackTrace();
-			throw new ValidationException("Invalid mapping format.", ex);
+			throw new ValidationException(isBackup ? "Unknown file format." : "Invalid mapping format.", ex);
 		}
 
 		// Generate SQL query.
