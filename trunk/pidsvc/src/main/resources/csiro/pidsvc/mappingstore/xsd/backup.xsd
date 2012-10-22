@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:include schemaLocation="mapping.xsd"/>
+	<xs:element name="backup">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="mapping" type="BackupMappingType" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="type" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="partial"/>
+						<xs:enumeration value="full"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="scope" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="record"/>
+						<xs:enumeration value="db"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="BackupMappingType">
+		<xs:complexContent>
+			<xs:extension base="MappingType">
+				<xs:attribute name="date_start" type="xs:dateTime" use="optional">
+					<xs:annotation>
+						<xs:documentation>Date when the mapping comes in force.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="date_end" type="xs:dateTime" use="optional">
+					<xs:annotation>
+						<xs:documentation>Date when the mapping is tomb-stoned.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

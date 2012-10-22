@@ -451,7 +451,19 @@ public class Manager
 			{
 				for (rs = pst.getResultSet(); rs.next();)
 				{
-					ret += "<mapping>";
+					ret += "<mapping";
+					// Time stamps are only applicable for full backups and deprecated records.
+					if (fullBackup || !fullBackup && preserveDatesForDeprecatedMappings && rs.getTimestamp("date_end") != null)
+					{
+						timeStamp = rs.getTimestamp("date_start");
+						if (timeStamp != null)
+							ret += " date_start=\"" + timeStamp.toString().replace(" ", "T") + "Z\"";
+						timeStamp = rs.getTimestamp("date_end");
+						if (timeStamp != null)
+							ret += " date_end=\"" + timeStamp.toString().replace(" ", "T") + "Z\"";
+					}
+					ret += ">";
+
 					ret += "<path>" + StringEscapeUtils.escapeXml(rs.getString("mapping_path")) + "</path>";
 					ret += "<type>" + rs.getString("type") + "</type>";
 
@@ -461,17 +473,6 @@ public class Manager
 					buf = rs.getString("creator");
 					if (buf != null)
 						ret += "<creator>" + StringEscapeUtils.escapeXml(buf) + "</creator>";
-
-					// Time stamps are only applicable for full backups and deprecated records.
-					if (fullBackup || !fullBackup && preserveDatesForDeprecatedMappings && rs.getTimestamp("date_end") != null)
-					{
-						timeStamp = rs.getTimestamp("date_start");
-						if (timeStamp != null)
-							ret += "<date_start>" + timeStamp + "</date_start>";
-						timeStamp = rs.getTimestamp("date_end");
-						if (timeStamp != null)
-							ret += "<date_end>" + timeStamp + "</date_end>";
-					}
 
 					// Default action.
 					defaultActionId = rs.getInt("default_action_id");
