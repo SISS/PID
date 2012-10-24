@@ -1,13 +1,24 @@
 package csiro.pidsvc.mappingstore.action;
 
-import csiro.pidsvc.mappingstore.action.Runner;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
 
 public class ActionClearHttpHeaders extends AbstractAction
 {
-	@Override
-	public void run(Runner controller, Descriptor actionDescriptor, MappingMatchResults matchResult)
+	public ActionClearHttpHeaders(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
-		controller.getHttpHeaders().clear();
+		super(controller, descriptor, matchResult);
+	}
+
+	@Override
+	public void run()
+	{
+		_controller.getHttpHeaders().clear();
+	}
+
+	@Override
+	public void trace()
+	{
+		run();
+		trace("Clear HTTP headers");
 	}
 }

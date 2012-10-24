@@ -18,7 +18,48 @@ public class ManagerJson extends Manager
 	{
 		super();
 	}
-	
+
+	public String getSettings() throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT * FROM configuration");
+			if (pst.execute())
+			{
+				ret = "[";
+				int i = 0;
+				for (rs = pst.getResultSet(); rs.next(); ++i)
+				{
+					if (i > 0)
+						ret += ",";
+
+					ret += "{" +
+							JSONObject.toString("name", rs.getString(1)) + ", " +
+							JSONObject.toString("value", rs.getString(2)) +
+						"}";
+				}
+				ret += "]";
+			}
+		}
+		catch (Exception e)
+		{
+			ret = "[]";
+			e.printStackTrace();
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
 	public String getMappings(int page, String mappingPath, String type, String creator, int includeDeprecated) throws SQLException
 	{
 		PreparedStatement	pst = null;

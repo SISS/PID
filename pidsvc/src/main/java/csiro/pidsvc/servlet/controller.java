@@ -114,9 +114,11 @@ public class controller extends HttpServlet
 			else if (cmd.equalsIgnoreCase("delete_mapping"))
 				mgr.deleteMapping(request.getParameter("mapping_path"));
 			else if (cmd.equalsIgnoreCase("import"))
-				response.getWriter().write(mgr.importMappings(request));
+				response.getWriter().write(mgr.importMappings(request)); 
 			else if (cmd.equalsIgnoreCase("purge_data_store"))
 				mgr.purgeDataStore();
+			else if (cmd.equalsIgnoreCase("save_settings"))
+				mgr.saveSettings(request.getParameterMap());
 		}
 		catch (Exception e)
 		{

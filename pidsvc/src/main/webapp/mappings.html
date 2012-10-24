@@ -16,7 +16,7 @@
 		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
-		<script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
 
 		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
 		<script type="text/javascript" src="Scripts/Mappings.js"></script>
@@ -25,7 +25,6 @@
 		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
 	</head>
 	<body style="margin: 10px;">
-
 		<div id="TopMenu" style="position: relative; height: 50px;">
 			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
 				Search <span id="MenuResultsCount"></span>
@@ -34,7 +33,6 @@
 				Mapping Configuration
 			</div>
 		</div>
-		
 		<div id="Containers" style="position: relative;">
 			<div style="position: absolute; top: 0;">
 				<h2>URI Mapping Search</h2>
@@ -42,9 +40,9 @@
 					<div style="background: #fff; margin-bottom: 5px;">
 						<table border="0" cellpadding="5" cellspacing="1" width="100%">
 							<tr>
-								<td nowrap>URI pattern:</td>
+								<td nowrap="nowrap">URI pattern:</td>
 								<td width="50%"><input type="text" id="SearchUriPattern" maxlength="255" style="width: 400px;"/></td>
-								<td align="right" nowrap>Mapping type:</td>
+								<td align="right" nowrap="nowrap">Mapping type:</td>
 								<td width="50%">
 									<select id="SearchMappingType" class="input" style="width: 100px;">
 										<option value="">Any</option>
@@ -54,9 +52,9 @@
 								</td>
 							</tr>
 							<tr>
-								<td nowrap>Author:</td>
+								<td nowrap="nowrap">Author:</td>
 								<td width="50%"><input type="text" id="SearchCreator" maxlength="50" style="width: 400px;"/></td>
-								<td align="right" nowrap></td>
+								<td align="right" nowrap="nowrap"></td>
 								<td width="50%">
 									<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.searchMapping();" style="width:100px;" />
 								</td>
@@ -89,7 +87,7 @@
 						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
 							<div style="position: relative; top: -2px;">
 								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -30px; top: 5px;"/></a>
-								Page <input type="text" id="PagerInput" style="width: 30px; font-size: 10px; text-align: center; padding: 0;" maxlength="3"/> / <span></span></span>
+								Page <input type="text" id="PagerInput" style="width: 30px; font-size: 10px; text-align: center; padding: 0;" maxlength="3"/> / <span></span>
 								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -30px; top: 5px;"/></a>
 							</div>
 						</div>

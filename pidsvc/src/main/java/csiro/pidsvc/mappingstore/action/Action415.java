@@ -1,13 +1,23 @@
 package csiro.pidsvc.mappingstore.action;
 
-import csiro.pidsvc.mappingstore.action.Runner;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
 
 public class Action415 extends AbstractAction
 {
-	@Override
-	public void run(Runner controller, Descriptor actionDescriptor, MappingMatchResults matchResult)
+	public Action415(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
-		controller.getResponse().setStatus(415);
+		super(controller, descriptor, matchResult);
+	}
+
+	@Override
+	public void run()
+	{
+		_controller.getResponse().setStatus(415);
+	}
+
+	@Override
+	public void trace()
+	{
+		trace("Set HTTP response status: 415");
 	}
 }
