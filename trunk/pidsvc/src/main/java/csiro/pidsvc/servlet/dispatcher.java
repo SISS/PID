@@ -11,18 +11,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import csiro.pidsvc.mappingstore.action.Runner;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.Manager;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
+import csiro.pidsvc.mappingstore.action.Runner;
+import csiro.pidsvc.tracing.ITracer;
+import csiro.pidsvc.tracing.OutputStreamTracer;
 
 /**
  * Servlet implementation class dispatcher
  */
 public class dispatcher extends HttpServlet
 {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1975810034384367312L;
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -51,26 +53,36 @@ public class dispatcher extends HttpServlet
 		///////////////////////////////////////////////////////////////////////
 		//	Get and decode input URI.
 
-		URI uri = null;
-		Manager mgr = null;
+		URI			uri = null;
+		Manager		mgr = null;
+		ITracer		tracer = null;
 
 		try
 		{
 			uri = new URI(URLDecoder.decode(request.getQueryString(), "UTF-8").replaceAll("^([^&]+)&(.+)?$", "$1?$2"));
 			mgr = new Manager();
 		}
-		catch (URISyntaxException e)
+		catch (URISyntaxException ex)
 		{
 			response.setStatus(404);
 			return;
 		}
-		catch (Exception e)
+		catch (Exception ex)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
-			e.printStackTrace();
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+			ex.printStackTrace();
 			if (mgr != null)
 				mgr.close();
 			return;
+		}
+
+		///////////////////////////////////////////////////////////////////////
+		//	Get tracer settings.
+
+		if (mgr.getSetting("DispatcherTracingMode").equalsIgnoreCase("1"))
+		{
+			tracer = new OutputStreamTracer(response.getOutputStream());
+			tracer.trace("Dispatch " + uri.getOriginalUriAsString());
 		}
 		
 		///////////////////////////////////////////////////////////////////////
@@ -82,9 +94,13 @@ public class dispatcher extends HttpServlet
 			URI uriNoExtension = uri.getNoExtensionURI();
 
 			// 1-to-1 mapping. Look for an exact match.
+			if (tracer != null)
+				tracer.trace("Find exact match: " + uri.getPathNoExtension() + (uri.getExtension() == null ? "" : " [." + uri.getExtension() + "]"));
 			matchResult = mgr.findExactMatch(uri, request);
-			if (!matchResult.success())
+			if (!matchResult.success() && uri != uriNoExtension)
 			{
+				if (tracer != null)
+					tracer.trace("Find exact match: " + uriNoExtension.getPathNoExtension());
 				matchResult = mgr.findExactMatch(uriNoExtension, request);
 				if (matchResult.success())
 					uri = uriNoExtension;
@@ -93,22 +109,39 @@ public class dispatcher extends HttpServlet
 			// Regex-based mapping.
 			if (!matchResult.success())
 			{
+				if (tracer != null)
+					tracer.trace("Find regex match: " + uri.getPathNoExtension() + (uri.getExtension() == null ? "" : " [." + uri.getExtension() + "]"));
 				matchResult = mgr.findRegexMatch(uri, request);
-				if (!matchResult.success())
+				if (!matchResult.success() && uri != uriNoExtension)
 				{
+					if (tracer != null)
+						tracer.trace("Find regex match: " + uriNoExtension.getPathNoExtension());
 					matchResult = mgr.findRegexMatch(uriNoExtension, request);
 					if (matchResult.success())
 						uri = uriNoExtension;
 				}
 			}
 
+			// Tracing information.
+			if (tracer != null)
+			{
+				tracer.trace("Match found: " + matchResult.success());
+				if (matchResult.success())
+				{
+					tracer.trace("\tDefault action ID: " + matchResult.DefaultActionId);
+					tracer.trace("\tCondition: " + matchResult.Condition);
+					tracer.trace("\tAuxiliaryData: " + matchResult.AuxiliaryData);
+					tracer.trace("Run actions.");
+				}
+			}
+
 			// Run actions.
-			(new Runner(uri, request, response)).Run(matchResult);
+			(new Runner(uri, request, response, tracer)).Run(matchResult);
 		}
-		catch (Exception e)
+		catch (Exception ex)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
-			e.printStackTrace();
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+			ex.printStackTrace();
 			return;
 		}
 		finally

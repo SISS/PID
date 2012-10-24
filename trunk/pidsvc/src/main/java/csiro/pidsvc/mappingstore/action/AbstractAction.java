@@ -6,41 +6,62 @@ import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import csiro.pidsvc.mappingstore.action.Runner;
-import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
+import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
 
 public abstract class AbstractAction
 {
-	public abstract void run(Runner controller, Descriptor actionDescriptor, MappingMatchResults matchResult);
-	
-	protected String substrituteCaptureParameters(String input, Descriptor actionDescriptor, MappingMatchResults matchResult) throws URISyntaxException, UnsupportedEncodingException
+	protected final Runner _controller;
+	protected final Descriptor _descriptor;
+	protected final MappingMatchResults _matchResult;	
+
+	public AbstractAction(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
-		String actionValue = actionDescriptor.Value.replaceAll("\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
+		_controller = controller;
+		_descriptor = descriptor;
+		_matchResult = matchResult;
+	}
+
+	public abstract void run();
+	public abstract void trace();
+
+	public boolean isTraceMode()
+	{
+		return _controller.isTraceMode();
+	}
+
+	protected void trace(String message)
+	{
+		_controller.trace(message);
+	}
+
+	protected String substrituteCaptureParameters(String input) throws URISyntaxException, UnsupportedEncodingException
+	{
+		String actionValue = _descriptor.Value.replaceAll("\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
 		String ret;
 
 		// Regex from URI matching.
-		if (matchResult.AuxiliaryData instanceof Pattern)
-			ret = input.replaceAll(((Pattern)matchResult.AuxiliaryData).pattern(), actionValue);
+		if (_matchResult.AuxiliaryData instanceof Pattern)
+			ret = input.replaceAll(((Pattern)_matchResult.AuxiliaryData).pattern(), actionValue);
 		else
 			ret = actionValue;
 
 		// Matches from condition regex matching.
-		if (matchResult.Condition != null)
+		if (_matchResult.Condition != null)
 		{
 			String q, val;
 			Matcher m;
-			if (matchResult.Condition.AuxiliaryData instanceof Matcher)
+			if (_matchResult.Condition.AuxiliaryData instanceof Matcher)
 			{
-				m = (Matcher)matchResult.Condition.AuxiliaryData;
+				m = (Matcher)_matchResult.Condition.AuxiliaryData;
 				for (int i = 0; i <= m.groupCount(); ++i)
 				{
 					ret = ret.replace("%[[" + i + "]]", m.group(i));
 				}
 			}
-			else if (matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
+			else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
 			{
-				NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)matchResult.Condition.AuxiliaryData;
+				NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)_matchResult.Condition.AuxiliaryData;
 				Enumeration<String> keys = aux.keys();
 
 				while (keys.hasMoreElements())
@@ -60,5 +81,10 @@ public abstract class AbstractAction
 
 		// Remove any non-expanded place holders.
 		return ret.replaceAll("%\\[\\[.+?\\]\\]|\\$\\d+", "");
+	}
+
+	public String toString()
+	{
+		return "Type=" + getClass().getSimpleName() + "; Name=" + _descriptor.Name + "; Value=" + _descriptor.Value + ";";		
 	}
 }

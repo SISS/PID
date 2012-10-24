@@ -11,6 +11,7 @@ CREATE DATABASE "pidsvc"
 CREATE LANGUAGE plpgsql;
 */
 
+DROP TABLE configuration CASCADE;
 DROP TABLE mapping_type CASCADE;
 DROP TABLE condition_type CASCADE;
 DROP TABLE action_type CASCADE;
@@ -18,6 +19,20 @@ DROP TABLE mapping CASCADE;
 DROP TABLE condition CASCADE;
 DROP TABLE action CASCADE;
 DROP FUNCTION delete_mapping_default_action() CASCADE;
+
+-- Table: configuration
+-- DROP TABLE configuration;
+CREATE TABLE configuration
+(
+  name character varying(50) NOT NULL,
+  value character varying(255),
+  CONSTRAINT configuration_pkey PRIMARY KEY (name )
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE configuration
+  OWNER TO "pidsvc-admin";
 
 -- Table: mapping_type
 CREATE TABLE mapping_type
@@ -227,6 +242,8 @@ ALTER TABLE vw_full_mapping_activeonly
   OWNER TO "pidsvc-admin";
 
 -- Populate with data
+INSERT INTO "configuration" ("name", "value") VALUES ('DispatcherTracingMode', '0');
+
 INSERT INTO "mapping_type" ("type") VALUES ('1:1');
 INSERT INTO "mapping_type" ("type") VALUES ('Regex');
 

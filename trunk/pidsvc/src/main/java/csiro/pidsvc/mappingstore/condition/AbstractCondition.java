@@ -39,4 +39,9 @@ public abstract class AbstractCondition
 	}
 	
 	public abstract boolean matches();
+
+	public String toString()
+	{
+		return "Type=" + getClass().getSimpleName() + "; ID=" + ID + "; Match=" + Match + "; Aux=" + AuxiliaryData + ";";
+	}
 }

@@ -109,9 +109,9 @@
 
 	backup: function()
 	{
-		$J("#BackupLoader").attr("src", "controller?cmd=" + ($J("#BackupTypeFull").is(":checked") ? "full" : "partial") + "_backup&deprecated=" + $J("#IncludeDeprecated").is(":checked").toString().toLowerCase());
 		if ($J.browser.msie)
 			Main.blockUI($J("#BackupSection"));
+		$J("#BackupLoader").attr("src", "controller?cmd=" + ($J("#BackupTypeFull").is(":checked") ? "full" : "partial") + "_backup&deprecated=" + $J("#IncludeDeprecated").is(":checked").toString().toLowerCase());
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -226,13 +226,13 @@
 
 	purgeDataStore: function()
 	{
+		Main.blockUI($J("#RestoreSection"));
 		$J.ajax("controller?cmd=purge_data_store", {
 				type: "POST",
 				cache: false
 			})
 			.done(this.purgeDataStoreDone)
 			.fail(this.displayGenericError);
-		Main.blockUI($J("#RestoreSection"));
 	},
 
 	purgeDataStoreDone: function()

@@ -13,6 +13,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -49,7 +51,6 @@ import org.xml.sax.SAXException;
 
 import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
-import csiro.pidsvc.mappingstore.action.Descriptor;
 import csiro.pidsvc.mappingstore.action.List;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition;
 import csiro.pidsvc.mappingstore.condition.ConditionPrioritizedContentType;
@@ -78,21 +79,7 @@ public class Manager
 			return DefaultActionId != MappingMatchResults.NULL || Condition != null || AuxiliaryData != null;
 		}
 	}
-	
-	protected class ConditionDescriptor
-	{
-		public final int ID;
-		public final String Type;
-		public final String Match;
-		
-		public ConditionDescriptor(int id, String type, String match)
-		{
-			this.ID = id;
-			this.Type = type;
-			this.Match = match;
-		}
-	}
-	
+
 	public Manager() throws NamingException, SQLException, IOException
 	{
 		Properties properties = new Properties(); 
@@ -286,7 +273,7 @@ public class Manager
 		return new MappingMatchResults(defaultActionId, retCondition, retAuxiliaryData);
 	}
 	
-	protected Vector<ConditionDescriptor> getConditions(int mappingId) throws SQLException
+	protected Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditions(int mappingId) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet 			rs = null;
@@ -300,8 +287,8 @@ public class Manager
 				return null;
 
 			// Get list of conditions.
-			Vector<ConditionDescriptor> conditions = new Vector<ConditionDescriptor>();
-			for (rs = pst.getResultSet(); rs.next(); conditions.add(new ConditionDescriptor(rs.getInt("condition_id"), rs.getString("type"), rs.getString("match"))));
+			Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = new Vector<csiro.pidsvc.mappingstore.condition.Descriptor>();
+			for (rs = pst.getResultSet(); rs.next(); conditions.add(new csiro.pidsvc.mappingstore.condition.Descriptor(rs.getInt("condition_id"), rs.getString("type"), rs.getString("match"))));
 			return conditions;
 		}
 		catch (Exception e)
@@ -321,7 +308,7 @@ public class Manager
 	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request) throws SQLException
 	{
 		// Get list of conditions.
-		Vector<ConditionDescriptor> conditions = getConditions(mappingId);
+		Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(mappingId);
 		if (conditions == null)
 			return null;
 
@@ -329,7 +316,7 @@ public class Manager
 		try
 		{
 			Vector<ConditionPrioritizedContentType> prioritizedConditions = null;
-			for (ConditionDescriptor descriptor : conditions)
+			for (csiro.pidsvc.mappingstore.condition.Descriptor descriptor : conditions)
 			{
 				/*
 				 * Once PrioritizedContentType condition is encountered process all
@@ -343,7 +330,7 @@ public class Manager
 	
 					// Extract all PrioritizedContentType conditions.
 					prioritizedConditions = new Vector<ConditionPrioritizedContentType>();
-					for (ConditionDescriptor dctr : conditions)
+					for (csiro.pidsvc.mappingstore.condition.Descriptor dctr : conditions)
 					{
 						if (dctr.Type.equalsIgnoreCase("PrioritizedContentType"))
 						{
@@ -379,7 +366,7 @@ public class Manager
 		return null;
 	}
 
-	public Descriptor getActionsByActionId(int actionId) throws SQLException
+	public csiro.pidsvc.mappingstore.action.Descriptor getActionsByActionId(int actionId) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
@@ -391,7 +378,7 @@ public class Manager
 			
 			rs = pst.executeQuery();
 			rs.next();
-			return new Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value"));
+			return new csiro.pidsvc.mappingstore.action.Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value"));
 		}
 		finally
 		{
@@ -416,7 +403,7 @@ public class Manager
 			rs = pst.executeQuery();
 			while (rs.next())
 			{
-				actions.add(new Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value")));
+				actions.add(new csiro.pidsvc.mappingstore.action.Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value")));
 			}
 		}
 		finally
@@ -508,7 +495,7 @@ public class Manager
 					defaultActionId = rs.getInt("default_action_id");
 					if (!rs.wasNull())
 					{
-						Descriptor action = getActionsByActionId(defaultActionId);
+						csiro.pidsvc.mappingstore.action.Descriptor action = getActionsByActionId(defaultActionId);
 						ret += "<action>";
 						ret += "<type>" + action.Type + "</type>";
 						if (action.Name != null)
@@ -519,11 +506,11 @@ public class Manager
 					}
 					
 					// Conditions.
-					Vector<ConditionDescriptor> conditions = getConditions(rs.getInt("mapping_id"));
+					Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(rs.getInt("mapping_id"));
 					if (conditions != null && conditions.size() > 0)
 					{
 						ret += "<conditions>";
-						for (ConditionDescriptor condition : conditions)
+						for (csiro.pidsvc.mappingstore.condition.Descriptor condition : conditions)
 						{
 							ret += "<condition>";
 							ret += "<type>" + condition.Type + "</type>";
@@ -534,7 +521,7 @@ public class Manager
 							if (actions != null && actions.size() > 0)
 							{
 								ret += "<actions>";
-								for (Descriptor action : actions)
+								for (csiro.pidsvc.mappingstore.action.Descriptor action : actions)
 								{
 									ret += "<action>";
 									ret += "<type>" + action.Type + "</type>";
@@ -648,5 +635,79 @@ public class Manager
 			if (pst != null)
 				pst.close();
 		}
+	}
+
+	public boolean saveSettings(Map<?, ?> settings) throws SQLException
+	{
+		String sqlQuery = "BEGIN;\n";
+		HashMap<String, String> params = new HashMap<String, String>(); 
+		for (Object key : settings.keySet())
+		{
+			if (key.equals("cmd"))
+				continue;
+			params.put((String)key, ((String[])settings.get(key))[0]);
+			sqlQuery += "UPDATE configuration SET \"value\"=? WHERE \"name\"=?;\n";
+		}
+		sqlQuery += "COMMIT;";
+
+		// Execute SQL query.
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement(sqlQuery);
+
+			// Set query parameters.
+			int i = 1;
+			for (String key : params.keySet())
+			{
+				pst.setString(i++, params.get(key));
+				pst.setString(i++, key);
+			}
+
+			return pst.execute();
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public String getSetting(String name)
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT value FROM configuration WHERE \"name\"=?");
+			pst.setString(1, name);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+					return rs.getString(1);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return null;
 	}
 }
