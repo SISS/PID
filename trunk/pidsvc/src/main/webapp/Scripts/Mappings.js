@@ -898,36 +898,45 @@
 		}
 
 		// Conditions.
-		cmdxml += "<conditions>";
-		$J("#ConditionSection > table").each(function() {
-			var jqCondition = $J(this);
-			var match = jqCondition.find("input.__conditionMatch").val().trim();
-			if (!match)
-				return;
-
-			cmdxml += "<condition>";
-			cmdxml += "<type>" + jqCondition.find("td.__conditionType select").val() + "</type>";
-			cmdxml += "<match>" + match.htmlEscape() + "</match>";
-			cmdxml += "<actions>";
-			jqCondition.find("table.__actions tr").each(function() {
-				// Serialize actions.
-				var jqAction = $J(this);
-				var actionName = jqAction.find("input.__actionName").val().trim().htmlEscape();
-				var actionValue = jqAction.find("input.__actionValue").val().htmlEscape()
-
-				if (!jqAction.find("input.__actionName").attr("disabled") && !actionName ||
-					!jqAction.find("input.__actionValue").attr("disabled") && !actionValue)
+		var jqConditions = $J("#ConditionSection > table");
+		if (jqConditions.size() > 0)
+		{
+			cmdxml += "<conditions>";
+			jqConditions.each(function() {
+				var jqCondition = $J(this);
+				var match = jqCondition.find("input.__conditionMatch").val().trim();
+				if (!match)
 					return;
-				cmdxml += "<action>";
-				cmdxml += "<type>" + jqAction.find("td.__actionType select").val() + "</type>";
-				cmdxml += "<name>" + actionName + "</name>";
-				cmdxml += "<value>" + actionValue + "</value>";
-				cmdxml += "</action>";
+	
+				cmdxml += "<condition>";
+				cmdxml += "<type>" + jqCondition.find("td.__conditionType select").val() + "</type>";
+				cmdxml += "<match>" + match.htmlEscape() + "</match>";
+
+				var jqActions = jqCondition.find("table.__actions tr");
+				if (jqActions.size() > 0)
+				{
+					cmdxml += "<actions>";
+					jqActions.each(function() {
+						// Serialize actions.
+						var jqAction = $J(this);
+						var actionName = jqAction.find("input.__actionName").val().trim().htmlEscape();
+						var actionValue = jqAction.find("input.__actionValue").val().htmlEscape()
+		
+						if (!jqAction.find("input.__actionName").attr("disabled") && !actionName ||
+							!jqAction.find("input.__actionValue").attr("disabled") && !actionValue)
+							return;
+						cmdxml += "<action>";
+						cmdxml += "<type>" + jqAction.find("td.__actionType select").val() + "</type>";
+						cmdxml += "<name>" + actionName + "</name>";
+						cmdxml += "<value>" + actionValue + "</value>";
+						cmdxml += "</action>";
+					});
+					cmdxml += "</actions>";
+				}
+				cmdxml += "</condition>";
 			});
-			cmdxml += "</actions>";
-			cmdxml += "</condition>";
-		});
-		cmdxml += "</conditions>";
+			cmdxml += "</conditions>";
+		}
 		cmdxml += "</mapping>";
 
 //		alert(cmdxml);
