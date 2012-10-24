@@ -527,22 +527,18 @@
 			.find("input.__actionValue")
 				.val(data.action ? data.action.value : "");
 
+		// Add conditions.
 		if (data.conditions)
 		{
 			$J("#ConditionSection").empty();
 			$J(data.conditions).each(function() {
-				// Add conditions.
-				Main.appendCondition($J("#ConditionSection"), this)
-					.find("td.__conditionType:last select")
-						.val(this.type);
+				Main.appendCondition($J("#ConditionSection"), this);
 
 				// Add actions for each conditions.
 				if (this.actions.length)
 				{
 					$J(this.actions).each(function() {
-						Main.appendAction($J("#ConditionSection table.__actions:last"), this)
-							.find("td.__actionType:last > select")
-								.val(this.type);
+						Main.appendAction($J("#ConditionSection table.__actions:last"), this);
 					});
 				}
 				else
@@ -658,6 +654,9 @@
 				"	</tr>" +
 				"</table>"
 			)
+			.find("td.__conditionType > select:last")
+				.val(jsonAction.type)
+			.end()
 			.find("a.__conditionMoveUp:last")
 				.click(Main.conditionMoveUp)
 			.end()
@@ -799,7 +798,8 @@
 				) +
 				"</tr>"
 			)
-			.find("td.__actionType select:last")
+			.find("td.__actionType > select:last")
+				.val(jsonAction.type)
 				.change(Main.actionTypeOnChange)
 				.change()
 			.end()
@@ -970,7 +970,7 @@
 			return;
 		}
 		if (key == "full_export")
-			location.href = "controller?cmd=" + key + "&mapping_path=" + encodeURIComponent($J("#MappingPath").val());
+			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent($J("#MappingPath").val());
 		else
 			location.href = "controller?cmd=partial_export&mapping_id=" + $J("#MappingPath").attr("mapping_id");
 	}
