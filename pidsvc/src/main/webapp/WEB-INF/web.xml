@@ -20,7 +20,7 @@
     <url-pattern>/dispatcher</url-pattern>
   </servlet-mapping>
   <servlet>
-    <description>PID Service control interface</description>
+    <description>PID Service Control Interface</description>
     <display-name>controller</display-name>
     <servlet-name>controller</servlet-name>
     <servlet-class>csiro.pidsvc.servlet.controller</servlet-class>
@@ -30,7 +30,7 @@
     <url-pattern>/controller</url-pattern>
   </servlet-mapping>
   <servlet>
-  	<description>PID Service information interface</description>
+  	<description>PID Service Information Interface</description>
   	<display-name>info</display-name>
   	<servlet-name>info</servlet-name>
   	<servlet-class>csiro.pidsvc.servlet.info</servlet-class>
