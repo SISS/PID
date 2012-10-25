@@ -20,7 +20,7 @@ import csiro.pidsvc.mappingstore.ManagerJson;
  */
 public class controller extends HttpServlet
 {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -6453299989235903216L;
 
 	protected final SimpleDateFormat _sdfBackupStamp = new SimpleDateFormat("yyyy-MM-dd.HHmmss");
 
