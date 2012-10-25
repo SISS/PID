@@ -45,20 +45,18 @@ public class ActionProxy extends AbstractAction
 					trace("\t" + header + ": " + hmHeaders.get(header));
 			}
 
-			// Handle X-Original-URI and Referer HTTP headers.
-			String originalUri = originalHttpRequest.getScheme() + "://" + originalHttpRequest.getServerName();
-			if (originalHttpRequest.getServerPort() != 80)
-				originalUri += ":" + originalHttpRequest.getServerPort();
-			originalUri += _controller.getUri().getOriginalUriAsString();
-			httpGet.addHeader("Referer", originalUri);
-			if (isTraceMode())
-				trace("\tReferer: " + originalUri);
+			// Handle X-Original-URI HTTP header.
+			if (!hmHeaders.containsKey("X-Original-URI"))
+			{
+				String originalUri = originalHttpRequest.getScheme() + "://" + originalHttpRequest.getServerName();
+				if (originalHttpRequest.getServerPort() != 80)
+					originalUri += ":" + originalHttpRequest.getServerPort();
+				originalUri += _controller.getUri().getOriginalUriAsString();
 
-			String xHttpHeaderOriginalUri = originalHttpRequest.getHeader("X-Original-URI");
-			xHttpHeaderOriginalUri = xHttpHeaderOriginalUri == null ? originalUri : xHttpHeaderOriginalUri;
-			httpGet.addHeader("X-Original-URI", xHttpHeaderOriginalUri);
-			if (isTraceMode())
-				trace("\tX-Original-URI: " + xHttpHeaderOriginalUri);
+				httpGet.addHeader("X-Original-URI", originalUri);
+				if (isTraceMode())
+					trace("\tX-Original-URI: " + originalUri);
+			}
 
 			// Get the data.
 			HttpResponse response  = httpClient.execute(httpGet);
