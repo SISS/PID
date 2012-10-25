@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:mapping:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:mapping:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
 	<xs:include schemaLocation="mapping.xsd"/>
 	<xs:element name="backup">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element name="mapping" type="BackupMappingType" maxOccurs="unbounded"/>
+				<xs:element name="mapping" type="pidsvc:BackupMappingType" maxOccurs="unbounded"/>
 			</xs:sequence>
 			<xs:attribute name="type" use="required">
 				<xs:simpleType>
@@ -26,7 +26,7 @@
 	</xs:element>
 	<xs:complexType name="BackupMappingType">
 		<xs:complexContent>
-			<xs:extension base="MappingType">
+			<xs:extension base="pidsvc:MappingType">
 				<xs:attribute name="date_start" type="xs:dateTime" use="optional">
 					<xs:annotation>
 						<xs:documentation>Date when the mapping comes in force.</xs:documentation>

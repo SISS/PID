@@ -444,7 +444,7 @@ public class Manager
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\">";
+		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\" xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
 		int					defaultActionId;
 		List				actions;
 		Timestamp			timeStamp;
