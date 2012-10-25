@@ -122,11 +122,12 @@
 		Main.unblockUI();
 	},
 
-	renderGenericError: function(jqEl, jqXHR, textStatus, errorThrown)
+	renderGenericError: function(jqXHR, textStatus, errorThrown)
 	{
+		var jqResults = $J("#MappingSearchResultsTable").find("tr:gt(0)").remove().end();
 		if (jqXHR.status != 200)
 		{
-			jqEl
+			jqResults
 				.append(
 					"<tr valign='top' class='__error'>" +
 					"	<td colspan='3'>" + jqXHR.status + " " + jqXHR.statusText + "</td>" +
@@ -135,13 +136,16 @@
 		}
 		else
 		{
-			jqEl
+			jqResults
 				.append(
 					"<tr valign='top' class='__error'>" +
 					"	<td colspan='3'>" + errorThrown.name + " (" + textStatus + ")<br/>" + errorThrown.message + "</td>" +
 					"</tr>"
 				);
 		}
+		$J("#Pager").hide();
+		$J("#MappingSearchResults").show();
+		Main.unblockUI();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -279,7 +283,7 @@
 		Main.blockUI($J("#UriSearchSection"));
 
 		// Call service.
-		$J.getJSON(request, this.renderResults).fail(this.renderResultsError);
+		$J.getJSON(request, this.renderResults).fail(this.renderGenericError);
 	},
 
 	renderResults: function(data)
@@ -407,11 +411,6 @@
 		Main.searchMapping(page);
 	},
 
-	renderResultsError: function(jqXHR, textStatus, errorThrown)
-	{
-		renderGenericError($J("#MappingSearchResultsTable"), jqXHR, textStatus, errorThrown);
-	},
-
 	///////////////////////////////////////////////////////////////////////////
 	//	PID configuration UI.
 
@@ -464,16 +463,16 @@
 
 		// If mappingId === 0 then get the latest configuration for the current mapping.
 		if (mappingId === 0)
-			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val()), Main.renderPidConfig).fail(Main.renderResultsError);
+			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val()), Main.renderPidConfig).fail(Main.renderGenericError);
 		else
-			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderPidConfig).fail(Main.renderResultsError);
+			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderPidConfig).fail(Main.renderGenericError);
 	},
 
 	getPidConfigByMappingPath: function(mappingPath)
 	{
 		$J("#Tip").hide();
 		Main.openTab(1);
-		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderPidConfig).fail(Main.renderResultsError);
+		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderPidConfig).fail(Main.renderGenericError);
 	},
 
 	renderPidConfig: function(data)
@@ -559,11 +558,6 @@
 
 		Main.blockSaving(true);
 		Main.unblockUI();
-	},
-
-	renderPidConfigError: function(jqXHR, textStatus, errorThrown)
-	{
-		renderGenericError($J("#MappingSearchResultsTable"), jqXHR, textStatus, errorThrown);
 	},
 
 	//
@@ -877,7 +871,8 @@
 		var creator = $J("#MappingCreator").val();
 
 		// Basic data.
-		var cmdxml = "<mapping>";
+		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
 		cmdxml += "<path>" + path.htmlEscape() + "</path>";
 		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
 		if (description)
