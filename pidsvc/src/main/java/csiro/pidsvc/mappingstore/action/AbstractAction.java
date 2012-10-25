@@ -2,6 +2,7 @@ package csiro.pidsvc.mappingstore.action;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,7 +57,7 @@ public abstract class AbstractAction
 				m = (Matcher)_matchResult.Condition.AuxiliaryData;
 				for (int i = 0; i <= m.groupCount(); ++i)
 				{
-					ret = ret.replace("%[[" + i + "]]", m.group(i));
+					ret = ret.replace("%[[" + i + "]]", URLEncoder.encode(m.group(i), "UTF-8"));
 				}
 			}
 			else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
@@ -69,11 +70,11 @@ public abstract class AbstractAction
 					q = (String)keys.nextElement();
 					m = aux.get(q);
 
-					ret = ret.replace("%[[" + q + "]]", m.group(0));
+					ret = ret.replace("%[[" + q + "]]", URLEncoder.encode(m.group(0), "UTF-8"));
 					for (int i = 0; i <= m.groupCount(); ++i)
 					{
 						val = m.group(i);
-						ret = ret.replace("%[[" + q + ":" + i + "]]", val == null ? "" : val);
+						ret = ret.replace("%[[" + q + ":" + i + "]]", val == null ? "" : URLEncoder.encode(val, "UTF-8"));
 					}
 				}
 			}
