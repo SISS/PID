@@ -53,7 +53,7 @@ import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.List;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition;
-import csiro.pidsvc.mappingstore.condition.ConditionPrioritizedContentType;
+import csiro.pidsvc.mappingstore.condition.ConditionContentType;
 
 public class Manager
 {
@@ -315,33 +315,33 @@ public class Manager
 		// Test conditions.
 		try
 		{
-			Vector<ConditionPrioritizedContentType> prioritizedConditions = null;
+			Vector<ConditionContentType> prioritizedConditions = null;
 			for (csiro.pidsvc.mappingstore.condition.Descriptor descriptor : conditions)
 			{
 				/*
-				 * Once PrioritizedContentType condition is encountered process all
-				 * PrioritizedContentType conditions in one go as a group.
+				 * Once ContentType condition is encountered process all
+				 * ContentType conditions in one go as a group.
 				 */
-				if (descriptor.Type.equalsIgnoreCase("PrioritizedContentType"))
+				if (descriptor.Type.equalsIgnoreCase("ContentType"))
 				{
-					// Skip if PrioritizedContentType conditions have already been processed.
+					// Skip if ContentType conditions have already been processed.
 					if (prioritizedConditions != null)
 						continue;
 	
-					// Extract all PrioritizedContentType conditions.
-					prioritizedConditions = new Vector<ConditionPrioritizedContentType>();
+					// Extract all ContentType conditions.
+					prioritizedConditions = new Vector<ConditionContentType>();
 					for (csiro.pidsvc.mappingstore.condition.Descriptor dctr : conditions)
 					{
-						if (dctr.Type.equalsIgnoreCase("PrioritizedContentType"))
+						if (dctr.Type.equalsIgnoreCase("ContentType"))
 						{
 							Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.condition.Condition" + dctr.Type);
 							Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class);
-							prioritizedConditions.add((ConditionPrioritizedContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match));
+							prioritizedConditions.add((ConditionContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match));
 						}
 					}
 	
 					// Find matching conditions.
-					AbstractCondition matchingCondition = ConditionPrioritizedContentType.getMatchingCondition(prioritizedConditions);
+					AbstractCondition matchingCondition = ConditionContentType.getMatchingCondition(prioritizedConditions);
 					if (matchingCondition != null)
 						return matchingCondition;
 
