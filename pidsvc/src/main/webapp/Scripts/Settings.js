@@ -18,7 +18,7 @@
 		switch (event.which)
 		{
 			case 8: // Backspace
-				if (!$J(":focus").is(":input") && event.ctrlKey)
+				if (!$J(":focus").is(":input"))
 				{
 					Main.openTab(-1);
 					event.preventDefault();
