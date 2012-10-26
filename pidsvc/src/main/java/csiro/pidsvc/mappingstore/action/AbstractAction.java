@@ -57,7 +57,7 @@ public abstract class AbstractAction
 				m = (Matcher)_matchResult.Condition.AuxiliaryData;
 				for (int i = 0; i <= m.groupCount(); ++i)
 				{
-					ret = ret.replace("(?i)%\\[\\[" + i + "\\]\\]", URLEncoder.encode(m.group(i), "UTF-8"));
+					ret = ret.replaceAll("(?i)%\\[\\[" + i + "\\]\\]", URLEncoder.encode(m.group(i), "UTF-8"));
 				}
 			}
 			else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)

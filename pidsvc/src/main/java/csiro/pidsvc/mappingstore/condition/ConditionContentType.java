@@ -1,5 +1,6 @@
 package csiro.pidsvc.mappingstore.condition;
 
+import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,6 +8,7 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 
 import csiro.pidsvc.helper.URI;
+import csiro.pidsvc.mappingstore.condition.helper.PrioritizedQueue;
 
 public class ConditionContentType extends AbstractCondition
 {
@@ -14,7 +16,7 @@ public class ConditionContentType extends AbstractCondition
 	{
 		super(uri, request, id, match);
 	}
-	
+
 	protected String _acceptHeader = null;
 
 	@Override
@@ -39,17 +41,17 @@ public class ConditionContentType extends AbstractCondition
 		}
 		return false;
 	}
-	
+
 	public static ConditionContentType getMatchingCondition(Vector<ConditionContentType> prioritizedConditions)
 	{
 		if (prioritizedConditions.size() == 0)
 			return null;
-		
+
 		String acceptHeader = prioritizedConditions.get(0)._request.getHeader("Accept");
 		if (acceptHeader == null || acceptHeader.isEmpty())
 			return null;
 
-		String acceptList[] = acceptHeader.split(",\\s*");
+		List<String> acceptList = (new PrioritizedQueue(acceptHeader)).getQueue();
 		for (String accept : acceptList)
 		{
 			if (accept.equalsIgnoreCase("*/*") || accept.equalsIgnoreCase("*"))
@@ -61,7 +63,6 @@ public class ConditionContentType extends AbstractCondition
 					return condition;
 			}
 		}
-		
 		return null;
 	}
 }
