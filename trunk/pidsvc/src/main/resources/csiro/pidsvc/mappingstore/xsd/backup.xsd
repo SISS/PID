@@ -34,7 +34,7 @@
 				</xs:attribute>
 				<xs:attribute name="date_end" type="xs:dateTime" use="optional">
 					<xs:annotation>
-						<xs:documentation>Date when the mapping is tomb-stoned.</xs:documentation>
+						<xs:documentation>Date when the mapping was tomb-stoned.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
 			</xs:extension>

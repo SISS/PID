@@ -10,20 +10,12 @@
 			</xs:element>
 			<xs:element name="type">
 				<xs:annotation>
-					<xs:documentation>Mapping URI pattern type.</xs:documentation>
+					<xs:documentation>Mapping URI pattern type that is supported by a specific version of the PID Service (e.g. 1:1, Regex, etc.).</xs:documentation>
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:enumeration value="1:1">
-							<xs:annotation>
-								<xs:documentation>Exact URI match.</xs:documentation>
-							</xs:annotation>
-						</xs:enumeration>
-						<xs:enumeration value="Regex">
-							<xs:annotation>
-								<xs:documentation>Uses regular expressions to recognise the URI pattern.</xs:documentation>
-							</xs:annotation>
-						</xs:enumeration>
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
@@ -32,10 +24,15 @@
 					<xs:documentation>Textual descriptions of the URI mapping (optional).</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="creator" type="xs:string" minOccurs="0">
+			<xs:element name="creator" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Creator's note of the URI mapping (optional).</xs:documentation>
 				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="255"/>
+					</xs:restriction>
+				</xs:simpleType>
 			</xs:element>
 			<xs:element name="action" type="pidsvc:ActionType" minOccurs="0">
 				<xs:annotation>
@@ -53,33 +50,34 @@
 		<xs:sequence>
 			<xs:element name="type">
 				<xs:annotation>
-					<xs:documentation>Action type.</xs:documentation>
+					<xs:documentation>Action type that is supported by a specific version of the PID Service (e.g. 302, 404, Proxy, etc.).</xs:documentation>
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:enumeration value="301"/>
-						<xs:enumeration value="302"/>
-						<xs:enumeration value="303"/>
-						<xs:enumeration value="307"/>
-						<xs:enumeration value="404"/>
-						<xs:enumeration value="410"/>
-						<xs:enumeration value="415"/>
-						<xs:enumeration value="AddHttpHeader"/>
-						<xs:enumeration value="RemoveHttpHeader"/>
-						<xs:enumeration value="ClearHttpHeaders"/>
-						<xs:enumeration value="Proxy"/>
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
-			<xs:element name="name" type="xs:string" minOccurs="0">
+			<xs:element name="name" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Action parameter name that depends on the action type (optional).</xs:documentation>
 				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
 			</xs:element>
-			<xs:element name="value" type="xs:string" minOccurs="0">
+			<xs:element name="value" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Action parameter value that depends on the action type (optional).</xs:documentation>
 				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="512"/>
+					</xs:restriction>
+				</xs:simpleType>
 			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
@@ -96,21 +94,24 @@
 		<xs:sequence>
 			<xs:element name="type">
 				<xs:annotation>
-					<xs:documentation>Condition type.</xs:documentation>
+					<xs:documentation>Condition type that is supported by a specific version of the PID Service (e.g. ContentType, Extension, QueryString, etc.).</xs:documentation>
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:enumeration value="ContentType"/>
-						<xs:enumeration value="Extension"/>
-						<xs:enumeration value="QueryString"/>
-						<xs:enumeration value="HttpHeader"/>
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
-			<xs:element name="match" type="xs:string">
+			<xs:element name="match">
 				<xs:annotation>
 					<xs:documentation>Parameter for the specific condition type that is used to find a match.</xs:documentation>
 				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="255"/>
+					</xs:restriction>
+				</xs:simpleType>
 			</xs:element>
 			<xs:element name="actions" minOccurs="0">
 				<xs:annotation>
