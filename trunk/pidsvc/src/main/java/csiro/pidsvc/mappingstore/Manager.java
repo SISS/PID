@@ -336,7 +336,6 @@ public class Manager
 						{
 							Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.condition.Condition" + dctr.Type);
 							Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class);
-			
 							prioritizedConditions.add((ConditionPrioritizedContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match));
 						}
 					}
@@ -345,15 +344,15 @@ public class Manager
 					AbstractCondition matchingCondition = ConditionPrioritizedContentType.getMatchingCondition(prioritizedConditions);
 					if (matchingCondition != null)
 						return matchingCondition;
-	
+
 					// Continue if no matching conditions were found.
 					continue;
 				}
-				
+
 				// Process all other conditions.
 				Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.condition.Condition" + descriptor.Type);
 				Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class);
-	
+
 				AbstractCondition condition = (AbstractCondition)ctor.newInstance(uri, request, descriptor.ID, descriptor.Match);
 				if (condition.matches())
 					return condition;
