@@ -38,7 +38,7 @@ public abstract class AbstractAction
 
 	protected String substrituteCaptureParameters(String input) throws URISyntaxException, UnsupportedEncodingException
 	{
-		String actionValue = _descriptor.Value.replaceAll("\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
+		String actionValue = _descriptor.Value.replaceAll("(?i)\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
 		String ret;
 
 		// Regex from URI matching.
@@ -57,7 +57,7 @@ public abstract class AbstractAction
 				m = (Matcher)_matchResult.Condition.AuxiliaryData;
 				for (int i = 0; i <= m.groupCount(); ++i)
 				{
-					ret = ret.replace("%[[" + i + "]]", URLEncoder.encode(m.group(i), "UTF-8"));
+					ret = ret.replace("(?i)%\\[\\[" + i + "\\]\\]", URLEncoder.encode(m.group(i), "UTF-8"));
 				}
 			}
 			else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
@@ -70,11 +70,14 @@ public abstract class AbstractAction
 					q = (String)keys.nextElement();
 					m = aux.get(q);
 
-					ret = ret.replace("%[[" + q + "]]", URLEncoder.encode(m.group(0), "UTF-8"));
+					if (m == null)
+						continue;
+					
+					ret = ret.replaceAll("(?i)%\\[\\[" + q + "\\]\\]", URLEncoder.encode(m.group(0), "UTF-8"));
 					for (int i = 0; i <= m.groupCount(); ++i)
 					{
 						val = m.group(i);
-						ret = ret.replace("%[[" + q + ":" + i + "]]", val == null ? "" : URLEncoder.encode(val, "UTF-8"));
+						ret = ret.replaceAll("(?i)%\\[\\[" + q + ":" + i + "\\]\\]", val == null ? "" : URLEncoder.encode(val, "UTF-8"));
 					}
 				}
 			}

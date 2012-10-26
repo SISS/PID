@@ -28,7 +28,7 @@ public abstract class AbstractConditionCollectionSearch extends AbstractConditio
 			Matcher		m;
 
 			NameValuePairSubstitutionGroup aux = new NameValuePairSubstitutionGroup(nameValuePairs.length); 
-			
+
 			for (String pair : nameValuePairs)
 			{
 				nameValuePair	= pair.split("=", 2);
@@ -38,7 +38,7 @@ public abstract class AbstractConditionCollectionSearch extends AbstractConditio
 				// Check if parameter is optional.
 				if (optionalParam = paramName.endsWith("?"))
 					paramName = paramName.substring(0, paramName.length() - 1);
-				
+
 				paramValue	= this.getValue(paramName);
 				re			= Pattern.compile(paramPattern, Pattern.CASE_INSENSITIVE);
 
