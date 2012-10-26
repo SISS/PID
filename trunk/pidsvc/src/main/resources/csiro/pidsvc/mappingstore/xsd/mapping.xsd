@@ -102,7 +102,6 @@
 					<xs:restriction base="xs:string">
 						<xs:enumeration value="ContentType"/>
 						<xs:enumeration value="Extension"/>
-						<xs:enumeration value="PrioritizedContentType"/>
 						<xs:enumeration value="QueryString"/>
 						<xs:enumeration value="HttpHeader"/>
 					</xs:restriction>

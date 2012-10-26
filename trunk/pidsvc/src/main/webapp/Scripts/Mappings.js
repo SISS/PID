@@ -624,7 +624,6 @@
 				"				<option value='ContentType'>ContentType</option>" +
 				"				<option value='Extension'>Extension</option>" +
 				"				<option value='HttpHeader'>HttpHeader</option>" +
-				"				<option value='PrioritizedContentType'>PrioritizedContentType</option>" +
 				"				<option value='QueryString'>QueryString</option>" +
 				"			</select>" +
 				"		</td>" +

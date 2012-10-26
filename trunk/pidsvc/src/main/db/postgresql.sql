@@ -249,7 +249,6 @@ INSERT INTO "mapping_type" ("type") VALUES ('Regex');
 
 INSERT INTO "condition_type" ("type") VALUES ('ContentType');
 INSERT INTO "condition_type" ("type") VALUES ('Extension');
-INSERT INTO "condition_type" ("type") VALUES ('PrioritizedContentType');
 INSERT INTO "condition_type" ("type") VALUES ('QueryString');
 INSERT INTO "condition_type" ("type") VALUES ('HttpHeader');
 
