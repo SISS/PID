@@ -9,7 +9,8 @@ public class URI
 {
 	protected final String _originalUri;
 	protected final java.net.URI _uri;
-	protected HashMap<String, String> _uriQueryString = new HashMap<String, String>();
+	protected String _uriQueryString = null;
+	protected HashMap<String, String> _uriQueryStringMap = new HashMap<String, String>();
 	protected String _pathNoExtension = null;
 	protected String _extension = null;
 
@@ -32,6 +33,7 @@ public class URI
 		this._originalUri = src._originalUri;
 		this._uri = src._uri;
 		this._uriQueryString = src._uriQueryString;
+		this._uriQueryStringMap = src._uriQueryStringMap;
 		this._pathNoExtension = src._pathNoExtension;
 		this._extension = src._extension;
 	}
@@ -70,10 +72,15 @@ public class URI
 		ret._extension = null;
 		return ret;
 	}
-	
+
+	public String getQueryString()
+	{
+		return _uriQueryString;
+	}
+
 	public String getQuerystringParameter(String parameter)
 	{
-		return _uriQueryString.get(parameter);
+		return _uriQueryStringMap.get(parameter);
 	}
 	
 	private void parse()
@@ -89,12 +96,12 @@ public class URI
 			if (m.group(3) != null)
 			{
 				String queryStringArgs[];
-				for (String pair : m.group(3).split("&"))
+				for (String pair : (_uriQueryString = m.group(3)).split("&"))
 				{
 					queryStringArgs = pair.split("=", 2);
 					if (queryStringArgs.length == 0)
 						continue;
-					_uriQueryString.put(queryStringArgs[0], queryStringArgs.length == 1 ? "" : queryStringArgs[1]);
+					_uriQueryStringMap.put(queryStringArgs[0], queryStringArgs.length == 1 ? "" : queryStringArgs[1]);
 				}
 			}
 		}

@@ -3,7 +3,6 @@ package csiro.pidsvc.mappingstore.action;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,53 +37,104 @@ public abstract class AbstractAction
 
 	protected String substrituteCaptureParameters(String input) throws URISyntaxException, UnsupportedEncodingException
 	{
-		String actionValue = _descriptor.Value.replaceAll("(?i)\\$\\{C\\:([^\\}]+)\\}", "%[[$1]]");
-		String ret;
-
-		// Regex from URI matching.
-		if (_matchResult.AuxiliaryData instanceof Pattern)
-			ret = input.replaceAll(((Pattern)_matchResult.AuxiliaryData).pattern(), actionValue);
-		else
-			ret = actionValue;
-
-		// Matches from condition regex matching.
-		if (_matchResult.Condition != null)
+		// Bring all placeholders and function calls to the same syntax.
+		int actionValueLength = -1;
+		String ret = _descriptor.Value.replaceAll("\\$(\\d+)", "%[[URI:$1]]");
+		while (actionValueLength != ret.length())
 		{
-			String q, val;
-			Matcher m;
-			if (_matchResult.Condition.AuxiliaryData instanceof Matcher)
+			actionValueLength = ret.length();
+			ret = ret.replaceAll("(?i)\\$\\{(\\w+)\\:([^\\$\\}]+)\\}", "%[[$1:$2]]");
+		}
+
+		// Process string functions.
+		Pattern reFunction = Pattern.compile("%\\[\\[(\\w+):([^%]*?)\\]\\]");
+		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
+		{
+			if (ret.lastIndexOf("%[[", m.start() - 1) == -1)
+				// Non-nested function call.
+				ret = ret.substring(0, m.start()) + URLEncoder.encode(callInternalFunction(input, m.group(1), m.group(2)), "UTF-8") + ret.substring(m.end());
+			else
+				// Nested function call.
+				ret = ret.substring(0, m.start()) + callInternalFunction(input, m.group(1), m.group(2)) + ret.substring(m.end());
+		}
+		return ret;
+	}
+
+	protected String callInternalFunction(String input, String name, String param)
+	{
+		try
+		{
+			if (name.equalsIgnoreCase("URI"))
 			{
-				m = (Matcher)_matchResult.Condition.AuxiliaryData;
-				for (int i = 0; i <= m.groupCount(); ++i)
+				// Regex from URI matching.
+				if (param.equals("0"))
+					return _controller.getUri().getOriginalUriAsString();
+				else if (_matchResult.AuxiliaryData instanceof Pattern)
 				{
-					ret = ret.replaceAll("(?i)%\\[\\[" + i + "\\]\\]", URLEncoder.encode(m.group(i), "UTF-8"));
+					int groupIndex = Integer.parseInt(param);
+					Matcher m = ((Pattern)_matchResult.AuxiliaryData).matcher(input);
+					if (m.find() && groupIndex <= m.groupCount())
+						return m.group(groupIndex);
 				}
 			}
-			else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
+			else if (name.equalsIgnoreCase("C"))
 			{
-				NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)_matchResult.Condition.AuxiliaryData;
-				Enumeration<String> keys = aux.keys();
-
-				while (keys.hasMoreElements())
+				// Matches from condition regex matching.
+				if (_matchResult.Condition != null)
 				{
-					q = (String)keys.nextElement();
-					m = aux.get(q);
-
-					if (m == null)
-						continue;
-					
-					ret = ret.replaceAll("(?i)%\\[\\[" + q + "\\]\\]", URLEncoder.encode(m.group(0), "UTF-8"));
-					for (int i = 0; i <= m.groupCount(); ++i)
+					if (_matchResult.Condition.AuxiliaryData instanceof Matcher)
 					{
-						val = m.group(i);
-						ret = ret.replaceAll("(?i)%\\[\\[" + q + ":" + i + "\\]\\]", val == null ? "" : URLEncoder.encode(val, "UTF-8"));
+						Matcher m = (Matcher)_matchResult.Condition.AuxiliaryData;
+						int groupIndex = Integer.parseInt(param);
+						if (groupIndex <= m.groupCount())
+							return m.group(groupIndex);
+					}
+					else if (_matchResult.Condition.AuxiliaryData instanceof NameValuePairSubstitutionGroup)
+					{
+						NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)_matchResult.Condition.AuxiliaryData;
+						Matcher m = Pattern.compile("^(.+?)(?::(.+))?$").matcher(param);
+						if (m.find())
+						{
+							String val = m.group(2);
+							if (val == null)
+								return aux.get(m.group(1)).group(0);
+							else
+							{
+								m = aux.get(m.group(1));
+								int groupIndex = Integer.parseInt(val);
+								if (groupIndex <= m.groupCount())
+									return m.group(groupIndex);
+							}
+						}
 					}
 				}
 			}
+			else if (name.equalsIgnoreCase("ENV"))
+			{
+				// Environment variables.
+				if (param.equalsIgnoreCase("REQUEST_URI"))
+					return _controller.getUri().getPathNoExtension();
+				else if (param.equalsIgnoreCase("ORIGINAL_URI"))
+					return _controller.getUri().getOriginalUriAsString();
+				else if (param.equalsIgnoreCase("QUERY_STRING"))
+					return _controller.getUri().getQueryString();
+				else if (param.equalsIgnoreCase("EXTENSION"))
+					return _controller.getUri().getExtension();
+				else if (param.equalsIgnoreCase("SERVER_NAME"))
+					return _controller.getRequest().getServerName();
+				else if (param.equalsIgnoreCase("SERVER_ADDR"))
+				{
+					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
+					if (_controller.getRequest().getServerPort() != 80)
+						val += ":" + _controller.getRequest().getServerPort();
+					return val;
+				}
+			}
 		}
-
-		// Remove any non-expanded place holders.
-		return ret.replaceAll("%\\[\\[.+?\\]\\]|\\$\\d+", "");
+		catch (Exception ex)
+		{
+		}
+		return "";
 	}
 
 	public String toString()
