@@ -38,11 +38,11 @@ public abstract class AbstractAction
 	protected String substrituteCaptureParameters(String input) throws URISyntaxException, UnsupportedEncodingException
 	{
 		// Bring all placeholders and function calls to the same syntax.
-		int actionValueLength = -1;
+		String lastValue = "";
 		String ret = _descriptor.Value.replaceAll("\\$(\\d+)", "%[[URI:$1]]");
-		while (actionValueLength != ret.length())
+		while (!ret.equals(lastValue))
 		{
-			actionValueLength = ret.length();
+			lastValue = ret;
 			ret = ret.replaceAll("(?i)\\$\\{(\\w+)\\:([^\\$\\}]+)\\}", "%[[$1:$2]]");
 		}
 
