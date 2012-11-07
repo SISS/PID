@@ -122,16 +122,17 @@
 		$J("#swfuploadControl").swfupload({
 				upload_url:				"controller?cmd=import",
 				file_size_limit:		"1GB",
-				file_types:				"*.*",
-				file_types_description:	"All Files",
-//				file_types:				"*.psb",
-//				file_types_description:	"PID Service Backup Files",
+//				file_types:				"*.*",
+//				file_types_description:	"All Files",
+				file_types:				"*.psb",
+				file_types_description:	"PID Service Backup Files",
 				file_upload_limit:		"0",
 				flash_url:				"Scripts/jQuery/swfupload/vendor/swfupload.swf",
 				button_image_url:		"Scripts/jQuery/swfupload/vendor/XPButtonUploadText_61x22.png",
 				button_width:			61,
 				button_height:			22,
 				button_placeholder:		$J("#UploadButton")[0],
+				assume_success_timeout:	0,
 				debug:					false
 			})
 			.bind("fileQueued", function(event, file) {
