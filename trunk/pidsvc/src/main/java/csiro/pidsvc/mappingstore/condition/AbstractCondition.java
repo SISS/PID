@@ -1,6 +1,6 @@
 package csiro.pidsvc.mappingstore.condition;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 
 import javax.servlet.http.HttpServletRequest;
@@ -9,7 +9,7 @@ import csiro.pidsvc.helper.URI;
 
 public abstract class AbstractCondition
 {
-	public class NameValuePairSubstitutionGroup extends Hashtable<String, Matcher>
+	public class NameValuePairSubstitutionGroup extends HashMap<String, Matcher>
 	{
 		private static final long serialVersionUID = -5092377711359150527L;
 
@@ -21,6 +21,13 @@ public abstract class AbstractCondition
 		public NameValuePairSubstitutionGroup(int initialCapacity)
 		{
 			super(initialCapacity);
+		}
+
+		@Override
+		public Matcher put(String key, Matcher value)
+		{
+			// Makes NameValuePairSubstitutionGroup class key case-insensitive.
+			return super.put(key.toLowerCase(), value);
 		}
 	}
 
