@@ -31,7 +31,7 @@ public class ActionProxy extends AbstractAction
 		{
 			HttpServletRequest		originalHttpRequest = _controller.getRequest();
 			HttpServletResponse		originalHttpResponse = _controller.getResponse();
-			HttpGet					httpGet = new HttpGet(substrituteCaptureParameters(_controller.getUri().getPathNoExtension()));
+			HttpGet					httpGet = new HttpGet(getExpandedActionValue());
 
 			if (isTraceMode())
 				trace(httpGet.getRequestLine().toString());
@@ -59,7 +59,7 @@ public class ActionProxy extends AbstractAction
 			}
 
 			// Get the data.
-			HttpResponse response  = httpClient.execute(httpGet);
+			HttpResponse response = httpClient.execute(httpGet);
 			HttpEntity entity = response.getEntity();
 			if (isTraceMode())
 				trace(response.getStatusLine().toString());
@@ -103,7 +103,7 @@ public class ActionProxy extends AbstractAction
 			if (isTraceMode())
 				trace("Set response status: 500; exception: " + e.getCause().getMessage());
 			else
-				Http.returnErrorCode(_controller.getResponse(), 500, e.getCause().getMessage(), e);
+				Http.returnErrorCode(_controller.getResponse(), 500, e);
 			e.printStackTrace();
 		}
 		finally

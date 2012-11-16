@@ -50,7 +50,7 @@ public class controller extends HttpServlet
 		{
 			mgr = new ManagerJson();
 			
-			if (cmd.matches("^(?:full|partial)_export$"))
+			if (cmd.matches("(?i)^(?:full|partial)_export$"))
 			{
 				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), 0);
 				String		mappingPath = request.getParameter("mapping_path");
@@ -58,32 +58,25 @@ public class controller extends HttpServlet
 
 //				response.setContentType("application/xml");
 //				response.getWriter().write(serializedConfig);
-				
-				// Zip the content.
-				response.setContentType("application/zip");
-				response.setHeader("Content-Disposition", "attachment; filename=mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb");
-				GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());
-				gos.write(serializedConfig.getBytes());
-				gos.close();
+
+				returnAttachment(response, "mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
 			}
-			else if (cmd.matches("^(?:full|partial)_backup$"))
+			else if (cmd.matches("(?i)^(?:full|partial)_backup$"))
 			{
 				String includeDeprecated = request.getParameter("deprecated");
 				String serializedConfig = mgr.backupDataStore(cmd.startsWith("full"), includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"));
-
-//				response.setContentType("application/xml");
-//				response.getWriter().write(serializedConfig);
-				
-				// Zip the content.
-				response.setContentType("application/zip");
-				response.setHeader("Content-Disposition", "attachment; filename=backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb");
-				GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());
-				gos.write(serializedConfig.getBytes());
-				gos.close();
+				returnAttachment(response, "backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
+			}
+			else if (cmd.matches("(?i)export_lookup$"))
+			{
+				String ns = request.getParameter("ns");
+				String serializedConfig = mgr.exportLookup(ns);
+				returnAttachment(response, "lookup." + _sdfBackupStamp.format(new Date()) + ".psl", serializedConfig);
 			}
 		}
 		catch (Exception e)
 		{
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 			e.printStackTrace();
 		}
 		finally
@@ -119,17 +112,33 @@ public class controller extends HttpServlet
 				mgr.purgeDataStore();
 			else if (cmd.equalsIgnoreCase("save_settings"))
 				mgr.saveSettings(request.getParameterMap());
+			else if (cmd.equalsIgnoreCase("create_lookup"))
+				mgr.createLookup(request.getInputStream());
+			else if (cmd.equalsIgnoreCase("delete_lookup"))
+				mgr.deleteLookup(request.getParameter("ns"));
+			else if (cmd.equalsIgnoreCase("import_lookup"))
+				response.getWriter().write(mgr.importLookup(request)); 
+			else
+				response.setStatus(404);
 		}
 		catch (Exception e)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 			e.printStackTrace();
-			return;
 		}
 		finally
 		{
 			if (mgr != null)
 				mgr.close();
 		}
+	}
+
+	protected void returnAttachment(HttpServletResponse response, String filename, String content) throws IOException
+	{
+		response.setContentType("application/zip");
+		response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+		GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());
+		gos.write(content.getBytes());
+		gos.close();
 	}
 }

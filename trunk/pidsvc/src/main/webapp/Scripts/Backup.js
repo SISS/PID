@@ -6,7 +6,10 @@
 
 		$J("#TopMenu > DIV.MenuButton").click(this.openTab);
 		this.openTab(0);
-		
+
+		// Set ExceptionHandler properties.
+		ExceptionHandler.setPostHandler(Main.unblockUI);
+
 		$J("#PurgeDataStore").click(function() {
 			if ($J(this).is(":checked") && !confirm("This operation is irreversible and will cause complete loss of mapping configuration.\nDo you want to proceed?"))
 				$J(this).removeAttr("checked");
@@ -40,18 +43,6 @@
 				}
 				break;
 		}
-	},
-
-	///////////////////////////////////////////////////////////////////////////
-	//	Error handling.
-
-	displayGenericError: function(jqXHR, textStatus, errorThrown)
-	{
-		if (jqXHR.status != 200)
-			alert(jqXHR.status + " " + jqXHR.statusText);
-		else
-			alert(errorThrown.name + " (" + textStatus + ")\n" + errorThrown.message);
-		Main.unblockUI();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -208,7 +199,7 @@
 				// Upload has completed, lets try the next one in the queue.
 				$J(this).swfupload("startUpload");
 			})
-			.bind("uploadError", Main.uploadError);		
+			.bind("uploadError", Main.uploadError);
 	},
 
 	uploadError: function(event, file, errorCode, message)
@@ -233,7 +224,7 @@
 				cache: false
 			})
 			.done(this.purgeDataStoreDone)
-			.fail(this.displayGenericError);
+			.fail(ExceptionHandler.displayGenericException);
 	},
 
 	purgeDataStoreDone: function()

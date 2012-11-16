@@ -36,6 +36,8 @@ import javax.xml.validation.Validator;
 import net.sf.saxon.s9api.Processor;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Serializer;
+import net.sf.saxon.s9api.XPathCompiler;
+import net.sf.saxon.s9api.XdmItem;
 import net.sf.saxon.s9api.XsltCompiler;
 import net.sf.saxon.s9api.XsltExecutable;
 import net.sf.saxon.s9api.XsltTransformer;
@@ -49,6 +51,7 @@ import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXException;
 
+import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.List;
@@ -80,6 +83,11 @@ public class Manager
 		}
 	}
 
+	protected interface ICallback
+	{
+		public String process(InputStream inputStream) throws Exception;
+	}
+
 	public Manager() throws NamingException, SQLException, IOException
 	{
 		Properties properties = new Properties(); 
@@ -107,37 +115,44 @@ public class Manager
 			_connection = null;
 		}
 	}
-	
-	public String createMapping(InputStream inputStream, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
+
+	/**************************************************************************
+	 *  Generic processing methods.
+	 */
+
+	protected String processGenericXmlCommand(InputStream inputStream, String xmlSchemaResourcePath, String xsltResourcePath) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
 		String inputData = Stream.readInputStream(inputStream);
 
 		// Validate request.
-		try
+		if (xmlSchemaResourcePath != null)
 		{
-			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			schemaFactory.setResourceResolver(new LSResourceResolver() {
-				@Override
-				public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI)
-				{
-					return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
-				}
-			});
-
-			Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream("xsd/" + (isBackup ? "backup" : "mapping") + ".xsd")));
-			Validator validator = schema.newValidator();
-			validator.validate(new StreamSource(new StringReader(inputData))); 
-		}
-		catch (SAXException ex)
-		{
-			ex.printStackTrace();
-			throw new ValidationException(isBackup ? "Unknown file format." : "Invalid mapping format.", ex);
+			try
+			{
+				SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+				schemaFactory.setResourceResolver(new LSResourceResolver() {
+					@Override
+					public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI)
+					{
+						return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
+					}
+				});
+	
+				Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
+				Validator validator = schema.newValidator();
+				validator.validate(new StreamSource(new StringReader(inputData))); 
+			}
+			catch (SAXException ex)
+			{
+				ex.printStackTrace();
+				throw new ValidationException("Unknown format.", ex);
+			}
 		}
 
 		// Generate SQL query.
 		Processor			processor = new Processor(false);
 		XsltCompiler		xsltCompiler = processor.newXsltCompiler();
-		InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/import_mapping_postgresql.xslt");
+		InputStream			inputSqlGen = getClass().getResourceAsStream(xsltResourcePath);
 		XsltExecutable		xsltExec = xsltCompiler.compile(new StreamSource(inputSqlGen));
 		XsltTransformer		transformer = xsltExec.load();
 
@@ -154,7 +169,7 @@ public class Manager
 			st = _connection.createStatement();
 			st.execute(sqlQuery);
 
-			Pattern re = Pattern.compile("^--(OK: .*)", Pattern.CASE_INSENSITIVE);
+			Pattern re = Pattern.compile("^--((?:OK|ERROR): .*)", Pattern.CASE_INSENSITIVE);
 			Matcher m = re.matcher(sqlQuery);
 
 			if (m.find())
@@ -163,9 +178,83 @@ public class Manager
 		finally
 		{
 			if (st != null)
-			st.close();
+				st.close();
 		}
 		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	protected String unwrapCompressedBackupFile(HttpServletRequest request, ICallback callback)
+	{
+		java.util.List<FileItem>	fileList = null;
+		GZIPInputStream				gis = null;
+
+		try
+		{
+			DiskFileItemFactory fileItemFactory = new DiskFileItemFactory();
+
+			// Set the size threshold, above which content will be stored on disk.
+			fileItemFactory.setSizeThreshold(1 * 1024 * 1024); // 1 MB
+//			fileItemFactory.setSizeThreshold(100 * 1024); // 100 KB
+
+			// Set the temporary directory to store the uploaded files of size above threshold.
+			fileItemFactory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+
+			ServletFileUpload uploadHandler = new ServletFileUpload(fileItemFactory);
+
+			fileList = uploadHandler.parseRequest(request);
+			for (FileItem item : fileList)
+			{
+				if (item.isFormField())
+					continue;
+
+				gis = new GZIPInputStream(item.getInputStream());
+//				String fileContent = Stream.readInputStream(gis);
+				String ret = callback.process(gis);
+				gis.close();
+				
+				// Process the first uploaded file only.
+				return ret;
+			}
+		}
+		catch (Exception ex)
+		{
+			String msg = ex.getMessage();
+			if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
+				return "ERROR: Unknown file format.";
+			else
+				return "ERROR: " + (msg == null ? "Something went wrong." : msg);
+		}
+		finally
+		{
+			try
+			{
+				// Close the stream.
+				gis.close();
+			}
+			catch (Exception ex)
+			{
+			}
+			if (fileList != null)
+			{
+				// Delete all uploaded files.
+				for (FileItem item : fileList)
+				{
+					if (!item.isFormField() && !item.isInMemory())
+						((DiskFileItem)item).delete();
+				}
+			}
+		}
+		return "ERROR: No file.";
+	}
+
+	/**************************************************************************
+	 *  URI Mappings.
+	 */
+
+	public String createMapping(InputStream inputStream, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
+		return processGenericXmlCommand(inputStream, "xsd/" + (isBackup ? "backup" : "mapping") + ".xsd", "xslt/import_mapping_postgresql.xslt");
 	}
 	
 	public boolean deleteMapping(String mappingPath) throws SQLException
@@ -173,7 +262,7 @@ public class Manager
 		PreparedStatement pst = null;
 		try
 		{
-			pst = _connection.prepareStatement("UPDATE \"mapping\" SET date_end = now() WHERE mapping_path = ? AND date_end IS NULL;");
+			pst = _connection.prepareStatement("UPDATE mapping SET date_end = now() WHERE mapping_path = ? AND date_end IS NULL;");
 			pst.setString(1, mappingPath);
 			return pst.execute();
 		}
@@ -194,7 +283,7 @@ public class Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT mapping_id, default_action_id FROM vw_active_mapping WHERE mapping_path = ? AND \"type\" = '1:1'");
+			pst = _connection.prepareStatement("SELECT mapping_id, default_action_id FROM vw_active_mapping WHERE mapping_path = ? AND type = '1:1'");
 			pst.setString(1, uri.getPathNoExtension());
 			
 			if (pst.execute())
@@ -236,7 +325,7 @@ public class Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, default_action_id FROM vw_active_mapping WHERE \"type\" = 'Regex'");
+			pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, default_action_id FROM vw_active_mapping WHERE type = 'Regex'");
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
@@ -280,7 +369,7 @@ public class Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT * FROM \"condition\" WHERE mapping_id = ? ORDER BY condition_id");
+			pst = _connection.prepareStatement("SELECT * FROM condition WHERE mapping_id = ? ORDER BY condition_id");
 			pst.setInt(1, mappingId);
 			
 			if (!pst.execute())
@@ -369,10 +458,10 @@ public class Manager
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		
+
 		try
 		{
-			pst = _connection.prepareStatement("SELECT * FROM \"action\" WHERE action_id = ?");
+			pst = _connection.prepareStatement("SELECT * FROM action WHERE action_id = ?");
 			pst.setInt(1, actionId);
 			
 			rs = pst.executeQuery();
@@ -393,12 +482,12 @@ public class Manager
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
 		List				actions = new List();
-		
+
 		try
 		{
-			pst = _connection.prepareStatement("SELECT * FROM \"action\" WHERE condition_id = ?");
+			pst = _connection.prepareStatement("SELECT * FROM action WHERE condition_id = ?");
 			pst.setInt(1, conditionId);
-			
+
 			rs = pst.executeQuery();
 			while (rs.next())
 			{
@@ -418,7 +507,7 @@ public class Manager
 	/**************************************************************************
 	 *  Export/import.
 	 */
-	
+
 	public String backupDataStore(boolean fullBackup, boolean includeDeprecated) throws SQLException
 	{
 		String source;
@@ -462,7 +551,7 @@ public class Manager
 				if (mappingIdentifier != null)
 					pst.setString(1, (String)mappingIdentifier);
 			}
-			
+
 			if (pst.execute())
 			{
 				for (rs = pst.getResultSet(); rs.next();)
@@ -557,68 +646,13 @@ public class Manager
 	
 	public String importMappings(HttpServletRequest request)
 	{
-		java.util.List<FileItem> fileList = null;
-		GZIPInputStream gis = null;
-		try
-		{
-			DiskFileItemFactory fileItemFactory = new DiskFileItemFactory();
-
-			// Set the size threshold, above which content will be stored on disk.
-			fileItemFactory.setSizeThreshold(1 * 1024 * 1024); // 1 MB
-//			fileItemFactory.setSizeThreshold(100 * 1024); // 100 KB
-
-			// Set the temporary directory to store the uploaded files of size above threshold.
-			fileItemFactory.setRepository(new File(System.getProperty("java.io.tmpdir")));
-
-			ServletFileUpload uploadHandler = new ServletFileUpload(fileItemFactory);
-
-			@SuppressWarnings("unchecked")
-			java.util.List<FileItem> items = uploadHandler.parseRequest(request);
-			fileList = items;
-
-			for (FileItem item : items)
+		return unwrapCompressedBackupFile(request, new ICallback() {
+			@Override
+			public String process(InputStream inputStream) throws Exception
 			{
-				if (item.isFormField())
-					continue;
-
-				gis = new GZIPInputStream(item.getInputStream());
-//				String fileContent = Stream.readInputStream(gis);
-				String ret = createMapping(gis, true);
-				gis.close();
-				
-				// Process the first uploaded file only.
-				return ret;
+				return createMapping(inputStream, true);
 			}
-		}
-		catch (Exception ex)
-		{
-			String msg = ex.getMessage();
-			if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
-				return "ERROR: Unknown file format.";
-			else
-				return "ERROR: " + (msg == null ? "Something went wrong." : msg);
-		}
-		finally
-		{
-			try
-			{
-				// Close the stream;
-				gis.close();
-			}
-			catch (Exception ex)
-			{
-			}
-			if (fileList != null)
-			{
-				// Delete all uploaded files.
-				for (FileItem item : fileList)
-				{
-					if (!item.isFormField() && !item.isInMemory())
-						((DiskFileItem)item).delete();
-				}
-			}
-		}
-		return "ERROR: No file.";
+		});
 	}
 
 	public boolean purgeDataStore() throws SQLException
@@ -626,7 +660,7 @@ public class Manager
 		PreparedStatement pst = null;
 		try
 		{
-			pst = _connection.prepareStatement("TRUNCATE TABLE \"mapping\" CASCADE;");
+			pst = _connection.prepareStatement("TRUNCATE TABLE mapping RESTART IDENTITY CASCADE;");
 			return pst.execute();
 		}
 		finally
@@ -635,6 +669,10 @@ public class Manager
 				pst.close();
 		}
 	}
+
+	/**************************************************************************
+	 *  Settings.
+	 */
 
 	public boolean saveSettings(Map<?, ?> settings) throws SQLException
 	{
@@ -645,7 +683,7 @@ public class Manager
 			if (key.equals("cmd"))
 				continue;
 			params.put((String)key, ((String[])settings.get(key))[0]);
-			sqlQuery += "UPDATE configuration SET \"value\"=? WHERE \"name\"=?;\n";
+			sqlQuery += "UPDATE configuration SET value = ? WHERE name = ?;\n";
 		}
 		sqlQuery += "COMMIT;";
 
@@ -679,7 +717,7 @@ public class Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT value FROM configuration WHERE \"name\"=?");
+			pst = _connection.prepareStatement("SELECT value FROM configuration WHERE name = ?");
 			pst.setString(1, name);
 
 			if (pst.execute())
@@ -708,5 +746,311 @@ public class Manager
 			}
 		}
 		return null;
+	}
+
+	/**************************************************************************
+	 *  Lookup maps.
+	 */
+
+	public String createLookup(InputStream inputStream) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
+		return processGenericXmlCommand(inputStream, "xsd/lookup.xsd", "xslt/import_lookup_postgresql.xslt");
+	}
+	
+	public boolean deleteLookup(String ns) throws SQLException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("DELETE FROM lookup_ns WHERE ns = ?;");
+			pst.setString(1, ns);
+			return pst.execute();
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public String getLookupMapType(String ns)
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT type FROM lookup_ns WHERE ns = ?");
+			pst.setString(1, ns);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+					return rs.getString(1);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
+	public String getLookupValue(String ns, String key)
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT value FROM lookup WHERE ns = ? AND key = ? LIMIT 1");
+			pst.setString(1, ns);
+			pst.setString(2, key);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+					return rs.getString(1);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
+	protected String[] getLookupKeyValue(String ns)
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT key, value FROM lookup WHERE ns = ? LIMIT 1");
+			pst.setString(1, ns);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+					return new String[] { rs.getString(1), rs.getString(2) };
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+			}
+			catch (SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
+	public String resolveLookupValue(String ns, String key)
+	{
+		try
+		{
+			String lookupType = getLookupMapType(ns);
+			if (lookupType.equalsIgnoreCase("Static"))
+				return getLookupValue(ns, key);
+			else if (lookupType.equalsIgnoreCase("HttpResolver"))
+			{
+				final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+				final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+				final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+				Matcher				m;
+				String				endpoint, extractorType, extractor, content;
+				String[]			dynKeyValue = getLookupKeyValue(ns);
+	
+				if (dynKeyValue == null)
+					return null;
+	
+				// Endpoint.
+				endpoint = dynKeyValue[0];
+				if (endpoint.contains("$0"))
+					endpoint = endpoint.replace("$0", key);
+				else
+					endpoint += key;
+	
+				// Type.
+				m = reType.matcher(dynKeyValue[1]);
+				m.find();
+				extractorType = m.group(1);
+	
+				// Extractor.
+				m = reExtract.matcher(dynKeyValue[1]);
+				m.find();
+				extractor = m.group(1);
+	
+				// Execute HTTP GET request.
+				content = Http.simpleGetRequest(endpoint);
+	
+				// Retrieve data.
+				if (extractor.equals(""))
+					return content;
+				if (extractorType.equalsIgnoreCase("Regex"))
+				{
+					Pattern re = Pattern.compile(extractor);
+					m = re.matcher(content);
+	
+					if (m.find())
+						return m.groupCount() > 0 ? m.group(1) : m.group();
+				}
+				else if (extractorType.equalsIgnoreCase("XPath"))
+				{
+					Processor			processor = new Processor(false);
+					XPathCompiler		xpathCompiler = processor.newXPathCompiler();
+
+					// Declare XML namespaces.
+					m = reNamespace.matcher(dynKeyValue[1]);
+					while (m.find())
+						xpathCompiler.declareNamespace(m.group(1), m.group(2));
+
+					// Evaluate XPath expression.
+					XdmItem node = xpathCompiler.evaluateSingle(extractor, processor.newDocumentBuilder().build(new StreamSource(new StringReader(content))));
+					return node == null ? null : node.getStringValue();
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public String exportLookup(String ns) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT type FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
+			pst.setString(1, ns);
+			pst.setString(2, ns);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (!rs.next())
+					throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
+
+				String lookupType = rs.getString("type");
+				ret += "<ns>" + StringEscapeUtils.escapeXml(ns) + "</ns>";
+
+				pst.getMoreResults();
+				rs = pst.getResultSet();
+				if (lookupType.equalsIgnoreCase("Static"))
+				{
+					ret += "<Static>";
+					while (rs.next())
+					{
+						ret += "<pair>";
+						ret += "<key>" + StringEscapeUtils.escapeXml(rs.getString(1)) + "</key>";
+						ret += "<value>" + StringEscapeUtils.escapeXml(rs.getString(2)) + "</value>";
+						ret += "</pair>";
+					}
+					ret += "</Static>";
+				}
+				else if (lookupType.equalsIgnoreCase("HttpResolver"))
+				{
+					ret += "<HttpResolver>";
+					if (!rs.next())
+						throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
+
+					final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+					final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+					final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+					Matcher				m;
+					String				namespaces = "";
+					String				buf = rs.getString(2);
+
+					ret += "<endpoint>" + StringEscapeUtils.escapeXml(rs.getString(1)) + "</endpoint>";
+
+					// Type.
+					m = reType.matcher(buf);
+					m.find();
+					ret += "<type>" + m.group(1) + "</type>";
+
+					// Extractor.
+					m = reExtract.matcher(buf);
+					m.find();
+					ret += "<extractor>" + StringEscapeUtils.escapeXml(m.group(1)) + "</extractor>";
+
+					// Namespaces.
+					m = reNamespace.matcher(buf);
+					while (m.find())
+						namespaces += "<ns prefix=\"" + StringEscapeUtils.escapeXml(m.group(1)) + "\">" + StringEscapeUtils.escapeXml(m.group(2)) + "</ns>";
+					if (!namespaces.isEmpty())
+						ret += "<namespaces>" + namespaces + "</namespaces>";
+
+					ret += "</HttpResolver>";
+				}
+				ret += "</lookup>";
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public String importLookup(HttpServletRequest request)
+	{
+		return unwrapCompressedBackupFile(request, new ICallback() {
+			@Override
+			public String process(InputStream inputStream) throws Exception
+			{
+				return createLookup(inputStream);
+			}
+		});
 	}
 }

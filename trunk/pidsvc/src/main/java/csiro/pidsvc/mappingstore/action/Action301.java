@@ -16,11 +16,11 @@ public class Action301 extends AbstractAction
 		try
 		{
 			_controller.getResponse().setStatus(301);
-			_controller.getResponse().addHeader("Location", substrituteCaptureParameters(_controller.getUri().getPathNoExtension()));
+			_controller.getResponse().addHeader("Location", getExpandedActionValue());
 		}
 		catch (Exception e)
 		{
-			Http.returnErrorCode(_controller.getResponse(), 500, e.getCause().getMessage(), e);
+			Http.returnErrorCode(_controller.getResponse(), 500, e);
 			e.printStackTrace();
 		}
 	}
@@ -30,7 +30,7 @@ public class Action301 extends AbstractAction
 	{
 		try
 		{
-			trace("Set HTTP response status: 301; location: " + substrituteCaptureParameters(_controller.getUri().getPathNoExtension()));
+			trace("Set HTTP response status: 301; location: " + getExpandedActionValue());
 		}
 		catch (Exception e)
 		{

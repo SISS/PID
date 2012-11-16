@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:lookup:1.0" xmlns:psvcl="urn:csiro:xmlns:pidsvc:lookup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:element name="lookup" type="psvcl:LookupType"/>
+	<xs:complexType name="LookupType">
+		<xs:sequence>
+			<xs:element name="ns">
+				<xs:annotation>
+					<xs:documentation>Lookup map namespace.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="psvcl:NonEmptyURI">
+							<xs:attribute name="rename" type="psvcl:NonEmptyURI" use="optional">
+								<xs:annotation>
+									<xs:documentation>Old lookup map namespace (if you need to rename an existing lookup map).</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:choice>
+				<xs:element name="Static" type="psvcl:StaticLookupType"/>
+				<xs:element name="HttpResolver" type="psvcl:HttpResolverLookupType"/>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="StaticLookupType">
+		<xs:sequence>
+			<xs:element name="pair" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="key">
+							<xs:annotation>
+								<xs:documentation>Lookup key.</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:minLength value="1"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="value" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Lookup value.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="HttpResolverLookupType">
+		<xs:sequence>
+			<xs:element name="endpoint">
+				<xs:annotation>
+					<xs:documentation>Lookup key resolution endpoint.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:anyURI">
+						<xs:minLength value="1"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Extractor type.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="extractor" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Lookup value extractor expression.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="namespaces" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="ns" minOccurs="1" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="psvcl:NonEmptyURI">
+										<xs:attribute name="prefix" type="xs:NCName" use="required"/>
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+				<xs:unique name="IX_XMLNS_UNIQUE">
+					<xs:selector xpath="psvcl:ns"/>
+					<xs:field xpath="@prefix"/>
+				</xs:unique>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="NonEmptyURI">
+		<xs:restriction base="xs:anyURI">
+			<xs:pattern value=".*\S+.*"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
