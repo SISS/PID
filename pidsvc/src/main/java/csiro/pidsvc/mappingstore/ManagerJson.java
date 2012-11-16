@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
 
@@ -44,11 +46,6 @@ public class ManagerJson extends Manager
 				}
 				ret += "]";
 			}
-		}
-		catch (Exception e)
-		{
-			ret = "[]";
-			e.printStackTrace();
 		}
 		finally
 		{
@@ -128,11 +125,6 @@ public class ManagerJson extends Manager
 				ret += "]}";
 			}
 		}
-		catch (Exception e)
-		{
-			ret = "{}";
-			e.printStackTrace();
-		}
 		finally
 		{
 			if (rs != null)
@@ -142,7 +134,7 @@ public class ManagerJson extends Manager
 		}
 		return ret;
 	}
-	
+
 	public String getPidConfig(String mappingPath) throws SQLException
 	{
 		String query =
@@ -278,11 +270,6 @@ public class ManagerJson extends Manager
 				ret += "}";
 			}
 		}
-		catch (Exception e)
-		{
-			ret = "{}";
-			e.printStackTrace();
-		}
 		finally
 		{
 			if (rsMapping != null)
@@ -293,6 +280,168 @@ public class ManagerJson extends Manager
 				rsAction.close();
 			if (rsHistory != null)
 				rsHistory.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public String getLookups(int page, String namespace) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null;
+		final int			pageSize = 10;
+
+		try
+		{
+			String query = "";
+			if (namespace != null && !namespace.isEmpty())
+				query += " AND ns ILIKE ?";
+
+			query =
+				"SELECT COUNT(*) FROM lookup_ns" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + ";\n" +
+				"SELECT * FROM lookup_ns" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY ns LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
+
+			int i = 1;
+			pst = _connection.prepareStatement(query);
+			for (int j = 0; j < 2; ++j)
+			{
+				// Bind parameters twice to two almost identical queries.
+				if (namespace != null && !namespace.isEmpty())
+					pst.setString(i++, "%" + namespace.replace("\\", "\\\\") + "%");
+			}
+			
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				rs.next();
+				ret = "{ \"count\": " + rs.getInt(1) +
+					", \"page\": " + page +
+					", \"pages\": " + ((int)Math.ceil(rs.getFloat(1) / pageSize)) +
+					", \"results\": [";
+				
+				for (pst.getMoreResults(), rs = pst.getResultSet(), i = 0; rs.next(); ++i)
+				{
+					if (i > 0)
+						ret += ",";
+
+					ret += "{" +
+							JSONObject.toString("ns", rs.getString("ns")) + ", " +
+							JSONObject.toString("type", rs.getString("type")) +
+						"}";
+				}
+				ret += "]}";
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public String getLookupConfig(String ns) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null;
+		String				lookupType;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT ns, type FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
+			pst.setString(1, ns);
+			pst.setString(2, ns);
+
+			if (pst.execute())
+			{
+				ret = "{";
+				rs = pst.getResultSet();
+				if (rs.next())
+				{
+					lookupType = rs.getString("type");
+					ret +=
+						JSONObject.toString("ns", rs.getString("ns")) + ", " +
+						JSONObject.toString("type", lookupType) + ", " +
+						"\"lookup\":";
+
+					pst.getMoreResults();
+					rs = pst.getResultSet();
+					if (lookupType.equalsIgnoreCase("Static"))
+					{
+						ret += "[";
+						for (int i = 0; rs.next(); ++i)
+						{
+							if (i > 0)
+								ret += ",";
+							ret +=
+								"{" +
+									JSONObject.toString("key", rs.getString(1)) + ", " +
+									JSONObject.toString("value", rs.getString(2)) +
+								"}";
+						}
+						ret += "]";
+					}
+					else if (lookupType.equalsIgnoreCase("HttpResolver"))
+					{
+						if (rs.next())
+						{
+							final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							Matcher				m;
+							String				buf = rs.getString(2);
+
+							try
+							{
+								String jsonPart = "{" + JSONObject.toString("endpoint", rs.getString(1)) + ", ";
+
+								// Type.
+								m = reType.matcher(buf);
+								m.find();
+								jsonPart += JSONObject.toString("type", m.group(1)) + ", ";
+
+								// Extractor.
+								m = reExtract.matcher(buf);
+								m.find();
+								jsonPart += JSONObject.toString("extractor", m.group(1)) + ", ";
+
+								// Namespaces.
+								m = reNamespace.matcher(buf);
+								jsonPart += "\"namespaces\":[";
+								for (int i = 0; m.find(); ++i)
+								{
+									if (i > 0)
+										jsonPart += ",";
+									jsonPart +=
+										"{" +
+											JSONObject.toString("prefix", m.group(1)) + ", " +
+											JSONObject.toString("uri", m.group(2)) +
+										"}";
+								}
+								jsonPart += "]";
+
+								jsonPart += "}";
+								ret += jsonPart;
+							}
+							catch (Exception e)
+							{
+								ret += "{}";
+							}
+						}
+					}
+				}
+				ret += "}";
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
 			if (pst != null)
 				pst.close();
 		}

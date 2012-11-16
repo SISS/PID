@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
 import csiro.pidsvc.mappingstore.ManagerJson;
 
@@ -41,10 +42,9 @@ public class info extends HttpServlet
 		ManagerJson mgr = null;
 		try
 		{
-//			Thread.sleep(500);
-			
+//			Thread.sleep(1500);
 			mgr = new ManagerJson();
-			
+
 			if (cmd.equalsIgnoreCase("search"))
 			{
 				int page = 1;
@@ -63,9 +63,24 @@ public class info extends HttpServlet
 			}
 			else if (cmd.equalsIgnoreCase("get_settings"))
 				response.getWriter().write(mgr.getSettings());
+			else if (cmd.equalsIgnoreCase("search_lookup"))
+			{
+				int page = 1;
+				String sPage = request.getParameter("page");
+				if (sPage != null && sPage.matches("\\d+"))
+					page = Integer.parseInt(sPage);
+
+				response.getWriter().write(mgr.getLookups(page, request.getParameter("ns")));
+			}
+			else if (cmd.equalsIgnoreCase("get_lookup_config"))
+			{
+				String ns = request.getParameter("ns");
+				response.getWriter().write(mgr.getLookupConfig(ns));
+			}
 		}
 		catch (Exception e)
 		{
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 			e.printStackTrace();
 		}
 		finally

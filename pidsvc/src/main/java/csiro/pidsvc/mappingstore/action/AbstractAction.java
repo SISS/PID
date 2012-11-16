@@ -6,6 +6,7 @@ import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import csiro.pidsvc.mappingstore.Manager;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
 
@@ -35,33 +36,33 @@ public abstract class AbstractAction
 		_controller.trace(message);
 	}
 
-	protected String substrituteCaptureParameters(String input) throws URISyntaxException, UnsupportedEncodingException
+	protected String getExpandedActionValue() throws URISyntaxException, UnsupportedEncodingException
 	{
+		trace("Expand\t" + _descriptor.Value);
+
 		// Bring all placeholders and function calls to the same syntax.
-		String lastValue = "";
-		String ret = _descriptor.Value.replaceAll("\\$(\\d+)", "%[[URI:$1]]");
-		while (!ret.equals(lastValue))
-		{
-			lastValue = ret;
-			ret = ret.replaceAll("(?i)\\$\\{(\\w+)\\:([^\\$\\}]+)\\}", "%[[$1:$2]]");
-		}
+		String ret = _descriptor.Value.replaceAll("\\$(\\d+)", "\\${URI:$1}");
+		if (ret != _descriptor.Value)
+			trace("\t" + ret);
 
 		// Process string functions.
-		Pattern reFunction = Pattern.compile("%\\[\\[(\\w+):([^%]*?)\\]\\]");
+		final Pattern reFunction = Pattern.compile("\\$\\{(\\w+):([^$]*?)\\}");
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
-			if (ret.lastIndexOf("%[[", m.start() - 1) == -1)
+			if (ret.lastIndexOf("${", m.start() - 1) == -1)
 				// Non-nested function call.
-				ret = ret.substring(0, m.start()) + URLEncoder.encode(callInternalFunction(input, m.group(1), m.group(2)), "UTF-8") + ret.substring(m.end());
+				ret = ret.substring(0, m.start()) + URLEncoder.encode(callInternalFunction(m.group(1), m.group(2)), "UTF-8") + ret.substring(m.end());
 			else
 				// Nested function call.
-				ret = ret.substring(0, m.start()) + callInternalFunction(input, m.group(1), m.group(2)) + ret.substring(m.end());
+				ret = ret.substring(0, m.start()) + callInternalFunction(m.group(1), m.group(2)) + ret.substring(m.end());
+			trace("\t" + ret);
 		}
 		return ret;
 	}
 
-	protected String callInternalFunction(String input, String name, String param)
+	protected String callInternalFunction(String name, String param)
 	{
+		Manager mgr = null;
 		try
 		{
 			if (name.equalsIgnoreCase("URI"))
@@ -72,7 +73,7 @@ public abstract class AbstractAction
 				else if (_matchResult.AuxiliaryData instanceof Pattern)
 				{
 					int groupIndex = Integer.parseInt(param);
-					Matcher m = ((Pattern)_matchResult.AuxiliaryData).matcher(input);
+					Matcher m = ((Pattern)_matchResult.AuxiliaryData).matcher(_controller.getUri().getPathNoExtension());
 					if (m.find() && groupIndex <= m.groupCount())
 						return m.group(groupIndex);
 				}
@@ -113,26 +114,67 @@ public abstract class AbstractAction
 			{
 				// Environment variables.
 				if (param.equalsIgnoreCase("REQUEST_URI"))
+				{
+					// E.g. /id/test.ext
 					return _controller.getUri().getPathNoExtension();
+				}
 				else if (param.equalsIgnoreCase("ORIGINAL_URI"))
+				{
+					// E.g. /id/test.ext?arg=1
 					return _controller.getUri().getOriginalUriAsString();
+				}
+				else if (param.equalsIgnoreCase("FULL_REQUEST_URI"))
+				{
+					// E.g. http://example.org:8080/id/test.ext?arg=1
+					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
+					if (_controller.getRequest().getServerPort() != 80)
+						val += ":" + _controller.getRequest().getServerPort();
+					return val + _controller.getUri().getOriginalUriAsString();
+				}
 				else if (param.equalsIgnoreCase("QUERY_STRING"))
+				{
+					// E.g. arg=1
 					return _controller.getUri().getQueryString();
+				}
 				else if (param.equalsIgnoreCase("EXTENSION"))
+				{
+					// E.g. ext
 					return _controller.getUri().getExtension();
+				}
 				else if (param.equalsIgnoreCase("SERVER_NAME"))
+				{
+					// E.g. example.org
 					return _controller.getRequest().getServerName();
+				}
 				else if (param.equalsIgnoreCase("SERVER_ADDR"))
 				{
+					// E.g. http://example.org:8080
 					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
 					if (_controller.getRequest().getServerPort() != 80)
 						val += ":" + _controller.getRequest().getServerPort();
 					return val;
 				}
 			}
+			else if (name.equalsIgnoreCase("LOOKUP"))
+			{
+				// Extracts [(namespace)]:(value).
+				final Pattern reNsValue = Pattern.compile("^\\[(.+?)\\]:(.+)$");
+				Matcher m = reNsValue.matcher(param);
+
+				if (m.find())
+				{
+					String value = (mgr = new Manager()).resolveLookupValue(m.group(1), m.group(2));
+					return value == null ? "" : value;
+				}
+			}
 		}
 		catch (Exception ex)
 		{
+		}
+		finally
+		{
+			if (mgr != null)
+				mgr.close();
 		}
 		return "";
 	}

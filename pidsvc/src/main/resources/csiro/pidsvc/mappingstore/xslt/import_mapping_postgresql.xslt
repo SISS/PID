@@ -12,7 +12,7 @@
 			</xsl:when>
 			<xsl:when test="backup[@type = 'partial' and @scope = 'record']">
 				<!-- Partial mapping import -->
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", replace(replace(backup/mapping[1]/path, "&#39;", "&#39;&#39;"), "\\", "\\\\"), "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [[[", backup/mapping[1]/path, "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="backup/mapping[1]"/>
 				COMMIT;
@@ -20,7 +20,7 @@
 			<xsl:when test="backup[@type = 'full' and @scope = 'record']">
 				<!-- Full mapping import -->
 				<xsl:variable name="path" select="backup/mapping[1]/path/text()"/>
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", replace(replace($path, "&#39;", "&#39;&#39;"), "\\", "\\\\"), "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [[[", $path, "]]].")'/>
 				BEGIN;
 				DELETE FROM "mapping" WHERE mapping_path = E'<xsl:value-of select='replace(replace($path, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
 				<xsl:apply-templates select="backup/mapping[path/text() = $path]"/>

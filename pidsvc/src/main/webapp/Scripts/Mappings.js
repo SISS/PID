@@ -20,10 +20,10 @@
 		// Initialise UI elements.
 		$J("#UriSearchSection")
 			.find("input:not(#PagerInput)")
-				.keypress(this.searchMappingOnKeyPress)
+				.keypress(this.searchOnKeyPress)
 			.end()
 			.find("select")
-				.keypress(this.searchMappingOnKeyPress);
+				.keypress(this.searchOnKeyPress);
 		$J("#Pager input:first").keypress(this.pagerOnKeyPress);
 		$J(document).keydown(this.globalDocumentOnKeyDown);
 
@@ -33,11 +33,14 @@
 		$J("#TopMenu > DIV.MenuButton").click(this.openTab);
 		this.openTab(0);
 
+		// Set ExceptionHandler properties.
+		ExceptionHandler.setPostHandler(Main.unblockUI);
+
 		// Initialise context menus.
 		$J.contextMenu({
 			selector: '#cmdExport', 
 			trigger: 'left',
-			callback: Main.exportMapping,
+			callback: Main.export,
 			items: {
 				"partial_export": { name: "Partial export (current only)", icon: "export", accesskey: "p" },
 				"full_export": { name: "<nobr>Full export (preserves history) &nbsp;</nobr>", icon: "export", accesskey: "f" },
@@ -60,23 +63,23 @@
 		if (type == "Deprecated")
 		{
 			$J("#MappingDeprecatedOnly").click();
-			this.searchMapping();
+			this.search();
 		}
 		else if (type)
 		{
 			$J("#SearchMappingType").val(type);
 			$J("#MappingType").val(type);
-			this.searchMapping();
+			this.search();
 		}
 		this.blockSaving(true);
 
 		// Reset mapping configuration.
-		this.createMapping(true);
+		this.create(true);
 
 		// Automatically retrieve mapping configuration.
 		var qsMappingPath = location.href.getQueryParam("mapping_path");
 		if (qsMappingPath !== false)
-			this.getPidConfigByMappingPath(decodeURIComponent(qsMappingPath));
+			this.getConfigByMappingPath(decodeURIComponent(qsMappingPath));
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -108,44 +111,6 @@
 				}
 				break;
 		}
-	},
-
-	///////////////////////////////////////////////////////////////////////////
-	//	Error handling.
-
-	displayGenericError: function(jqXHR, textStatus, errorThrown)
-	{
-		if (jqXHR.status != 200)
-			alert(jqXHR.status + " " + jqXHR.statusText);
-		else
-			alert(errorThrown.name + " (" + textStatus + ")\n" + errorThrown.message);
-		Main.unblockUI();
-	},
-
-	renderGenericError: function(jqXHR, textStatus, errorThrown)
-	{
-		var jqResults = $J("#MappingSearchResultsTable").find("tr:gt(0)").remove().end();
-		if (jqXHR.status != 200)
-		{
-			jqResults
-				.append(
-					"<tr valign='top' class='__error'>" +
-					"	<td colspan='3'>" + jqXHR.status + " " + jqXHR.statusText + "</td>" +
-					"</tr>"
-				);
-		}
-		else
-		{
-			jqResults
-				.append(
-					"<tr valign='top' class='__error'>" +
-					"	<td colspan='3'>" + errorThrown.name + " (" + textStatus + ")<br/>" + errorThrown.message + "</td>" +
-					"</tr>"
-				);
-		}
-		$J("#Pager").hide();
-		$J("#MappingSearchResults").show();
-		Main.unblockUI();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -193,7 +158,7 @@
 
 	unblockUI: function()
 	{
-		$J("#MappingConfigSection").unblock();
+		$J("#ConfigSection").unblock();
 		$J("#UriSearchSection").unblock();
 		$J.unblockUI();
 	},
@@ -207,7 +172,7 @@
 	{
 		if (state)
 		{
-			$J("#MappingConfigSection input, #MappingConfigSection select").attr("disabled", "disabled");
+			$J("#ConfigSection input, #ConfigSection select").attr("disabled", "disabled");
 			$J("#ConfigSupersededWarning").show();
 			$J("*.__supersededLock, #ConfigSaveWarning").hide();
 
@@ -217,7 +182,7 @@
 		}
 		else
 		{
-			$J("#MappingConfigSection input:not(#MappingPath), #MappingConfigSection select:not(#MappingType)").removeAttr("disabled");
+			$J("#ConfigSection input:not(#MappingPath), #ConfigSection select:not(#MappingType)").removeAttr("disabled");
 			$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 			$J("*.__supersededLock").show();
 
@@ -240,9 +205,10 @@
 
 	monitorChanges: function()
 	{
-		$J("#MappingConfigSection input[configurationOnChange!='1'], #MappingConfigSection select[configurationOnChange!='1']")
-			.attr("configurationOnChange", "1")
-			.change(Main.configurationOnChange);
+		$J("#ConfigSection")
+			.find("input[configurationOnChange != '1'], select[configurationOnChange != '1']")
+				.attr("configurationOnChange", "1")
+				.change(Main.configurationOnChange);
 	},
 
 	configurationOnChange: function()
@@ -267,7 +233,7 @@
 	///////////////////////////////////////////////////////////////////////////
 	//	Handling search results.
 
-	searchMapping: function(page)
+	search: function(page)
 	{
 		if (!page)
 		{
@@ -283,7 +249,7 @@
 		Main.blockUI($J("#UriSearchSection"));
 
 		// Call service.
-		$J.getJSON(request, this.renderResults).fail(this.renderGenericError);
+		$J.getJSON(request, this.renderResults).fail(ExceptionHandler.renderGenericException);
 	},
 
 	renderResults: function(data)
@@ -291,18 +257,18 @@
 		Main.unblockUI();
 
 		// Check for errors.
-		if ($J("#MappingSearchResultsTable .__error").size() > 0)
+		if ($J("#SearchResultsTable .__error").size() > 0)
 			return;
 
 		// Render results.
 		if (data != null)
 		{
-			$J("#MappingSearchResultsTable tr:gt(0)").remove();
-			$J("#MappingSearchResults").show();
+			$J("#SearchResultsTable tr:gt(0)").remove();
+			$J("#SearchResults").show();
 			if (data.results.length)
 			{
 				$J(data.results).each(function() {
-					$J("#MappingSearchResultsTable")
+					$J("#SearchResultsTable")
 						.append(
 							"<tr valign='top'>" +
 							"	<td>" +
@@ -329,11 +295,11 @@
 							"</tr>"
 						);
 				});
-				$J("#MappingSearchResultsTable tr:gt(0) > td").hover(
+				$J("#SearchResultsTable tr:gt(0) > td").hover(
 					function() { $J(this).siblings().andSelf().addClass("ResultRowHighlight"); },
 					function() { $J(this).siblings().andSelf().removeClass("ResultRowHighlight"); }
 				);
-				$J("#MappingSearchResultsTable .__link").click(Main.getPidConfig);
+				$J("#SearchResultsTable .__link").click(Main.getConfig);
 
 				// Initialise pager control.
 				$J("#MenuResultsCount").text(data.count ? "(" + data.count + ")" : "");
@@ -354,7 +320,7 @@
 			}
 			else
 			{
-				$J("#MappingSearchResultsTable")
+				$J("#SearchResultsTable")
 					.append(
 						"<tr valign='top'>" +
 						"	<td colspan='3'>No mappings found...</td>" +
@@ -366,12 +332,12 @@
 		Main._focusPager = false;
 	},
 
-	searchMappingOnKeyPress: function(event)
+	searchOnKeyPress: function(event)
 	{
 		if (event.which == 13)
 		{
 			event.preventDefault();
-			Main.searchMapping();
+			Main.search();
 		}
 	},
 
@@ -408,26 +374,26 @@
 			page = totalPages;
 
 		$J("#Pager input:first").val(page);
-		Main.searchMapping(page);
+		Main.search(page);
 	},
 
 	///////////////////////////////////////////////////////////////////////////
-	//	PID configuration UI.
+	//	Configuration UI.
 
-	createMapping: function(initialize)
+	create: function(initialize)
 	{
 		if (initialize !== true)
 			$J("#Tip").hide();
-		this.renderPidConfig(null);
+		this.renderConfig(null);
 	},
 
-	deleteMapping: function()
+	delete: function()
 	{
 		if (Main.isEditingBlocked())
 			return;
 		var mappingPath = $J("#MappingPath").val().trim();
 		if (!mappingPath || $J("#ChangeHistory").attr("isDeprecated") == "1")
-			return this.createMapping();
+			return this.create();
 
 		if (!confirm("Are you sure wish to delete this mapping?"))
 			return;
@@ -440,17 +406,17 @@
 					type: "POST",
 					cache: false
 				})
-				.done(this.getPidConfig.bind(this, 0))
-				.fail(this.displayGenericError);
+				.done(this.getConfig.bind(this, 0))
+				.fail(ExceptionHandler.displayGenericException);
 		}
 		else
 		{
 			// Clear unsaved mapping.
-			this.createMapping();
+			this.create();
 		}
 	},
 
-	getPidConfig: function(id)
+	getConfig: function(id)
 	{
 		var internalCall = Object.isNumber(id);
 		var mappingId = internalCall ? id : $J(this).attr("mapping_id");
@@ -459,23 +425,24 @@
 		Main.openTab(1);
 
 		if (!internalCall)
-			Main.blockUI($J("#MappingConfigSection"));
+			Main.blockUI($J("#ConfigSection"));
 
 		// If mappingId === 0 then get the latest configuration for the current mapping.
 		if (mappingId === 0)
-			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val()), Main.renderPidConfig).fail(Main.renderGenericError);
+			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val()), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 		else
-			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderPidConfig).fail(Main.renderGenericError);
+			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 	},
 
-	getPidConfigByMappingPath: function(mappingPath)
+	getConfigByMappingPath: function(mappingPath)
 	{
 		$J("#Tip").hide();
 		Main.openTab(1);
-		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderPidConfig).fail(Main.renderGenericError);
+		Main.blockUI($J("#ConfigSection"));
+		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 	},
 
-	renderPidConfig: function(data)
+	renderConfig: function(data)
 	{
 		// Reset configuration.
 		if (!data || $J.isEmptyObject(data))
@@ -551,7 +518,7 @@
 			$J("#ChangeHistory ul")
 				.append("<li><a href='#' mapping_id='" + this.mapping_id + "'>" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a></li>");
 		});
-		$J("#ChangeHistory a").click(Main.getPidConfig);
+		$J("#ChangeHistory a").click(Main.getConfig);
 
 		// Block editing for deprecated/superseded mappings.
 		Main.blockEditing(data.ended);
@@ -563,6 +530,7 @@
 	//
 	//	Conditions handling.
 	//
+
 	addCondition: function()
 	{
 		var jq = Main.appendCondition($J("#ConditionSection"), null).find("table.__actions:last");
@@ -607,10 +575,10 @@
 		}
 	},
 
-	appendCondition: function(jq, jsonAction)
+	appendCondition: function(jq, json)
 	{
-		if (!jsonAction)
-			jsonAction = { type: null, match: "" };
+		if (json == null)
+			json = { type: null, match: "" };
 
 		return jq
 			.append("<table border='0' cellpadding='5' cellspacing='0' width='100%'>" +
@@ -628,14 +596,14 @@
 				"			</select>" +
 				"		</td>" +
 				"		<td>" +
-				"			<input type='text' value='" + jsonAction.match + "' class='__conditionMatch' maxlength='255' style='width: 483px;' />" +
+				"			<input type='text' value='" + json.match + "' class='__conditionMatch' maxlength='255' style='width: 483px;' />" +
 				"			<div align='right'>" +
 				"				<a href='#' class='__toggleActions tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Actions</a>" +
 				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
 				"			</div>" +
 				"		</td>" +
 				"	</tr>" +
-				"	<tr " + (jsonAction.type == null ? "" : "style='display: none;'") + ">" +
+				"	<tr " + (json.type == null ? "" : "style='display: none;'") + ">" +
 				"		<td colspan='3'>" +
 				"			<div style='margin-left: 70px'>" +
 				"				<div class='caps' style='background: #f2f2f2;'>Actions:</div>" +
@@ -648,7 +616,7 @@
 				"</table>"
 			)
 			.find("td.__conditionType > select:last")
-				.val(jsonAction.type)
+				.val(json.type)
 			.end()
 			.find("a.__conditionMoveUp:last")
 				.click(Main.conditionMoveUp)
@@ -670,6 +638,7 @@
 	//
 	//	Actions handling.
 	//
+
 	addAction: function()
 	{
 		Main.appendAction($J(this).parent().prev(), { type: "", name: "", value: "" });
@@ -723,13 +692,15 @@
 		}
 	},
 
-	appendAction: function(jq, jsonAction)
+	appendAction: function(jq, json)
 	{
-		if (!jsonAction)
-			jsonAction = { type: null, name: "", value: "" };
+		if (json == null || json.type == null)
+			json = this;
+		if (json == null || json.type == null)
+			json = { type: null, name: "", value: "" };
 
 		var elementWidth = null;
-		if (jsonAction.type == null)
+		if (json.type == null)
 		{
 			elementWidth = {
 				type: 	"184px",
@@ -750,7 +721,7 @@
 		var ret = jq
 			.append("<tr>" +
 				(
-					jsonAction.type != null ?
+						json.type != null ?
 						"<td>" +
 						"<a href='#' class='__actionMoveUp'><img src='Images/arrow_up_small.gif' title='Move Up' width='12' height='6' border='0' style='position: relative; top: -4px;'/></a><br/>" +
 						"<a href='#' class='__actionMoveDown'><img src='Images/arrow_down_small.gif' title='Move Down' width='12' height='6' border='0' style='position: relative; top: 3px;'/></a>" +
@@ -759,7 +730,7 @@
 				) +
 				"	<td class='__actionType'>" +
 				"		<select class='input' style='width: " + elementWidth.type +";'>" +
-				(jsonAction.type != null ? "" : "<option></option>") +
+				(json.type != null ? "" : "<option></option>") +
 				"			<option value='301'>301 Moved permanently</option>" +
 				"			<option value='302'>302 Simple redirection</option>" +
 				"			<option value='303'>303 See other</option>" +
@@ -769,7 +740,7 @@
 				"			<option value='415'>415 Unsupported media type</option>" +
 				"			<option value='Proxy'>Proxy</option>" +
 				(
-					jsonAction.type != null ?
+						json.type != null ?
 						"<option value='AddHttpHeader'>AddHttpHeader</option>" +
 						"<option value='RemoveHttpHeader'>RemoveHttpHeader</option>" +
 						"<option value='ClearHttpHeaders'>ClearHttpHeaders</option>"
@@ -781,18 +752,18 @@
 				"		<td><a href='#' class='__actionTip'><img src='Images/help-faq.png' title='Tips' width='16' height='16' border='0' style='position: relative; left: -14px;'/></a></td>" +
 				"	</td>" +
 				"	<td>" +
-				"		<input type='text' value='" + (jsonAction.name ? jsonAction.name : "") + "' class='__actionName' maxlength='50' style='width: " + elementWidth.name +";' />" +
+				"		<input type='text' value='" + (json.name ? json.name : "") + "' class='__actionName' maxlength='50' style='width: " + elementWidth.name +";' />" +
 				"	</td>" +
 				"	<td align='right'>" +
-				"		<input type='text' value='" + (jsonAction.value ? jsonAction.value : "") + "' class='__actionValue' maxlength='512' style='width: " + elementWidth.value +";' />" +
+				"		<input type='text' value='" + (json.value ? json.value : "") + "' class='__actionValue' maxlength='512' style='width: " + elementWidth.value +";' />" +
 				"	</td>" +
 				(
-					jsonAction.type != null ? "<td><a href='#' class='__removeAction'><img src='Images/delete.png' title='Remove' width='16' height='16' border='0' style='position: relative; top: 1px;'/></a></td>" : ""
+						json.type != null ? "<td><a href='#' class='__removeAction'><img src='Images/delete.png' title='Remove' width='16' height='16' border='0' style='position: relative; top: 1px;'/></a></td>" : ""
 				) +
 				"</tr>"
 			)
 			.find("td.__actionType > select:last")
-				.val(jsonAction.type)
+				.val(json.type)
 				.change(Main.actionTypeOnChange)
 				.change()
 			.end()
@@ -860,7 +831,7 @@
 	///////////////////////////////////////////////////////////////////////////
 	//	Saving.
 
-	saveMapping: function()
+	save: function()
 	{
 		var path = $J("#MappingPath").val();
 		if (!path || Main.isSavingBlocked())
@@ -944,8 +915,8 @@
 				contentType: "text/xml",
 				data: cmdxml
 			})
-			.done(Main.getPidConfig.bind(Main, 0))
-			.fail(Main.displayGenericError);
+			.done(Main.getConfig.bind(Main, 0))
+			.fail(ExceptionHandler.displayGenericException);
 	},
 
 	reinstateMapping: function()
@@ -956,7 +927,7 @@
 		$J("#ConfigSaveWarning").show();
 	},
 
-	exportMapping: function(key, options)
+	export: function(key, options)
 	{
 		if (!Main.isSavingBlocked())
 		{

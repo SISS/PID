@@ -7,6 +7,9 @@
 		$J("#TopMenu > DIV.MenuButton").click(this.openTab);
 		this.openTab(0);
 
+		// Set ExceptionHandler properties.
+		ExceptionHandler.setPostHandler(Main.unblockUI);
+
 		this.getSettings();
 	},
 
@@ -25,18 +28,6 @@
 				}
 				break;
 		}
-	},
-
-	///////////////////////////////////////////////////////////////////////////
-	//	Error handling.
-
-	displayGenericError: function(jqXHR, textStatus, errorThrown)
-	{
-		if (jqXHR.status != 200)
-			alert(jqXHR.status + " " + jqXHR.statusText);
-		else
-			alert(errorThrown.name + " (" + textStatus + ")\n" + errorThrown.message);
-		Main.unblockUI();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -140,6 +131,6 @@
 				data: postData
 			})
 			.done(this.unblockUI)
-			.fail(this.displayGenericError);
+			.fail(ExceptionHandler.displayGenericException);
 	}
 });

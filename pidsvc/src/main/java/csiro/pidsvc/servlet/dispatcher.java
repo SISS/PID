@@ -69,7 +69,7 @@ public class dispatcher extends HttpServlet
 		}
 		catch (Exception ex)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex);
 			ex.printStackTrace();
 			if (mgr != null)
 				mgr.close();
@@ -84,10 +84,10 @@ public class dispatcher extends HttpServlet
 			tracer = new OutputStreamTracer(response.getOutputStream());
 			tracer.trace("Dispatch " + uri.getOriginalUriAsString());
 		}
-		
+
 		///////////////////////////////////////////////////////////////////////
 		//	Find a matching mapping and run action items.
-		
+
 		try
 		{
 			MappingMatchResults matchResult;
@@ -140,7 +140,7 @@ public class dispatcher extends HttpServlet
 		}
 		catch (Exception ex)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex);
 			ex.printStackTrace();
 			return;
 		}

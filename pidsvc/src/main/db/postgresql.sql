@@ -190,6 +190,63 @@ CREATE TRIGGER "TR_delete_mapping_default_action"
   FOR EACH ROW
   EXECUTE PROCEDURE delete_mapping_default_action();
 
+-- Table: lookup_type
+-- DROP TABLE lookup_type;
+CREATE TABLE lookup_type
+(
+  type character varying(50) NOT NULL,
+  CONSTRAINT lookup_type_pkey PRIMARY KEY (type )
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE lookup_type
+  OWNER TO "pidsvc-admin";
+
+-- Table: lookup_ns
+-- DROP TABLE lookup_ns;
+CREATE TABLE lookup_ns
+(
+  ns character varying(255) NOT NULL,
+  type character varying(50) NOT NULL,
+  CONSTRAINT lookup_ns_pkey PRIMARY KEY (ns ),
+  CONSTRAINT "FK_lookup_ns_type" FOREIGN KEY (type)
+      REFERENCES lookup_type (type) MATCH SIMPLE
+      ON UPDATE RESTRICT ON DELETE RESTRICT
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE lookup_ns
+  OWNER TO "pidsvc-admin";
+
+-- Table: lookup
+-- DROP TABLE lookup;
+CREATE TABLE lookup
+(
+  lookup_id serial NOT NULL,
+  ns character varying(255) NOT NULL,
+  key text NOT NULL,
+  value text NOT NULL,
+  CONSTRAINT lookup_pkey PRIMARY KEY (lookup_id ),
+  CONSTRAINT "IX_lookup_ns" FOREIGN KEY (ns)
+      REFERENCES lookup_ns (ns) MATCH SIMPLE
+      ON UPDATE CASCADE ON DELETE CASCADE
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE lookup
+  OWNER TO "pidsvc-admin";
+
+-- Index: "IX_lookup_key"
+-- DROP INDEX "IX_lookup_key";
+CREATE INDEX "IX_lookup_key"
+  ON lookup
+  USING btree
+  (key );
+ALTER TABLE lookup CLUSTER ON "IX_lookup_key";
+
 -- View: vw_latest_mapping
 -- DROP VIEW vw_latest_mapping;
 CREATE OR REPLACE VIEW vw_latest_mapping AS 
@@ -263,3 +320,6 @@ INSERT INTO "action_type" ("type", "description") VALUES ('AddHttpHeader', 'Add 
 INSERT INTO "action_type" ("type", "description") VALUES ('RemoveHttpHeader', 'Remove HTTP response header');
 INSERT INTO "action_type" ("type", "description") VALUES ('ClearHttpHeaders', 'Clear HTTP response headers');
 INSERT INTO "action_type" ("type", "description") VALUES ('Proxy', 'Proxy request');
+
+INSERT INTO "lookup_type" ("type") VALUES ('Static');
+INSERT INTO "lookup_type" ("type") VALUES ('HttpResolver');

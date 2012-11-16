@@ -15,14 +15,14 @@ public class ActionAddHttpHeader extends AbstractAction
 	{
 		try
 		{
-			String val = substrituteCaptureParameters(_controller.getUri().getPathNoExtension());
+			String val = getExpandedActionValue();
 			_controller.getHttpHeaders().put(_descriptor.Name, val);
 			if (isTraceMode())
 				trace("Add HTTP header; name: " + _descriptor.Name + "; value: " + val);
 		}
 		catch (Exception e)
 		{
-			Http.returnErrorCode(_controller.getResponse(), 500, e.getCause().getMessage(), e);
+			Http.returnErrorCode(_controller.getResponse(), 500, e);
 			if (isTraceMode())
 				trace("Set HTTP response status 500; exception: " + e.getCause().getMessage());
 			e.printStackTrace();
