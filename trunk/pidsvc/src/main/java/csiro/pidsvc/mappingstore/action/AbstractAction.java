@@ -115,8 +115,14 @@ public abstract class AbstractAction
 				// Environment variables.
 				if (param.equalsIgnoreCase("REQUEST_URI"))
 				{
-					// E.g. /id/test.ext
+					// E.g. /id/test
 					return _controller.getUri().getPathNoExtension();
+				}
+				else if (param.equalsIgnoreCase("REQUEST_URI_EXT"))
+				{
+					// E.g. /id/test.ext
+					String ext = _controller.getUri().getExtension();
+					return (ext == null || ext.equals("")) ? _controller.getUri().getPathNoExtension() : _controller.getUri().getPathNoExtension() + "." + ext;
 				}
 				else if (param.equalsIgnoreCase("ORIGINAL_URI"))
 				{
@@ -124,6 +130,26 @@ public abstract class AbstractAction
 					return _controller.getUri().getOriginalUriAsString();
 				}
 				else if (param.equalsIgnoreCase("FULL_REQUEST_URI"))
+				{
+					// E.g. http://example.org:8080/id/test
+					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
+					if (_controller.getRequest().getServerPort() != 80)
+						val += ":" + _controller.getRequest().getServerPort();
+					return val + _controller.getUri().getPathNoExtension();
+				}
+				else if (param.equalsIgnoreCase("FULL_REQUEST_URI_EXT"))
+				{
+					// E.g. http://example.org:8080/id/test.ext
+					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
+					if (_controller.getRequest().getServerPort() != 80)
+						val += ":" + _controller.getRequest().getServerPort();
+					val += _controller.getUri().getPathNoExtension();
+
+					// Check extension.
+					String ext = _controller.getUri().getExtension();
+					return (ext == null || ext.equals("")) ? val : val + "." + ext;
+				}
+				else if (param.equalsIgnoreCase("FULL_REQUEST_URI_QS"))
 				{
 					// E.g. http://example.org:8080/id/test.ext?arg=1
 					String val = _controller.getRequest().getScheme() + "://" + _controller.getRequest().getServerName();
