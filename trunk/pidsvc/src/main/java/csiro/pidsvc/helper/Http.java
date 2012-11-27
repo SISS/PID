@@ -24,7 +24,6 @@ public class Http
 	 * 
 	 * @param response HttpServletResponse object.
 	 * @param httpResponseCode HTTP response code.
-	 * @param message HTTP response message.
 	 * @param exception Exception object.
 	 */
 	public static void returnErrorCode(HttpServletResponse response, int httpResponseCode, Exception exception)
