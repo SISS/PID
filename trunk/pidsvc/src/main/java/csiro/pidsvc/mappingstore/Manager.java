@@ -893,6 +893,8 @@ public class Manager
 		try
 		{
 			String lookupType = getLookupMapType(ns);
+			if (lookupType == null)				
+				return null;
 			if (lookupType.equalsIgnoreCase("Static"))
 				return getLookupValue(ns, key);
 			else if (lookupType.equalsIgnoreCase("HttpResolver"))
