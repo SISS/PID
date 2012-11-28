@@ -49,7 +49,10 @@ public abstract class AbstractAction
 		final Pattern reFunction = Pattern.compile("\\$\\{(\\w+):([^$]*?)\\}");
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
-			if (ret.lastIndexOf("${", m.start() - 1) == -1)
+			if (m.group(1).equalsIgnoreCase("RAW"))
+				// Raw function call just passes the argument through without URL encoding.
+				ret = ret.substring(0, m.start()) + m.group(2) + ret.substring(m.end());
+			else if (ret.lastIndexOf("${", m.start() - 1) == -1)
 				// Non-nested function call.
 				ret = ret.substring(0, m.start()) + URLEncoder.encode(callInternalFunction(m.group(1), m.group(2)), "UTF-8") + ret.substring(m.end());
 			else
@@ -124,7 +127,7 @@ public abstract class AbstractAction
 					String ext = _controller.getUri().getExtension();
 					return (ext == null || ext.equals("")) ? _controller.getUri().getPathNoExtension() : _controller.getUri().getPathNoExtension() + "." + ext;
 				}
-				else if (param.equalsIgnoreCase("ORIGINAL_URI"))
+				else if (param.equalsIgnoreCase("REQUEST_URI_QS") || param.equalsIgnoreCase("ORIGINAL_URI"))
 				{
 					// E.g. /id/test.ext?arg=1
 					return _controller.getUri().getOriginalUriAsString();
