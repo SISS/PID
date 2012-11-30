@@ -188,7 +188,7 @@
 
 			// Open URI link is only visible for 1-to-1 mappings.
 			if ($J("#MappingType").val() != "1:1" || $J("#MappingPath").is(":enabled"))
-				$J("#OpenUriLink").hide();
+				$J("#QRCode").hide();
 			
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
@@ -454,7 +454,7 @@
 			$J("#MappingType").val("1:1").removeAttr("disabled");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val("");
-			$J("#OpenUriLink").hide();
+			$J("#QRCode").hide();
 
 			$J("#DefaultAction")
 				.find("td.__actionType > select")
@@ -481,7 +481,13 @@
 		$J("#MappingCreator").val(data.creator);
 
 		if (data.type == "1:1")
-			$J("#OpenUriLink").attr("href", data.mapping_path).show();
+		{
+			$J("#QRCode")
+				.attr("src", "qrcode?uri=" + encodeURIComponent(location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path)) + "&size=120")
+				.show()
+				.parent()
+					.attr("href", data.mapping_path);
+		}
 
 		$J("#DefaultAction")
 			.find("td.__actionType > select")
