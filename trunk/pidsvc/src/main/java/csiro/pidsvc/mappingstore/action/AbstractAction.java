@@ -46,7 +46,7 @@ public abstract class AbstractAction
 			trace("\t" + ret);
 
 		// Process string functions.
-		final Pattern reFunction = Pattern.compile("\\$\\{(\\w+):([^$]*?)\\}");
+		final Pattern reFunction = Pattern.compile("\\$\\{(\\w+)(?::([^$]*?))?\\}");
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
 			if (m.group(1).equalsIgnoreCase("RAW"))
@@ -71,7 +71,7 @@ public abstract class AbstractAction
 			if (name.equalsIgnoreCase("URI"))
 			{
 				// Regex from URI matching.
-				if (param.equals("0"))
+				if (param == null || param.isEmpty() || param.equals("0"))
 					return _controller.getUri().getOriginalUriAsString();
 				else if (_matchResult.AuxiliaryData instanceof Pattern)
 				{
@@ -86,6 +86,8 @@ public abstract class AbstractAction
 				// Matches from condition regex matching.
 				if (_matchResult.Condition != null)
 				{
+					if (param == null || param.isEmpty())
+						param = "0";
 					if (_matchResult.Condition.AuxiliaryData instanceof Matcher)
 					{
 						Matcher m = (Matcher)_matchResult.Condition.AuxiliaryData;
@@ -165,10 +167,16 @@ public abstract class AbstractAction
 					// E.g. arg=1
 					return _controller.getUri().getQueryString();
 				}
-				else if (param.equalsIgnoreCase("EXTENSION"))
+				else if (param.equalsIgnoreCase("EXTENSION") || param.equalsIgnoreCase("EXT"))
 				{
 					// E.g. ext
 					return _controller.getUri().getExtension();
+				}
+				else if (param.equalsIgnoreCase("DOT_EXTENSION") || param.equalsIgnoreCase("DOT_EXT"))
+				{
+					// E.g. .ext
+					String ext = _controller.getUri().getExtension();
+					return (ext == null || ext.equals("")) ? "" : "." + ext;
 				}
 				else if (param.equalsIgnoreCase("SERVER_NAME"))
 				{
@@ -195,6 +203,11 @@ public abstract class AbstractAction
 					String value = (mgr = new Manager()).resolveLookupValue(m.group(1), m.group(2));
 					return value == null ? "" : value;
 				}
+			}
+			else if (name.equalsIgnoreCase("QS"))
+			{
+				// Returns query string parameter from original request URI.
+				return _controller.getUri().getQuerystringParameter(param);
 			}
 		}
 		catch (Exception ex)
