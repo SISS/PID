@@ -429,7 +429,7 @@
 
 		// If mappingId === 0 then get the latest configuration for the current mapping.
 		if (mappingId === 0)
-			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val()), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
+			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val().trim()), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 		else
 			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 	},
@@ -843,7 +843,7 @@
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
-		cmdxml += "<path>" + path.htmlEscape() + "</path>";
+		cmdxml += "<path>" + path.htmlEscape().trim() + "</path>";
 		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
 		if (description)
 			cmdxml += "<description>" + description.htmlEscape() + "</description>";
@@ -935,7 +935,7 @@
 			return;
 		}
 		if (key == "full_export")
-			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent($J("#MappingPath").val());
+			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent($J("#MappingPath").val().trim());
 		else
 			location.href = "controller?cmd=partial_export&mapping_id=" + $J("#MappingPath").attr("mapping_id");
 	}
