@@ -773,21 +773,21 @@ public class Manager
 		}
 	}
 
-	public String getLookupMapType(String ns)
+	public LookupMapDescriptor getLookupMapType(String ns)
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT type FROM lookup_ns WHERE ns = ?");
+			pst = _connection.prepareStatement("SELECT type, behaviour_type, behaviour_value FROM lookup_ns WHERE ns = ?");
 			pst.setString(1, ns);
 
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
 				if (rs.next())
-					return rs.getString(1);
+					return new LookupMapDescriptor(rs.getString(1), rs.getString(2), rs.getString(3));
 			}
 		}
 		catch (Exception e)
@@ -890,14 +890,18 @@ public class Manager
 
 	public String resolveLookupValue(String ns, String key)
 	{
+		LookupMapDescriptor lookupDescriptor = getLookupMapType(ns);
+		if (lookupDescriptor == null)				
+			return null;
+
 		try
 		{
-			String lookupType = getLookupMapType(ns);
-			if (lookupType == null)				
-				return null;
-			if (lookupType.equalsIgnoreCase("Static"))
-				return getLookupValue(ns, key);
-			else if (lookupType.equalsIgnoreCase("HttpResolver"))
+			if (lookupDescriptor.isStatic())
+			{
+				String ret = getLookupValue(ns, key);
+				return ret == null ? lookupDescriptor.getDefaultValue(key) : ret;
+			}
+			else if (lookupDescriptor.isHttpResolver())
 			{
 				final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 				final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
@@ -952,7 +956,7 @@ public class Manager
 
 					// Evaluate XPath expression.
 					XdmItem node = xpathCompiler.evaluateSingle(extractor, processor.newDocumentBuilder().build(new StreamSource(new StringReader(content))));
-					return node == null ? null : node.getStringValue();
+					return node == null ? lookupDescriptor.getDefaultValue(key) : node.getStringValue();
 				}
 			}
 		}
@@ -960,7 +964,7 @@ public class Manager
 		{
 			e.printStackTrace();
 		}
-		return null;
+		return lookupDescriptor.getDefaultValue(key);
 	}
 
 	public String exportLookup(String ns) throws SQLException
@@ -971,7 +975,7 @@ public class Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT type FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
+			pst = _connection.prepareStatement("SELECT type, behaviour_type, behaviour_value FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
 			pst.setString(1, ns);
 			pst.setString(2, ns);
 
@@ -983,6 +987,9 @@ public class Manager
 
 				String lookupType = rs.getString("type");
 				ret += "<ns>" + StringEscapeUtils.escapeXml(ns) + "</ns>";
+
+				String behaviourValue = rs.getString("behaviour_value");
+				ret += "<default type=\"" + StringEscapeUtils.escapeXml(rs.getString("behaviour_type")) + "\">" + (behaviourValue == null ? "" : StringEscapeUtils.escapeXml(behaviourValue)) + "</default>";
 
 				pst.getMoreResults();
 				rs = pst.getResultSet();

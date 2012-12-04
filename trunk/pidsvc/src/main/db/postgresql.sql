@@ -203,15 +203,33 @@ WITH (
 ALTER TABLE lookup_type
   OWNER TO "pidsvc-admin";
 
+-- Table: lookup_behaviour_type
+-- DROP TABLE lookup_behaviour_type;
+CREATE TABLE lookup_behaviour_type
+(
+  type character varying(50) NOT NULL,
+  CONSTRAINT lookup_behaviour_type_pkey PRIMARY KEY (type )
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE lookup_behaviour_type
+  OWNER TO "pidsvc-admin";
+
 -- Table: lookup_ns
 -- DROP TABLE lookup_ns;
 CREATE TABLE lookup_ns
 (
   ns character varying(255) NOT NULL,
   type character varying(50) NOT NULL,
+  behaviour_type character varying(50) NOT NULL,
+  behaviour_value character varying(255),
   CONSTRAINT lookup_ns_pkey PRIMARY KEY (ns ),
   CONSTRAINT "FK_lookup_ns_type" FOREIGN KEY (type)
       REFERENCES lookup_type (type) MATCH SIMPLE
+      ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT "FK_lookup_ns_behaviour_type" FOREIGN KEY (behaviour_type)
+      REFERENCES lookup_behaviour_type (type) MATCH SIMPLE
       ON UPDATE RESTRICT ON DELETE RESTRICT
 )
 WITH (
@@ -323,3 +341,6 @@ INSERT INTO "action_type" ("type", "description") VALUES ('Proxy', 'Proxy reques
 
 INSERT INTO "lookup_type" ("type") VALUES ('Static');
 INSERT INTO "lookup_type" ("type") VALUES ('HttpResolver');
+
+INSERT INTO "lookup_behaviour_type" ("type") VALUES ('Constant');
+INSERT INTO "lookup_behaviour_type" ("type") VALUES ('PassThrough');

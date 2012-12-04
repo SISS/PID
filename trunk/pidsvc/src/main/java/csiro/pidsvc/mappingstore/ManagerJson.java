@@ -353,7 +353,7 @@ public class ManagerJson extends Manager
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT ns, type FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
+			pst = _connection.prepareStatement("SELECT ns, type, behaviour_type, behaviour_value FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
 			pst.setString(1, ns);
 			pst.setString(2, ns);
 
@@ -367,6 +367,10 @@ public class ManagerJson extends Manager
 					ret +=
 						JSONObject.toString("ns", rs.getString("ns")) + ", " +
 						JSONObject.toString("type", lookupType) + ", " +
+						"\"default\":{" +
+							JSONObject.toString("type", rs.getString("behaviour_type")) + ", " + 
+							JSONObject.toString("value", rs.getString("behaviour_value")) + 
+						"}," +
 						"\"lookup\":";
 
 					pst.getMoreResults();

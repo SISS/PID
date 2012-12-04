@@ -142,12 +142,12 @@
 				message: "<img src='Images/loading319.gif' width='128' height='128'/>",
 				overlayCSS: {
 					opacity: .8,
-					backgroundColor: '#fff'
+					backgroundColor: "#fff"
 				},
 				css: {
-					border: 'none',
-					backgroundColor: '',
-					color: '#fff'
+					border: "none",
+					backgroundColor: "",
+					color: "#fff"
 				}
 			};
 		if (jq)

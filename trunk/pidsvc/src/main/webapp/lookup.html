@@ -84,7 +84,7 @@
 						<tr valign="top">
 							<td width="70%">
 								<b>Namespace:</b>
-								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+								<table border="0" cellpadding="5" cellspacing="1" width="100%" style="margin-bottom: 10px;">
 									<tr valign="top">
 										<td width="80%" style="position: relative;">
 											<input id="Namespace" type="text" style="width: 545px;" />
@@ -94,6 +94,31 @@
 												<option value="Static">Static</option>
 												<option value="HttpResolver">HttpResolver</option>
 											</select>
+										</td>
+									</tr>
+								</table>
+								<b>Default behaviour:</b>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr>
+										<td nowrap="nowrap"><label for="DefaultBehaviourConstant">Constant:</label></td>
+										<td>
+											<input type="radio" id="DefaultBehaviourConstant" name="DefaultBehaviour" value="Constant"/>
+											<input id="DefaultBehaviourConstantValue" type="text" style="width: 588px;"/>
+										</td>
+									</tr>
+									<tr>
+										<td nowrap="nowrap"><label for="DefaultBehaviourPassThrough">Pass-through:</label></td>
+										<td>
+											<input type="radio" id="DefaultBehaviourPassThrough" name="DefaultBehaviour" value="PassThrough"/>
+										</td>
+									</tr>
+									<tr>
+										<td></td>
+										<td class="tip">
+											The default behaviour setting defines the action to be taken when lookup value is not found.
+											In "constant" mode the lookup call will return a static string and in pass-through it will
+											return the original lookup key that has been looked up.
+											<br/><br/>
 										</td>
 									</tr>
 								</table>
