@@ -127,6 +127,11 @@ HR
 	height: 2px;
 }
 
+LABEL
+{
+	cursor: pointer;
+}
+
 .numlist
 {
 	background-color: #d42626;

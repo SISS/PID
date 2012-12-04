@@ -23,12 +23,18 @@
 		<xsl:variable name="type">
 			<xsl:value-of select="local-name(*[last()])"/>
 		</xsl:variable>
+		<xsl:variable name="behaviour_value">
+			<xsl:choose>
+				<xsl:when test="not(default/text())">NULL</xsl:when>
+				<xsl:otherwise>E'<xsl:value-of select='replace(replace(default/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>'</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
 
 		<xsl:if test="ns/@rename">
 			DELETE FROM lookup_ns WHERE ns = E'<xsl:value-of select='replace(replace(ns/@rename, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
 		</xsl:if>
 		DELETE FROM lookup_ns WHERE ns = E'<xsl:value-of select="$ns"/>';
-		INSERT INTO lookup_ns (ns, type) VALUES (E'<xsl:value-of select="$ns"/>', E'<xsl:value-of select="$type"/>');
+		INSERT INTO lookup_ns (ns, type, behaviour_type, behaviour_value) VALUES (E'<xsl:value-of select="$ns"/>', E'<xsl:value-of select="$type"/>', E'<xsl:value-of select="default/@type"/>', <xsl:value-of select="$behaviour_value"/>);
 
 		<xsl:apply-templates select="*[last()]"/>
 	</xsl:template>

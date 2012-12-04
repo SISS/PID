@@ -14,6 +14,7 @@
 		$J(document).keydown(this.globalDocumentOnKeyDown);
 		$J("#Namespace").change(this.namespaceOnChange);
 		$J("#LookupType").change(this.lookupTypeOnChange);
+		$J("#DefaultBehaviourConstant, #DefaultBehaviourPassThrough").change(this.defaultBehaviourOnChange);
 
 		$J("#Tip > div").css("opacity", .7);
 
@@ -98,12 +99,12 @@
 				message: "<img src='Images/loading319.gif' width='128' height='128'/>",
 				overlayCSS: {
 					opacity: .8,
-					backgroundColor: '#fff'
+					backgroundColor: "#fff"
 				},
 				css: {
-					border: 'none',
-					backgroundColor: '',
-					color: '#fff'
+					border: "none",
+					backgroundColor: "",
+					color: "#fff"
 				}
 			};
 		if (jq)
@@ -347,6 +348,8 @@
 			$J("#Namespace").val("");
 			$J("#LookupType").val("Static").attr("__current", "Static");
 			$J("#LookupMap").empty();
+			$J("#DefaultBehaviourConstantValue").val("");
+			$J("#DefaultBehaviourConstant").click();
 			Main.appendLookupRecord(null);
 
 			Main.blockSaving(true);
@@ -358,6 +361,16 @@
 		// Show configuration.
 		$J("#Namespace").val(data.ns);
 		$J("#LookupType").val(data.type).attr("__current", data.type);
+		if (data.default.type == "Constant")
+		{
+			$J("#DefaultBehaviourConstant").click();
+			$J("#DefaultBehaviourConstantValue").val(data.default.value);
+		}
+		else
+		{
+			$J("#DefaultBehaviourPassThrough").click();
+			$J("#DefaultBehaviourConstantValue").val("");
+		}
 
 		// Initialize lookup map.
 		if (data.lookup)
@@ -412,9 +425,14 @@
 		}
 
 		// Change to a new type.
-		if (!confirm("Changing lookup map type will erase your current settings!\n\nDo you want to proceed?"))
+		var currentType = jqType.attr("__current");
+		var warnUser = (
+				currentType == "Static" && $J("#LookupMap").find("INPUT[value != '']").size() > 0 ||
+				currentType == "HttpResolver" && ($J("#LookupMap INPUT.__lookupEndpoint").val() != "http://" || $J("#LookupMap INPUT.__lookupExtractor").val() != "")
+			);
+		if (warnUser && !confirm("Changing lookup map type will erase your current settings!\n\nDo you want to proceed?"))
 		{
-			jqType.val(jqType.attr("__current"));
+			jqType.val(currentType);
 			e.stopImmediatePropagation();
 			return;
 		}
@@ -427,16 +445,22 @@
 			case "Static":
 			{
 				Main.appendLookupRecord(null);
-				$J("#AddLookupRecordCmd").show();
 				break;
 			}
 			case "HttpResolver":
 			{
 				Main.appendHttpLookupRecord(null);
-				$J("#AddLookupRecordCmd").hide();
 				break;
 			}
 		}
+	},
+
+	defaultBehaviourOnChange: function(e)
+	{
+		if ($J(this).val() == "Constant")
+			$J("#DefaultBehaviourConstantValue").removeAttr("disabled");
+		else
+			$J("#DefaultBehaviourConstantValue").attr("disabled", "disabled");
 	},
 
 	//
@@ -527,7 +551,7 @@
 			.append(
 				"<tr>" +
 				"	<td nowrap=\"nowrap\">HTTP Endpoint:</td>" +
-				"	<td align=\"right\"><input class=\"__lookupEndpoint\" type=\"text\" style=\"width: 606px;\"/></td>" +
+				"	<td align=\"right\"><input class=\"__lookupEndpoint\" type=\"text\" style=\"width: 604px;\"/></td>" +
 				"</tr>" +
 				"<tr>" +
 				"	<td></td>" +
@@ -540,7 +564,7 @@
 				"			<option value=\"Regex\">Regex</option>" +
 				"			<option value=\"XPath\">XPath</option>" +
 				"		</select>" +
-				"		<input class=\"__lookupExtractor\" type=\"text\" style=\"width: 502px;\"/></td>" +
+				"		<input class=\"__lookupExtractor\" type=\"text\" style=\"width: 500px;\"/></td>" +
 				"</tr>" +
 				"<tr>" +
 				"	<td></td>" +
@@ -630,11 +654,13 @@
 		var config		= $J("#ConfigSection").data("config");
 		var oldns		= config ? config.ns : null;
 		var type		= $J("#LookupType").val();
+		var defaultType	= $J("INPUT:radio[name = 'DefaultBehaviour']:checked").val();
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		cmdxml += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
 		cmdxml += "<ns" + (oldns && oldns != ns ? " rename=\"" + oldns.htmlEscape() + "\"" : "") + ">" + ns.htmlEscape() + "</ns>";
+		cmdxml += "<default type=\"" + defaultType + "\">" + (defaultType == "Constant" ? $J("#DefaultBehaviourConstantValue").val().htmlEscape() : "") + "</default>";
 		cmdxml += "<" + type + ">";
 
 		// Lookup configuration.

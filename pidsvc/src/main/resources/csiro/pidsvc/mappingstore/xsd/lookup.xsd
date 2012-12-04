@@ -19,6 +19,28 @@
 					</xs:simpleContent>
 				</xs:complexType>
 			</xs:element>
+			<xs:element name="default">
+				<xs:annotation>
+					<xs:documentation>Default behaviour for lookup map.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="type" use="required">
+								<xs:annotation>
+									<xs:documentation>Behaviour type.</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="Constant"/>
+										<xs:enumeration value="PassThrough"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
 			<xs:choice>
 				<xs:element name="Static" type="psvcl:StaticLookupType"/>
 				<xs:element name="HttpResolver" type="psvcl:HttpResolverLookupType"/>
