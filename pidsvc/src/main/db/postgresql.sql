@@ -19,6 +19,7 @@ DROP TABLE mapping CASCADE;
 DROP TABLE condition CASCADE;
 DROP TABLE action CASCADE;
 DROP FUNCTION delete_mapping_default_action() CASCADE;
+DROP FUNCTION set_original_mapping_path() CASCADE;
 
 -- Table: configuration
 -- DROP TABLE configuration;
@@ -76,6 +77,7 @@ CREATE TABLE mapping
 (
   mapping_id serial NOT NULL,
   mapping_path character varying(255) NOT NULL,
+  original_path character varying(255) NOT NULL,
   description text,
   creator character varying(255),
   type character varying(50) NOT NULL,
@@ -190,6 +192,30 @@ CREATE TRIGGER "TR_delete_mapping_default_action"
   FOR EACH ROW
   EXECUTE PROCEDURE delete_mapping_default_action();
 
+-- Function: set_original_mapping_path()
+CREATE OR REPLACE FUNCTION set_original_mapping_path()
+  RETURNS trigger AS
+$BODY$
+BEGIN
+	IF NEW.original_path IS NULL THEN
+		NEW.original_path := NEW.mapping_path;
+	END IF;
+	RETURN NEW;
+END;
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION set_original_mapping_path()
+  OWNER TO "pidsvc-admin";
+
+-- Trigger: TR_set_original_mapping_path on mapping
+-- DROP TRIGGER "TR_set_original_mapping_path" ON mapping;
+CREATE TRIGGER "TR_set_original_mapping_path"
+  BEFORE INSERT
+  ON mapping
+  FOR EACH ROW
+  EXECUTE PROCEDURE set_original_mapping_path();
+
 -- Table: lookup_type
 -- DROP TABLE lookup_type;
 CREATE TABLE lookup_type
@@ -268,7 +294,7 @@ ALTER TABLE lookup CLUSTER ON "IX_lookup_key";
 -- View: vw_latest_mapping
 -- DROP VIEW vw_latest_mapping;
 CREATE OR REPLACE VIEW vw_latest_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -280,7 +306,7 @@ ALTER TABLE vw_latest_mapping
 -- View: vw_active_mapping
 -- DROP VIEW vw_active_mapping;
 CREATE OR REPLACE VIEW vw_active_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -293,7 +319,7 @@ ALTER TABLE vw_active_mapping
 -- View: vw_deprecated_mapping
 -- DROP VIEW vw_deprecated_mapping;
 CREATE OR REPLACE VIEW vw_deprecated_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -306,7 +332,7 @@ ALTER TABLE vw_deprecated_mapping
 -- View: vw_full_mapping_activeonly
 -- DROP VIEW vw_full_mapping_activeonly;
 CREATE OR REPLACE VIEW vw_full_mapping_activeonly AS 
- SELECT a.mapping_id, a.mapping_path, a.description, a.creator, a.type, a.default_action_id, a.date_start, a.date_end
+ SELECT a.mapping_id, a.mapping_path, a.original_path, a.description, a.creator, a.type, a.default_action_id, a.date_start, a.date_end
    FROM mapping a
   WHERE (EXISTS ( SELECT 1
            FROM mapping b

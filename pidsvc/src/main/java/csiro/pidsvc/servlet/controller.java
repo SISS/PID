@@ -56,9 +56,6 @@ public class controller extends HttpServlet
 				String		mappingPath = request.getParameter("mapping_path");
 				String		serializedConfig = mappingId > 0 ? mgr.exportMapping(mappingId) : mgr.exportMapping(mappingPath, cmd.startsWith("full"));
 
-//				response.setContentType("application/xml");
-//				response.getWriter().write(serializedConfig);
-
 				returnAttachment(response, "mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
 			}
 			else if (cmd.matches("(?i)^(?:full|partial)_backup$"))
@@ -135,6 +132,8 @@ public class controller extends HttpServlet
 
 	protected void returnAttachment(HttpServletResponse response, String filename, String content) throws IOException
 	{
+//		response.setContentType("application/xml"); response.getWriter().write(content);
+
 		response.setContentType("application/zip");
 		response.setHeader("Content-Disposition", "attachment; filename=" + filename);
 		GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());

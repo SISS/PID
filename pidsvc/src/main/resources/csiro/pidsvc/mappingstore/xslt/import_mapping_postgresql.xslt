@@ -22,7 +22,7 @@
 				<xsl:variable name="path" select="backup/mapping[1]/path/text()"/>
 				<xsl:value-of select='concat("--OK: Successfully imported [[[", $path, "]]].")'/>
 				BEGIN;
-				DELETE FROM "mapping" WHERE mapping_path = E'<xsl:value-of select='replace(replace($path, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
+				DELETE FROM mapping WHERE mapping_path = E'<xsl:value-of select='replace(replace($path, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
 				<xsl:apply-templates select="backup/mapping[path/text() = $path]"/>
 				COMMIT;
 			</xsl:when>
@@ -38,7 +38,7 @@
 	</xsl:template>
 	<xsl:template name="cleanup">
 		<xsl:for-each select="distinct-values(/backup/mapping/path/text())">
-			DELETE FROM "mapping" WHERE mapping_path = E'<xsl:value-of select='replace(replace(., "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
+			DELETE FROM mapping WHERE mapping_path = E'<xsl:value-of select='replace(replace(., "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
 		</xsl:for-each>
 	</xsl:template>
 	<xsl:template match="mapping">
@@ -74,20 +74,25 @@
 			</xsl:choose>
 		</xsl:variable>
 
-		UPDATE "mapping" SET date_end = now() WHERE mapping_path = E'<xsl:value-of select="$path"/>' AND date_end IS NULL;
+		<xsl:if test="/mapping and path/@rename">
+			DELETE FROM mapping WHERE mapping_path = E'<xsl:value-of select="$path"/>';
+			UPDATE mapping SET mapping_path = E'<xsl:value-of select="$path"/>' WHERE mapping_path = E'<xsl:value-of select='replace(replace(path/@rename, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>';
+		</xsl:if>
+		UPDATE mapping SET date_end = now() WHERE mapping_path = E'<xsl:value-of select="$path"/>' AND date_end IS NULL;
 
 		<xsl:apply-templates select="action" mode="default_action"/>
 
 		<xsl:choose>
 			<xsl:when test="/backup">
-				<!-- Allow date_start/date_end restore for backups only. -->
-				INSERT INTO "mapping" (mapping_path, description, creator, "type", default_action_id<xsl:if test="@date_start">, date_start</xsl:if><xsl:if test="@date_end">, date_end</xsl:if>)
+				<!-- Allow original_path/date_start/date_end restore for backups only. -->
+				INSERT INTO mapping (mapping_path, description, creator, type, default_action_id<xsl:if test="@original_path">, original_path</xsl:if><xsl:if test="@date_start">, date_start</xsl:if><xsl:if test="@date_end">, date_end</xsl:if>)
 				VALUES (E'<xsl:value-of select="$path"/>', <xsl:value-of select="$description"/>, <xsl:value-of select="$creator"/>, '<xsl:value-of select="type"/>', <xsl:value-of select="$default_action_id"/>
+					<xsl:if test="@original_path">, '<xsl:value-of select="@original_path"/>'</xsl:if>
 					<xsl:if test="@date_start">, '<xsl:value-of select="@date_start"/>'</xsl:if>
 					<xsl:if test="@date_end">, '<xsl:value-of select="@date_end"/>'</xsl:if>);
 			</xsl:when>
 			<xsl:otherwise>
-				INSERT INTO "mapping" (mapping_path, description, creator, "type", default_action_id)
+				INSERT INTO mapping (mapping_path, description, creator, type, default_action_id)
 				VALUES (E'<xsl:value-of select="$path"/>', <xsl:value-of select="$description"/>, <xsl:value-of select="$creator"/>, '<xsl:value-of select="type"/>', <xsl:value-of select="$default_action_id"/>);
 			</xsl:otherwise>
 		</xsl:choose>
@@ -99,16 +104,16 @@
 		<xsl:apply-templates select="condition"/>
 	</xsl:template>
 	<xsl:template match="condition">
-		INSERT INTO "condition" (mapping_id, "type", "match")
+		INSERT INTO condition (mapping_id, type, match)
 		VALUES ((SELECT currval('"mapping_mapping_id_seq"'::regclass)), '<xsl:value-of select="type"/>', E'<xsl:value-of select='replace(replace(match, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>');
-		
+
 		<xsl:apply-templates select="actions/action"/>
 	</xsl:template>
 
 	<xsl:template match="action" mode="default_action">
 		<xsl:variable name="name">
 			<xsl:choose>
-				<xsl:when test="name">
+				<xsl:when test="name/text()">
 					<xsl:text>E'</xsl:text>
 					<xsl:value-of select='replace(replace(name, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 					<xsl:text>'</xsl:text>
@@ -118,7 +123,7 @@
 		</xsl:variable>
 		<xsl:variable name="value">
 			<xsl:choose>
-				<xsl:when test="value">
+				<xsl:when test="value/text()">
 					<xsl:text>E'</xsl:text>
 					<xsl:value-of select='replace(replace(value, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 					<xsl:text>'</xsl:text>
@@ -127,13 +132,13 @@
 			</xsl:choose>
 		</xsl:variable>
 
-		INSERT INTO "action" ("type", action_name, action_value)
+		INSERT INTO action (type, action_name, action_value)
 		VALUES ('<xsl:value-of select="type"/>', <xsl:value-of select="$name"/>, <xsl:value-of select="$value"/>);
 	</xsl:template>
 	<xsl:template match="action">
 		<xsl:variable name="name">
 			<xsl:choose>
-				<xsl:when test="name">
+				<xsl:when test="name/text()">
 					<xsl:text>E'</xsl:text>
 					<xsl:value-of select='replace(replace(name, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 					<xsl:text>'</xsl:text>
@@ -143,7 +148,7 @@
 		</xsl:variable>
 		<xsl:variable name="value">
 			<xsl:choose>
-				<xsl:when test="value">
+				<xsl:when test="value/text()">
 					<xsl:text>E'</xsl:text>
 					<xsl:value-of select='replace(replace(value, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 					<xsl:text>'</xsl:text>
@@ -152,7 +157,7 @@
 			</xsl:choose>
 		</xsl:variable>
 
-		INSERT INTO "action" ("type", condition_id, action_name, action_value)
+		INSERT INTO action (type, condition_id, action_name, action_value)
 		VALUES ('<xsl:value-of select="type"/>', (SELECT currval('"condition_condition_id_seq"'::regclass)), <xsl:value-of select="$name"/>, <xsl:value-of select="$value"/>);
 	</xsl:template>
 </xsl:stylesheet>

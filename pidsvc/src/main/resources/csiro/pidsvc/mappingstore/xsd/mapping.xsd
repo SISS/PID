@@ -3,10 +3,21 @@
 	<xs:element name="mapping" type="pidsvc:MappingType"/>
 	<xs:complexType name="MappingType">
 		<xs:sequence>
-			<xs:element name="path" type="xs:string">
+			<xs:element name="path">
 				<xs:annotation>
 					<xs:documentation>Mapping URI pattern.</xs:documentation>
 				</xs:annotation>
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="pidsvc:NonEmptyString">
+							<xs:attribute name="rename" type="pidsvc:NonEmptyString" use="optional">
+								<xs:annotation>
+									<xs:documentation>Old mapping URI pattern (if you need to rename an existing mapping).</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
 			</xs:element>
 			<xs:element name="type">
 				<xs:annotation>
@@ -129,4 +140,9 @@
 			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
+	<xs:simpleType name="NonEmptyString">
+		<xs:restriction base="xs:string">
+			<xs:pattern value=".*\S+.*"/>
+		</xs:restriction>
+	</xs:simpleType>
 </xs:schema>

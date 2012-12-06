@@ -536,7 +536,7 @@ public class Manager
 		int					defaultActionId;
 		List				actions;
 		Timestamp			timeStamp;
-		String				buf;
+		String				buf, path;
 
 		try
 		{
@@ -556,7 +556,10 @@ public class Manager
 			{
 				for (rs = pst.getResultSet(); rs.next();)
 				{
+					path = rs.getString(mappingIdentifier instanceof Integer || !fullBackup ? "original_path" : "mapping_path");
+					
 					ret += "<mapping";
+
 					// Time stamps are only applicable for full backups and deprecated records.
 					if (fullBackup || !fullBackup && preserveDatesForDeprecatedMappings && rs.getTimestamp("date_end") != null)
 					{
@@ -567,9 +570,14 @@ public class Manager
 						if (timeStamp != null)
 							ret += " date_end=\"" + timeStamp.toString().replace(" ", "T") + "Z\"";
 					}
-					ret += ">";
 
-					ret += "<path>" + StringEscapeUtils.escapeXml(rs.getString("mapping_path")) + "</path>";
+					// Preserve original mapping path for full backups.
+					if (fullBackup)
+						ret += " original_path=\"" + rs.getString("original_path") + "\"";
+
+					ret += ">";	// mapping
+
+					ret += "<path>" + StringEscapeUtils.escapeXml(path) + "</path>";
 					ret += "<type>" + rs.getString("type") + "</type>";
 
 					buf = rs.getString("description");

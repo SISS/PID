@@ -294,7 +294,7 @@
 		if (!confirm("Are you sure wish to delete \"" + config.ns + "\" lookup map?"))
 			return;
 
-		// Delete existing mapping.
+		// Delete existing record.
 		this.blockUI();
 		$J.ajax("controller?cmd=delete_lookup&ns=" + encodeURIComponent(config.ns), {
 				type: "POST",
