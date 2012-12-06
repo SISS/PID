@@ -6,9 +6,9 @@ import csiro.pidsvc.helper.URI;
 
 public class ConditionQueryString extends AbstractConditionCollectionSearch
 {
-	public ConditionQueryString(URI uri, HttpServletRequest request, int id, String match)
+	public ConditionQueryString(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
-		super(uri, request, id, match);
+		super(uri, request, id, match, matchAuxiliaryData);
 	}
 
 	@Override

@@ -322,10 +322,12 @@ INSERT INTO "configuration" ("name", "value") VALUES ('DispatcherTracingMode', '
 INSERT INTO "mapping_type" ("type") VALUES ('1:1');
 INSERT INTO "mapping_type" ("type") VALUES ('Regex');
 
+INSERT INTO "condition_type" ("type") VALUES ('Comparator');
+INSERT INTO "condition_type" ("type") VALUES ('ComparatorI');
 INSERT INTO "condition_type" ("type") VALUES ('ContentType');
 INSERT INTO "condition_type" ("type") VALUES ('Extension');
-INSERT INTO "condition_type" ("type") VALUES ('QueryString');
 INSERT INTO "condition_type" ("type") VALUES ('HttpHeader');
+INSERT INTO "condition_type" ("type") VALUES ('QueryString');
 
 INSERT INTO "action_type" ("type", "description") VALUES ('301', 'Moved permanently to a target URL');
 INSERT INTO "action_type" ("type", "description") VALUES ('302', 'Simple redirection to a target URL');

@@ -59,7 +59,7 @@ public class dispatcher extends HttpServlet
 
 		try
 		{
-			uri = new URI(URLDecoder.decode(request.getQueryString(), "UTF-8").replaceAll("^([^&]+)&(.+)?$", "$1?$2"));
+			uri = new URI(URLDecoder.decode(request.getQueryString().replace("%26", "%2526"), "UTF-8").replaceAll("^([^&]+)&(.+)?$", "$1?$2"));
 			mgr = new Manager();
 		}
 		catch (URISyntaxException ex)
@@ -110,16 +110,10 @@ public class dispatcher extends HttpServlet
 			if (!matchResult.success())
 			{
 				if (tracer != null)
-					tracer.trace("Find regex match: " + uri.getPathNoExtension() + (uri.getExtension() == null ? "" : " [." + uri.getExtension() + "]"));
-				matchResult = mgr.findRegexMatch(uri, request);
-				if (!matchResult.success() && uri != uriNoExtension)
-				{
-					if (tracer != null)
-						tracer.trace("Find regex match: " + uriNoExtension.getPathNoExtension());
-					matchResult = mgr.findRegexMatch(uriNoExtension, request);
-					if (matchResult.success())
-						uri = uriNoExtension;
-				}
+					tracer.trace("Find regex match: " + uriNoExtension.getPathNoExtension());
+				matchResult = mgr.findRegexMatch(uriNoExtension, request);
+				if (matchResult.success())
+					uri = uriNoExtension;
 			}
 
 			// Tracing information.
