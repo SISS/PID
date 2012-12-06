@@ -61,6 +61,8 @@ public class info extends HttpServlet
 
 				response.getWriter().write(mappingId > 0 ? mgr.getPidConfig(mappingId) : mgr.getPidConfig(mappingPath));
 			}
+			else if (cmd.equalsIgnoreCase("check_mapping_path_exists"))
+				response.getWriter().write(mgr.checkMappingPathExists(request.getParameter("mapping_path")));
 			else if (cmd.equalsIgnoreCase("get_settings"))
 				response.getWriter().write(mgr.getSettings());
 			else if (cmd.equalsIgnoreCase("search_lookup"))

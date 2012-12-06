@@ -26,6 +26,7 @@
 				.keypress(this.searchOnKeyPress);
 		$J("#Pager input:first").keypress(this.pagerOnKeyPress);
 		$J(document).keydown(this.globalDocumentOnKeyDown);
+		$J("#MappingPath").change(this.mappingPathOnChange);
 
 		$J("#Tip > div").css("opacity", .7);
 		this.appendAction($J("#DefaultAction"), null);
@@ -182,12 +183,12 @@
 		}
 		else
 		{
-			$J("#ConfigSection input:not(#MappingPath), #ConfigSection select:not(#MappingType)").removeAttr("disabled");
+			$J("#ConfigSection input, #ConfigSection select").removeAttr("disabled");
 			$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 			$J("*.__supersededLock").show();
 
 			// Open URI link is only visible for 1-to-1 mappings.
-			if ($J("#MappingType").val() != "1:1" || $J("#MappingPath").is(":enabled"))
+			if ($J("#MappingType").val() != "1:1" || !$J("#ConfigSection").data("config") || $J("#ChangeHistory").attr("isDeprecated") == "1")
 				$J("#QRCode").hide();
 			
 			// Ensure condition section title is visible.
@@ -391,18 +392,20 @@
 	{
 		if (Main.isEditingBlocked())
 			return;
-		var mappingPath = $J("#MappingPath").val().trim();
-		if (!mappingPath || $J("#ChangeHistory").attr("isDeprecated") == "1")
-			return this.create();
 
-		if (!confirm("Are you sure wish to delete this mapping?"))
+		var config		= $J("#ConfigSection").data("config");
+		var mappingPath	= $J("#MappingPath").val().trim();
+
+		if ((!config && !mappingPath) || $J("#ChangeHistory").attr("isDeprecated") == "1")
+			return this.create();
+		if (!confirm("Are you sure wish to delete \"" + config.mapping_path + "\" mapping?"))
 			return;
 
-		if ($J("#MappingPath").attr("disabled"))
+		if (config)
 		{
-			// Delete existing mapping.
+			// Delete existing record.
 			this.blockUI();
-			$J.ajax("controller?cmd=delete_mapping&mapping_path=" + encodeURIComponent(mappingPath), {
+			$J.ajax("controller?cmd=delete_mapping&mapping_path=" + encodeURIComponent(config.mapping_path), {
 					type: "POST",
 					cache: false
 				})
@@ -429,9 +432,13 @@
 
 		// If mappingId === 0 then get the latest configuration for the current mapping.
 		if (mappingId === 0)
-			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent($J("#MappingPath").val().trim()), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
+		{
+			var path = $J("#MappingPath").val().trim();
+			$J("#MappingPath").val(path);
+			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(path), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+		}
 		else
-			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.renderGenericException);
+			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.displayGenericException);
 	},
 
 	getConfigByMappingPath: function(mappingPath)
@@ -439,19 +446,22 @@
 		$J("#Tip").hide();
 		Main.openTab(1);
 		Main.blockUI($J("#ConfigSection"));
-		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
+		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
 	},
 
 	renderConfig: function(data)
 	{
+		// Save last loaded configuration in memory.
+		$J("#ConfigSection").data("config", data);
+
 		// Reset configuration.
 		if (!data || $J.isEmptyObject(data))
 		{
 			if (data != null && $J.isEmptyObject(data))
 				alert("Mapping is not found!");
 
-			$J("#MappingPath").val("").removeAttr("mapping_id").removeAttr("disabled");
-			$J("#MappingType").val("1:1").removeAttr("disabled");
+			$J("#MappingPath").val("");
+			$J("#MappingType").val("1:1");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val("");
 			$J("#QRCode").hide();
@@ -475,18 +485,20 @@
 		}
 
 		// Show configuration.
-		$J("#MappingPath").val(data.mapping_path).attr("mapping_id", data.mapping_id).attr("disabled", "disabled");
-		$J("#MappingType").val(data.type).attr("disabled", "disabled");
+		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
+		$J("#MappingType").val(data.type);
 		$J("#MappingDescription").val(data.description);
 		$J("#MappingCreator").val(data.creator);
 
 		if (data.type == "1:1")
 		{
+			var qruri = location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path);
 			$J("#QRCode")
-				.attr("src", "qrcode?uri=" + encodeURIComponent(location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path)) + "&size=120")
+				.attr("src", "qrcode?uri=" + encodeURIComponent(qruri) + "&size=120")
+				.attr("title", "Open in a new window\n" + qruri)
 				.show()
 				.parent()
-					.attr("href", data.mapping_path);
+					.attr("href", qruri);
 		}
 
 		$J("#DefaultAction")
@@ -522,7 +534,11 @@
 		$J("#ChangeHistory").attr("isDeprecated", data.history[0].date_end != null ? 1 : 0).show().find("ul").empty();
 		$J(data.history).each(function() {
 			$J("#ChangeHistory ul")
-				.append("<li><a href='#' mapping_id='" + this.mapping_id + "'>" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a></li>");
+				.append(
+					"<li><a href='#' mapping_id='" + this.mapping_id + "'>" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a>" +
+						(this.creator ? "<br/><span class=\"tip\">by " + this.creator + "</span>" : "") +
+					"</li>"
+				);
 		});
 		$J("#ChangeHistory a").click(Main.getConfig);
 
@@ -531,6 +547,21 @@
 
 		Main.blockSaving(true);
 		Main.unblockUI();
+	},
+
+	mappingPathOnChange: function()
+	{
+		var jq				= $J("#MappingPath");
+		var config			= $J("#ConfigSection").data("config");
+		var originalPath	= config ? config.mapping_path : null;
+		var newPath			= jq.val().trim();
+
+		if (originalPath == null)
+			return;
+		originalPath = originalPath.trim();
+		jq.val(newPath);
+		if (originalPath != "" && originalPath != newPath && !confirm("You have changed the URI pattern. It may override another mapping or cause some URIs to work incorrectly.\n\nDo you wish to continue?"))
+			jq.val(originalPath);
 	},
 
 	//
@@ -839,19 +870,38 @@
 	///////////////////////////////////////////////////////////////////////////
 	//	Saving.
 
-	save: function()
+	presaveCheck: function(data)
+	{
+		Main.unblockUI();
+		if (data && data.exists && !confirm("The mapping \"" + data.mapping_path + "\" already exists.\n\nDo you wish to continue and overwrite existing mapping?"))
+			return;
+		Main.save(true);
+	},
+
+	save: function(prechecked)
 	{
 		var path = $J("#MappingPath").val();
 		if (!path || Main.isSavingBlocked())
 			return;
 
-		var description = $J("#MappingDescription").val();
-		var creator = $J("#MappingCreator").val();
+		var config		= $J("#ConfigSection").data("config");
+		var oldpath		= config ? config.mapping_path : null;
+
+		// Check and warn the user if necessary if he's just about to rewrite existing mapping.
+		if (!prechecked && oldpath && oldpath != path)
+		{
+			Main.blockUI();
+			$J.getJSON("info?cmd=check_mapping_path_exists&mapping_path=" + encodeURIComponent(path.htmlEscape().trim()), Main.presaveCheck).fail(ExceptionHandler.displayGenericException);
+			return;
+		}
+
+		var description	= $J("#MappingDescription").val();
+		var creator		= $J("#MappingCreator").val();
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
-		cmdxml += "<path>" + path.htmlEscape().trim() + "</path>";
+		cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
 		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
 		if (description)
 			cmdxml += "<description>" + description.htmlEscape() + "</description>";
@@ -912,7 +962,7 @@
 		}
 		cmdxml += "</mapping>";
 
-//		alert(cmdxml);
+//		alert(cmdxml); return;
 //		$J(window.open().document.body).html(cmdxml.htmlEscape());
 
 		// Submit request.
@@ -937,14 +987,15 @@
 
 	export: function(key, options)
 	{
-		if (!Main.isSavingBlocked())
+		var config = $J("#ConfigSection").data("config");
+		if (!Main.isSavingBlocked() || !config)
 		{
 			alert("You must save the mapping before exporting!");
 			return;
 		}
 		if (key == "full_export")
-			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent($J("#MappingPath").val().trim());
+			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent(config.mapping_path.trim());
 		else
-			location.href = "controller?cmd=partial_export&mapping_id=" + $J("#MappingPath").attr("mapping_id");
+			location.href = "controller?cmd=partial_export&mapping_id=" + config.mapping_id;
 	}
 });

@@ -37,6 +37,11 @@
 						<xs:documentation>Date when the mapping was tomb-stoned.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
+				<xs:attribute name="original_path" type="pidsvc:NonEmptyString" use="optional">
+					<xs:annotation>
+						<xs:documentation>Original mapping URI pattern.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>

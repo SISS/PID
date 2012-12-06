@@ -138,7 +138,7 @@ public class ManagerJson extends Manager
 	public String getPidConfig(String mappingPath) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
 			"FROM vw_latest_mapping m\n" +
 			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
 			"WHERE mapping_path = ?";
@@ -148,8 +148,8 @@ public class ManagerJson extends Manager
 	public String getPidConfig(int mappingId) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
-			"FROM \"mapping\" m\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"FROM mapping m\n" +
 			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
 			"WHERE mapping_id = ?";
 		return getPidConfigImpl(query, mappingId);
@@ -187,6 +187,7 @@ public class ManagerJson extends Manager
 					ret +=
 						JSONObject.toString("mapping_id", rsMapping.getInt("mapping_id")) + ", " +
 						JSONObject.toString("mapping_path", rsMapping.getString("mapping_path")) + ", " +
+						JSONObject.toString("original_path", rsMapping.getString("original_path")) + ", " +
 						JSONObject.toString("type", rsMapping.getString("type")) + ", " +
 						JSONObject.toString("description", rsMapping.getString("description")) + ", " +
 						JSONObject.toString("creator", rsMapping.getString("creator")) + ", " +
@@ -206,7 +207,7 @@ public class ManagerJson extends Manager
 					ret += ",";
 
 					// Serialise change history.
-					pst = _connection.prepareStatement("SELECT mapping_id, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM mapping WHERE mapping_path = ? ORDER BY mapping.date_start DESC");
+					pst = _connection.prepareStatement("SELECT mapping_id, creator, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM mapping WHERE mapping_path = ? ORDER BY mapping.date_start DESC");
 					pst.setString(1, rsMapping.getString("mapping_path"));
 
 					ret += "\"history\": [";
@@ -218,9 +219,10 @@ public class ManagerJson extends Manager
 								ret += ",";
 							ret +=
 								"{" +
-									JSONObject.toString("mapping_id", rsHistory.getInt(1)) + ", " +
-									JSONObject.toString("date_start", rsHistory.getString(2)) + ", " +
-									JSONObject.toString("date_end", rsHistory.getString(3)) +
+									JSONObject.toString("mapping_id", rsHistory.getInt("mapping_id")) + ", " +
+									JSONObject.toString("creator", rsHistory.getString("creator")) + ", " +
+									JSONObject.toString("date_start", rsHistory.getString("date_start")) + ", " +
+									JSONObject.toString("date_end", rsHistory.getString("date_end")) +
 								"}";
 						}
 					}
@@ -286,6 +288,39 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
+	public String checkMappingPathExists(String mappingPath) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		boolean				exists = false;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT 1 FROM mapping WHERE mapping_path = ?");
+			pst.setString(1, mappingPath);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				exists = rs.next();
+			}
+		}
+		catch (Exception e)
+		{
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return "{" +
+				JSONObject.toString("exists", exists) + ", " +
+				JSONObject.toString("mapping_path", mappingPath) +
+			"}";
+	}
+	
 	public String getLookups(int page, String namespace) throws SQLException
 	{
 		PreparedStatement	pst = null;
