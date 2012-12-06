@@ -6,9 +6,9 @@ import csiro.pidsvc.helper.URI;
 
 public class ConditionHttpHeader extends AbstractConditionCollectionSearch
 {
-	public ConditionHttpHeader(URI uri, HttpServletRequest request, int id, String match)
+	public ConditionHttpHeader(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
-		super(uri, request, id, match);
+		super(uri, request, id, match, matchAuxiliaryData);
 	}
 
 	@Override

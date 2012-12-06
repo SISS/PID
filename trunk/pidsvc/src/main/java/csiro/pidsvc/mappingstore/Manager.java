@@ -279,7 +279,7 @@ public class Manager
 		ResultSet			rs = null;
 		int					defaultActionId = MappingMatchResults.NULL;
 		AbstractCondition	retCondition = null;
-		Object				retAuxiliaryData = null;
+		Object				matchAuxiliaryData = null;
 
 		try
 		{
@@ -298,10 +298,10 @@ public class Manager
 						defaultActionId = MappingMatchResults.NULL;
 
 					// Set auxiliary data to "true" to flag that the URI has been found.
-					retAuxiliaryData = true;
+					matchAuxiliaryData = true;
 
 					// Find matching condition.
-					retCondition = getCondition(rs.getInt(1), uri, request);
+					retCondition = getCondition(rs.getInt(1), uri, request, matchAuxiliaryData);
 				}
 			}
 		}
@@ -312,7 +312,7 @@ public class Manager
 			if (pst != null)
 				pst.close();
 		}
-		return new MappingMatchResults(defaultActionId, retCondition, retAuxiliaryData);		
+		return new MappingMatchResults(defaultActionId, retCondition, matchAuxiliaryData);		
 	}
 
 	public MappingMatchResults findRegexMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
@@ -321,7 +321,7 @@ public class Manager
 		ResultSet 			rs = null;
 		int					defaultActionId = MappingMatchResults.NULL;
 		AbstractCondition	retCondition = null;
-		Object				retAuxiliaryData = null;
+		Object				matchAuxiliaryData = null;
 
 		try
 		{
@@ -342,10 +342,10 @@ public class Manager
 							defaultActionId = MappingMatchResults.NULL;
 
 						// Save auxiliary data.
-						retAuxiliaryData = re;
+						matchAuxiliaryData = re;
 						
 						// Find matching condition.
-						retCondition = getCondition(rs.getInt(1), uri, request);
+						retCondition = getCondition(rs.getInt(1), uri, request, matchAuxiliaryData);
 						break;
 					}
 				}
@@ -359,7 +359,7 @@ public class Manager
 				pst.close();
 		}
 		
-		return new MappingMatchResults(defaultActionId, retCondition, retAuxiliaryData);
+		return new MappingMatchResults(defaultActionId, retCondition, matchAuxiliaryData);
 	}
 	
 	protected Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditions(int mappingId) throws SQLException
@@ -394,7 +394,7 @@ public class Manager
 		return null;
 	}
 	
-	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request) throws SQLException
+	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request, Object matchAuxiliaryData) throws SQLException
 	{
 		// Get list of conditions.
 		Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(mappingId);
@@ -424,8 +424,8 @@ public class Manager
 						if (dctr.Type.equalsIgnoreCase("ContentType"))
 						{
 							Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.condition.Condition" + dctr.Type);
-							Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class);
-							prioritizedConditions.add((ConditionContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match));
+							Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class, Object.class);
+							prioritizedConditions.add((ConditionContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match, matchAuxiliaryData));
 						}
 					}
 	
@@ -440,9 +440,9 @@ public class Manager
 
 				// Process all other conditions.
 				Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.condition.Condition" + descriptor.Type);
-				Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class);
+				Constructor<?> ctor = impl.getDeclaredConstructor(URI.class, HttpServletRequest.class, int.class, String.class, Object.class);
 
-				AbstractCondition condition = (AbstractCondition)ctor.newInstance(uri, request, descriptor.ID, descriptor.Match);
+				AbstractCondition condition = (AbstractCondition)ctor.newInstance(uri, request, descriptor.ID, descriptor.Match, matchAuxiliaryData);
 				if (condition.matches())
 					return condition;
 			}

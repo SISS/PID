@@ -9,9 +9,9 @@ import csiro.pidsvc.helper.URI;
 
 public class ConditionExtension extends AbstractCondition
 {
-	public ConditionExtension(URI uri, HttpServletRequest request, int id, String match)
+	public ConditionExtension(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
-		super(uri, request, id, match);
+		super(uri, request, id, match, matchAuxiliaryData);
 	}
 
 	@Override

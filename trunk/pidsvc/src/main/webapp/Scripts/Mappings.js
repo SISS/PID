@@ -595,6 +595,8 @@
 				"</td>" +
 				"		<td class='__conditionType'>" +
 				"			<select class='input' style='width: 200px;'>" +
+				"				<option value='Comparator'>Comparator</option>" +
+				"				<option value='ComparatorI'>Comparator (case-insensitive)</option>" +
 				"				<option value='ContentType'>ContentType</option>" +
 				"				<option value='Extension'>Extension</option>" +
 				"				<option value='HttpHeader'>HttpHeader</option>" +

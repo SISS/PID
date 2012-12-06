@@ -10,9 +10,9 @@ import csiro.pidsvc.helper.URI;
 public abstract class AbstractConditionCollectionSearch extends AbstractCondition
 	implements ICollectionSearch
 {
-	public AbstractConditionCollectionSearch(URI uri, HttpServletRequest request, int id, String match)
+	public AbstractConditionCollectionSearch(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
-		super(uri, request, id, match);
+		super(uri, request, id, match, matchAuxiliaryData);
 	}
 
 	@Override
@@ -20,7 +20,7 @@ public abstract class AbstractConditionCollectionSearch extends AbstractConditio
 	{
 		try
 		{
-			String[]	nameValuePairs = this.Match.split("&");
+			String[]	nameValuePairs = this.Match.split("(?<!\\\\)&");
 			String[]	nameValuePair;
 			String		paramName, paramValue, paramPattern;
 			Boolean		optionalParam;
@@ -31,7 +31,7 @@ public abstract class AbstractConditionCollectionSearch extends AbstractConditio
 
 			for (String pair : nameValuePairs)
 			{
-				nameValuePair	= pair.split("=", 2);
+				nameValuePair	= pair.replace("\\&", "&").split("=", 2);
 				paramName		= nameValuePair[0];
 				paramPattern	= nameValuePair.length > 1 ? nameValuePair[1] : ".*"; // If parameter pattern isn't present then check for parameter presence.
 

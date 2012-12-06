@@ -12,9 +12,9 @@ import csiro.pidsvc.mappingstore.condition.helper.PrioritizedQueue;
 
 public class ConditionContentType extends AbstractCondition
 {
-	public ConditionContentType(URI uri, HttpServletRequest request, int id, String match)
+	public ConditionContentType(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
-		super(uri, request, id, match);
+		super(uri, request, id, match, matchAuxiliaryData);
 	}
 
 	protected String _acceptHeader = null;
