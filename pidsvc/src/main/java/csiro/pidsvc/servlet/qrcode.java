@@ -37,6 +37,7 @@ public class qrcode extends HttpServlet
 	{
 		response.setDateHeader("Expires", 0);
 		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
+		response.addHeader("Content-Disposition", "attachment; filename=qrcode.png");
 		response.setContentType("image/png");
 
 		String uri = request.getParameter("uri");
@@ -44,6 +45,8 @@ public class qrcode extends HttpServlet
 			return;
 
 		int size = Literals.toInt(request.getParameter("size"), 100);
+		if (size > 1200)
+			size = 1200;
 
 		// Get a byte matrix for the data.
 		BitMatrix matrix = null;
