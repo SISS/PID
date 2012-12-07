@@ -50,12 +50,18 @@ public class FormalGrammar
 			if (m.group(1).equalsIgnoreCase("RAW"))
 				// Raw function call just passes the argument through without URL encoding.
 				ret = ret.substring(0, m.start()) + m.group(2) + ret.substring(m.end());
-			else if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
-				// Non-nested function call.
-				ret = ret.substring(0, m.start()) + URLEncoder.encode(invokeFunction(m.group(1), m.group(2)), "UTF-8") + ret.substring(m.end());
 			else
-				// Nested function call.
-				ret = ret.substring(0, m.start()) + invokeFunction(m.group(1), m.group(2)) + ret.substring(m.end());
+			{
+				String fnRet = invokeFunction(m.group(1), m.group(2));
+				if (fnRet == null)
+					fnRet = "";
+				if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
+					// Non-nested function call.
+					ret = ret.substring(0, m.start()) + URLEncoder.encode(fnRet, "UTF-8") + ret.substring(m.end());
+				else
+					// Nested function call.
+					ret = ret.substring(0, m.start()) + fnRet + ret.substring(m.end());
+			}
 			_log.add(ret);
 		}
 		return ret;
