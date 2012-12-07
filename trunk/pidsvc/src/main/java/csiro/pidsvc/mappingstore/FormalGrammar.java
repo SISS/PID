@@ -38,36 +38,47 @@ public class FormalGrammar
 		_log.clear();
 		_log.add(expression);
 
+		String lastState = expression;
+
 		// Bring all place-holders and function calls to the same syntax.
 		String ret = expression.replaceAll("\\$(\\d+)", "\\${URI:$1}");
-		if (ret != expression)
-			_log.add(ret);
+		if (ret != lastState)
+			_log.add(lastState = ret);
+
+		// Escape characters (enclose \ and & characters by a RAW function call).
+		ret = ret.replaceAll("\\\\([\\\\\\$])", "\\${RAW:$1}");
+		ret = ret.replace("${RAW:\\}", "${RAW:\\\\}");
+		if (ret != lastState)
+			_log.add(lastState = ret);
 
 		// Process string functions.
-		final Pattern reFunction = Pattern.compile("\\$\\{(\\w+)(?::([^$]*?))?\\}");
+		final Pattern reFunction = Pattern.compile("(?<!\\\\)\\$\\{((?:(?!RAW)\\w)+)(?::([^$]*?))?\\}", Pattern.CASE_INSENSITIVE);
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
-			if (m.group(1).equalsIgnoreCase("RAW"))
-				// Raw function call just passes the argument through without URL encoding.
-				ret = ret.substring(0, m.start()) + m.group(2) + ret.substring(m.end());
+			String fnRet = invokeFunction(m.group(1), m.group(2));
+			if (fnRet == null)
+				fnRet = "";
+			if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
+				// Non-nested function call.
+				ret = ret.substring(0, m.start()) + URLEncoder.encode(fnRet, "UTF-8") + ret.substring(m.end());
 			else
-			{
-				String fnRet = invokeFunction(m.group(1), m.group(2));
-				if (fnRet == null)
-					fnRet = "";
-				if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
-					// Non-nested function call.
-					ret = ret.substring(0, m.start()) + URLEncoder.encode(fnRet, "UTF-8") + ret.substring(m.end());
-				else
-					// Nested function call.
-					ret = ret.substring(0, m.start()) + fnRet + ret.substring(m.end());
-			}
+				// Nested function call.
+				ret = ret.substring(0, m.start()) + fnRet + ret.substring(m.end());
+			_log.add(ret);
+		}
+
+		// Process RAW function separately. 
+		final Pattern reFnRaw = Pattern.compile("\\$\\{RAW:(.+?)(?:(?<!(?<!\\\\)\\\\)\\})", Pattern.CASE_INSENSITIVE);
+		for (Matcher m = reFnRaw.matcher(ret); m.find(); m = reFnRaw.matcher(ret))
+		{
+			// Unescape \\, \{ and \}
+			ret = ret.substring(0, m.start()) + m.group(1).replaceAll("\\\\([\\\\{\\}])", "$1") + ret.substring(m.end());
 			_log.add(ret);
 		}
 		return ret;
 	}
 
-	public String invokeFunction(String name, String param)
+	protected String invokeFunction(String name, String param)
 	{
 		Manager mgr = null;
 		try
@@ -76,13 +87,13 @@ public class FormalGrammar
 			{
 				// Regex from URI matching.
 				if (param == null || param.isEmpty() || param.equals("0"))
-					return _uri.getOriginalUriAsString();
+					return URLDecoder.decode(_uri.getOriginalUriAsString(), "UTF-8");
 				else if (_matchAuxiliaryData instanceof Pattern)
 				{
 					int groupIndex = Integer.parseInt(param);
 					Matcher m = ((Pattern)_matchAuxiliaryData).matcher(_uri.getPathNoExtension());
 					if (m.find() && groupIndex <= m.groupCount())
-						return m.group(groupIndex);
+						return URLDecoder.decode(m.group(groupIndex), "UTF-8");
 				}
 			}
 			else if (name.equalsIgnoreCase("C"))
@@ -222,6 +233,6 @@ public class FormalGrammar
 			if (mgr != null)
 				mgr.close();
 		}
-		return "";
+		return null;
 	}
 }

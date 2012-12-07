@@ -59,12 +59,18 @@ public class dispatcher extends HttpServlet
 
 		try
 		{
-			uri = new URI(URLDecoder.decode(request.getQueryString().replace("%26", "%2526"), "UTF-8").replaceAll("^([^&]+)&(.+)?$", "$1?$2"));
+			String preparedUri = request.getQueryString();
+			preparedUri = preparedUri.replace("%26", "%2526"); // Double escape &.
+			preparedUri = URLDecoder.decode(preparedUri, "UTF-8");
+			preparedUri = preparedUri.replace(" ", "+");
+			preparedUri = preparedUri.replaceAll("^([^&]+)&(.+)?$", "$1?$2"); // Replace first & with ? marking the start of the query string.
+
+			uri = new URI(preparedUri);
 			mgr = new Manager();
 		}
 		catch (URISyntaxException ex)
 		{
-			response.setStatus(404);
+			Http.returnErrorCode(response, HttpServletResponse.SC_NOT_FOUND, ex);
 			return;
 		}
 		catch (Exception ex)
