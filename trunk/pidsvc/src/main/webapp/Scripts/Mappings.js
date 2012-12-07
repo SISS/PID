@@ -39,12 +39,25 @@
 
 		// Initialise context menus.
 		$J.contextMenu({
-			selector: '#cmdExport', 
+			selector: '#cmdExport',
 			trigger: 'left',
 			callback: Main.export,
 			items: {
 				"partial_export": { name: "Partial export (current only)", icon: "export", accesskey: "p" },
 				"full_export": { name: "<nobr>Full export (preserves history) &nbsp;</nobr>", icon: "export", accesskey: "f" },
+			}
+		});
+		$J.contextMenu({
+			selector: '#cmdQrCode',
+			trigger: 'left',
+			callback: Main.publishQrCode,
+			items: {
+				"100": { name: "100 px", icon: "barcode" },
+				"120": { name: "120 px", icon: "barcode" },
+				"150": { name: "150 px", icon: "barcode" },
+				"200": { name: "200 px", icon: "barcode" },
+				"300": { name: "300 px", icon: "barcode" },
+				"custom_size": { name: "Custom size", icon: "barcode" }
 			}
 		});
 
@@ -494,6 +507,7 @@
 		{
 			var qruri = location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path);
 			$J("#QRCode")
+				.data("uri", qruri)
 				.attr("src", "qrcode?uri=" + encodeURIComponent(qruri) + "&size=120")
 				.attr("title", "Open in a new window\n" + qruri)
 				.show()
@@ -997,5 +1011,25 @@
 			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent(config.mapping_path.trim());
 		else
 			location.href = "controller?cmd=partial_export&mapping_id=" + config.mapping_id;
+	},
+
+	///////////////////////////////////////////////////////////////////////////
+	//	QR Codes.
+
+	publishQrCode: function(key, options)
+	{
+		var size = key.toInt(0);
+		if (size === 0)
+		{
+			size = prompt("Enter the size of QR Code you wish to get (in pixels):", 100);
+			if (!size)
+				return;
+			if ((size = size.toInt(0)) === 0)
+			{
+				alert("You entered a wrong number!");
+				return;
+			}
+		}
+		location.href = "qrcode?uri=" + encodeURIComponent($J("#QRCode").data("uri")) + "&size=" + size;
 	}
 });

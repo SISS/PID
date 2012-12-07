@@ -98,6 +98,7 @@
 .context-menu-item.icon-quit { background-image: url(images/door.png); }
 
 .context-menu-item.icon-export { background-image: url(../../../Images/card-export.png); }
+.context-menu-item.icon-barcode { background-image: url(../../../Images/barcode-2d.png); }
 
 /* vertically align inside labels */
 .context-menu-input > label > * { vertical-align: top; }
