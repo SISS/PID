@@ -52,6 +52,7 @@
 			trigger: 'left',
 			callback: Main.publishQrCode,
 			items: {
+				"1": { name: "Nano", icon: "barcode" },
 				"100": { name: "100 px", icon: "barcode" },
 				"120": { name: "120 px", icon: "barcode" },
 				"150": { name: "150 px", icon: "barcode" },
@@ -201,8 +202,10 @@
 			$J("*.__supersededLock").show();
 
 			// Open URI link is only visible for 1-to-1 mappings.
-			if ($J("#MappingType").val() != "1:1" || !$J("#ConfigSection").data("config") || $J("#ChangeHistory").attr("isDeprecated") == "1")
-				$J("#QRCode").hide();
+			if ($J("#MappingType").val() != "1:1")
+				$J("#cmdQrCode").hide();
+			else if (!$J("#ConfigSection").data("config") || $J("#ChangeHistory").attr("isDeprecated") == "1")
+				$J("#QRCodeSection, #cmdQrCode").hide();
 			
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
@@ -477,7 +480,7 @@
 			$J("#MappingType").val("1:1");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val("");
-			$J("#QRCode").hide();
+			$J("#QRCodeSection, #cmdQrCode").hide();
 
 			$J("#DefaultAction")
 				.find("td.__actionType > select")
@@ -505,15 +508,26 @@
 
 		if (data.type == "1:1")
 		{
-			var qruri = location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path);
+			var qruri = data.mapping_path + (data.mapping_path.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr";
 			$J("#QRCode")
 				.data("uri", qruri)
-				.attr("src", "qrcode?uri=" + encodeURIComponent(qruri) + "&size=120")
-				.attr("title", "Open in a new window\n" + qruri)
-				.show()
+				.attr("src", qruri + "=120")
+				.attr("title", "Open in a new window\n" + location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path))
 				.parent()
-					.attr("href", qruri);
+					.attr("href", data.mapping_path);
 		}
+		else
+		{
+			$J("#QRCode")
+				.data("uri", null)
+				.attr("src", "Images/emptyqr.png")
+				.attr("title", "No QR Code is generated for Regex-based mappings.")
+				.parent()
+					.removeAttr("href");
+			
+		}
+		$J("#QRCodeHits").text(data.qr_hits);
+		$J("#QRCodeSection").show();
 
 		$J("#DefaultAction")
 			.find("td.__actionType > select")
@@ -1021,7 +1035,7 @@
 		var size = key.toInt(0);
 		if (size === 0)
 		{
-			size = prompt("Enter the size of QR Code you wish to get (in pixels):", 100);
+			size = prompt("Enter the size of QR Code in pixels:", 100);
 			if (!size)
 				return;
 			if ((size = size.toInt(0)) === 0)
@@ -1030,6 +1044,31 @@
 				return;
 			}
 		}
-		location.href = "qrcode?uri=" + encodeURIComponent($J("#QRCode").data("uri")) + "&size=" + size;
+		location.href = $J("#QRCode").data("uri") + "=" + size;
+	},
+
+	publishQrCodeInstructions: function()
+	{
+		var settings = {
+				message: $J("#QRCodeInstructions"),
+				overlayCSS: {
+					opacity: .8,
+					backgroundColor: "#fff",
+					cursor: ""
+				},
+				css: {
+					width: "700px",
+					top: "100px",
+					left: "15px",
+					border: "solid 2px #bed600",
+					backgroundColor: "#fff",
+					color: "#000",
+					padding: "15px",
+					cursor: "",
+					textAlign: "left"
+				},
+				onOverlayClick: $J.unblockUI
+			};
+		$J.blockUI(settings);
 	}
 });

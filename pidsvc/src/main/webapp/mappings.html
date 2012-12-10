@@ -101,7 +101,7 @@
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="javascript:Main.delete();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="#" id="cmdQrCode"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdQrCode" class="__supersededLock"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 				</div>
 				<div id="ConfigSection" style="width: 1050px;">
 					<table border="0" cellpadding="1" cellspacing="5" width="100%">
@@ -165,7 +165,18 @@
 							<td style="width: 10px"></td>
 							<!--td style="width: 2px; background: #bed600;"></td-->
 							<td width="30%">
-								<a href="#" class="__supersededLock" target="_blank"><img id="QRCode" width="120" height="120" border="0" style="display: none;"/></a>
+								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" class="__supersededLock" style="display: none;">
+									<tr valign="top">
+										<td>
+											<a target="_blank"><img id="QRCode" width="120" height="120" border="0"/></a>
+										</td>
+										<td>
+											<br/>
+											QR Code hits: <span id="QRCodeHits"></span><br/>
+											<a href="javascript:Main.publishQrCodeInstructions();" class="tip">How to publish QR Code?</a>
+										</td>
+									</tr>
+								</table>
 								<div id="ChangeHistory" style="display: none;">
 									<b class="caps">Change history:</b>
 									<div style="overflow: auto; height: 225px;"><ul></ul></div>
@@ -179,6 +190,25 @@
 					</table>
 				</div>
 			</div>
+		</div>
+		<div id="QRCodeInstructions" style="display: none;">
+			<h2>How to publish QR Code? </h2>
+			<br/><br/>
+			Publishing of QR Codes for any PID Service recognised URIs is a simple and straighforward process. To get QR Code
+			add <span style="font-family: Courier New; font-weight: bold;">_pidsvcqr=&lt;size&gt;</span> querystring parameter at the end of your
+			URI, where <span style="font-family: Courier New;">&lt;size&gt;</span> is the size of generated image in pixels. If
+			size parameter is missing then the default size of 100px will be used.
+			<br/><br/>
+			Even though QR Codes are not automatically generated for Regex-based URI mappings they can still be published for concrete
+			URIs that are matched by a regular expression. To generate a QR Code for concrete URI follow the same procedure as described above.
+			<br/><br/>
+			Note that QR Codes may only be generated for URIs registered and recognised by the PID Service.
+			<br/><br/>
+			To add QR Code to a web page use the following syntax:
+			<br/><br/>
+			<span style="font-family: Courier New; font-weight: bold;">&lt;img src="http://www.pidservice.org/my/uri?_pidsvcqr=120" width="120" height="120"/&gt;</span>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
 		</div>
 	</body>
 </html>

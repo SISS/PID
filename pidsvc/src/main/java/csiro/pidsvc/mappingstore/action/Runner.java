@@ -71,7 +71,11 @@ public class Runner
 		try
 		{
 			mgr = new Manager();
-		
+
+			// Update QR Code hits counter for resolved URIs.
+			if (matchResult.MappingId != MappingMatchResults.NULL && _uri.isQrCodeHit())
+				mgr.increateQrCodeHitCounter(matchResult.MappingId);
+
 			// Get request HTTP headers.
 			for (@SuppressWarnings("unchecked")
 				Enumeration<String> enumeration = (Enumeration<String>)_request.getHeaderNames(); enumeration.hasMoreElements(); )
@@ -103,7 +107,7 @@ public class Runner
 			else if (matchResult.DefaultActionId != MappingMatchResults.NULL)
 			{
 				// User-defined fall back action.
-				Descriptor descriptor = mgr.getActionsByActionId(matchResult.DefaultActionId);
+				Descriptor descriptor = mgr.getAction(matchResult.DefaultActionId);
 				action = instantiateActionObject(descriptor, matchResult);
 				if (isTraceMode())
 				{

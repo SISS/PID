@@ -184,14 +184,17 @@ public class ManagerJson extends Manager
 					String actionType = rsMapping.getString("action_type");
 					if (rsMapping.wasNull())
 						actionType = null;
+
+					String mappingPath = rsMapping.getString("mapping_path");
 					ret +=
 						JSONObject.toString("mapping_id", rsMapping.getInt("mapping_id")) + ", " +
-						JSONObject.toString("mapping_path", rsMapping.getString("mapping_path")) + ", " +
+						JSONObject.toString("mapping_path", mappingPath) + ", " +
 						JSONObject.toString("original_path", rsMapping.getString("original_path")) + ", " +
 						JSONObject.toString("type", rsMapping.getString("type")) + ", " +
 						JSONObject.toString("description", rsMapping.getString("description")) + ", " +
 						JSONObject.toString("creator", rsMapping.getString("creator")) + ", " +
 						JSONObject.toString("ended", rsMapping.getBoolean("ended")) + ", " +
+						JSONObject.toString("qr_hits", this.getTotalQrCodeHits(mappingPath)) + ", " +
 						"\"action\": ";
 					if (actionType == null)
 						ret += "null";

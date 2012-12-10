@@ -84,6 +84,7 @@ CREATE TABLE mapping
   default_action_id integer,
   date_start timestamp without time zone NOT NULL DEFAULT now(),
   date_end timestamp without time zone,
+  qr_hits integer DEFAULT 0 NOT NULL,
   CONSTRAINT mapping_pkey PRIMARY KEY (mapping_id ),
 --  CONSTRAINT "FK_mapping_default_action_id" FOREIGN KEY (default_action_id)
 --      REFERENCES action (action_id) MATCH SIMPLE
