@@ -57,6 +57,8 @@ import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.List;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition;
 import csiro.pidsvc.mappingstore.condition.ConditionContentType;
+import csiro.pidsvc.mappingstore.condition.ConditionQrCodeRequest;
+import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
 
 public class Manager
 {
@@ -66,12 +68,14 @@ public class Manager
 	{
 		public static final int NULL = -1;
 
+		public final int MappingId;
 		public final int DefaultActionId;
 		public final AbstractCondition Condition;
 		public final Object AuxiliaryData;
 		
-		public MappingMatchResults(int defaultActionId, AbstractCondition condition, Object auxiliaryData)
+		public MappingMatchResults(int mappingId, int defaultActionId, AbstractCondition condition, Object auxiliaryData)
 		{
+			MappingId = mappingId;
 			DefaultActionId = defaultActionId;
 			Condition = condition;
 			AuxiliaryData = auxiliaryData;
@@ -79,7 +83,7 @@ public class Manager
 		
 		public boolean success()
 		{
-			return DefaultActionId != MappingMatchResults.NULL || Condition != null || AuxiliaryData != null;
+			return MappingId != MappingMatchResults.NULL || DefaultActionId != MappingMatchResults.NULL || Condition != null || AuxiliaryData != null;
 		}
 	}
 
@@ -277,6 +281,7 @@ public class Manager
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
+		int					mappingId = MappingMatchResults.NULL;
 		int					defaultActionId = MappingMatchResults.NULL;
 		AbstractCondition	retCondition = null;
 		Object				matchAuxiliaryData = null;
@@ -301,7 +306,7 @@ public class Manager
 					matchAuxiliaryData = true;
 
 					// Find matching condition.
-					retCondition = getCondition(rs.getInt(1), uri, request, matchAuxiliaryData);
+					retCondition = getCondition(mappingId = rs.getInt(1), uri, request, matchAuxiliaryData);
 				}
 			}
 		}
@@ -312,13 +317,14 @@ public class Manager
 			if (pst != null)
 				pst.close();
 		}
-		return new MappingMatchResults(defaultActionId, retCondition, matchAuxiliaryData);		
+		return new MappingMatchResults(mappingId, defaultActionId, retCondition, matchAuxiliaryData);		
 	}
 
 	public MappingMatchResults findRegexMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
 	{
 		PreparedStatement	pst = null;
 		ResultSet 			rs = null;
+		int					mappingId = MappingMatchResults.NULL;
 		int					defaultActionId = MappingMatchResults.NULL;
 		AbstractCondition	retCondition = null;
 		Object				matchAuxiliaryData = null;
@@ -345,7 +351,7 @@ public class Manager
 						matchAuxiliaryData = re;
 						
 						// Find matching condition.
-						retCondition = getCondition(rs.getInt(1), uri, request, matchAuxiliaryData);
+						retCondition = getCondition(mappingId = rs.getInt(1), uri, request, matchAuxiliaryData);
 						break;
 					}
 				}
@@ -359,7 +365,7 @@ public class Manager
 				pst.close();
 		}
 		
-		return new MappingMatchResults(defaultActionId, retCondition, matchAuxiliaryData);
+		return new MappingMatchResults(mappingId, defaultActionId, retCondition, matchAuxiliaryData);
 	}
 	
 	protected Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditions(int mappingId) throws SQLException
@@ -396,6 +402,10 @@ public class Manager
 	
 	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request, Object matchAuxiliaryData) throws SQLException
 	{
+		// QR Code request.
+		if (uri.isQrCodeRequest())
+			return new ConditionQrCodeRequest(uri, request);
+
 		// Get list of conditions.
 		Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(mappingId);
 		if (conditions == null)
@@ -454,7 +464,7 @@ public class Manager
 		return null;
 	}
 
-	public csiro.pidsvc.mappingstore.action.Descriptor getActionsByActionId(int actionId) throws SQLException
+	public csiro.pidsvc.mappingstore.action.Descriptor getAction(int actionId) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
@@ -483,23 +493,32 @@ public class Manager
 		ResultSet			rs = null;
 		List				actions = new List();
 
-		try
+		switch (conditionId)
 		{
-			pst = _connection.prepareStatement("SELECT * FROM action WHERE condition_id = ?");
-			pst.setInt(1, conditionId);
-
-			rs = pst.executeQuery();
-			while (rs.next())
+			case SpecialConditionType.QR_CODE_REQUEST:
+				actions.add(new csiro.pidsvc.mappingstore.action.Descriptor("QrCode", null, null));
+				break;
+			default:
 			{
-				actions.add(new csiro.pidsvc.mappingstore.action.Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value")));
+				try
+				{
+					pst = _connection.prepareStatement("SELECT * FROM action WHERE condition_id = ?");
+					pst.setInt(1, conditionId);
+
+					rs = pst.executeQuery();
+					while (rs.next())
+					{
+						actions.add(new csiro.pidsvc.mappingstore.action.Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value")));
+					}
+				}
+				finally
+				{
+					if (rs != null)
+						rs.close();
+					if (pst != null)
+						pst.close();
+				}
 			}
-		}
-		finally
-		{
-			if (rs != null)
-				rs.close();
-			if (pst != null)
-				pst.close();
 		}
 		return actions;
 	}
@@ -591,7 +610,7 @@ public class Manager
 					defaultActionId = rs.getInt("default_action_id");
 					if (!rs.wasNull())
 					{
-						csiro.pidsvc.mappingstore.action.Descriptor action = getActionsByActionId(defaultActionId);
+						csiro.pidsvc.mappingstore.action.Descriptor action = getAction(defaultActionId);
 						ret += "<action>";
 						ret += "<type>" + action.Type + "</type>";
 						if (action.Name != null)
@@ -991,7 +1010,7 @@ public class Manager
 			{
 				rs = pst.getResultSet();
 				if (!rs.next())
-					throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
+					throw new SQLException("Lookup map configuration cannot be exported. Data may be corrupted.");
 
 				String lookupType = rs.getString("type");
 				ret += "<ns>" + StringEscapeUtils.escapeXml(ns) + "</ns>";
@@ -1069,5 +1088,47 @@ public class Manager
 				return createLookup(inputStream);
 			}
 		});
+	}
+
+	/**************************************************************************
+	 *  QR Codes.
+	 */
+
+	public boolean increateQrCodeHitCounter(int mappingId) throws SQLException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("UPDATE mapping SET qr_hits = qr_hits + 1 WHERE mapping_id = ?;");
+			pst.setInt(1, mappingId);
+			return pst.execute();
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public int getTotalQrCodeHits(String mappingPath) throws SQLException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("SELECT SUM(qr_hits) FROM mapping WHERE mapping_path = ?;");
+			pst.setString(1, mappingPath);
+			if (pst.execute())
+			{
+				ResultSet rs = pst.getResultSet();
+				if (rs.next())
+					return rs.getInt(1);
+			}
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+		return 0;
 	}
 }

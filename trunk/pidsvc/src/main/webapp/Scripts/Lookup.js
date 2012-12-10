@@ -734,7 +734,7 @@
 
 	export: function()
 	{
-		if (Main.isSavingBlocked())
+		if (Main.isSavingBlocked() && $J("#ConfigSection").data("config"))
 			location.href = "controller?cmd=export_lookup&ns=" + encodeURIComponent($J("#Namespace").val());
 		else
 			alert("You must save the mapping before exporting!");

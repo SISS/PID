@@ -85,7 +85,7 @@ public class dispatcher extends HttpServlet
 		///////////////////////////////////////////////////////////////////////
 		//	Get tracer settings.
 
-		if (mgr.getSetting("DispatcherTracingMode").equalsIgnoreCase("1"))
+		if (!uri.isQrCodeRequest() && mgr.getSetting("DispatcherTracingMode").equalsIgnoreCase("1"))
 		{
 			tracer = new OutputStreamTracer(response.getOutputStream());
 			tracer.trace("Dispatch " + uri.getOriginalUriAsString());

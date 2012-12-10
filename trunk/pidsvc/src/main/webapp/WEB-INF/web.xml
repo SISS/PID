@@ -35,18 +35,8 @@
   	<servlet-name>info</servlet-name>
   	<servlet-class>csiro.pidsvc.servlet.info</servlet-class>
   </servlet>
-  <servlet>
-  	<description>PID Service QR Code Renderer</description>
-  	<display-name>qrcode</display-name>
-  	<servlet-name>qrcode</servlet-name>
-  	<servlet-class>csiro.pidsvc.servlet.qrcode</servlet-class>
-  </servlet>
   <servlet-mapping>
   	<servlet-name>info</servlet-name>
   	<url-pattern>/info</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-  	<servlet-name>qrcode</servlet-name>
-  	<url-pattern>/qrcode</url-pattern>
   </servlet-mapping>
 </web-app>
