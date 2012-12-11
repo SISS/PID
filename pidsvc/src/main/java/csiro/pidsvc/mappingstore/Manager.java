@@ -1094,7 +1094,7 @@ public class Manager
 	 *  QR Codes.
 	 */
 
-	public boolean increateQrCodeHitCounter(int mappingId) throws SQLException
+	public boolean increaseQrCodeHitCounter(int mappingId) throws SQLException
 	{
 		PreparedStatement pst = null;
 		try

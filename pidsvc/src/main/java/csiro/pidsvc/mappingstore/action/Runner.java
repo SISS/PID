@@ -74,7 +74,7 @@ public class Runner
 
 			// Update QR Code hits counter for resolved URIs.
 			if (matchResult.MappingId != MappingMatchResults.NULL && _uri.isQrCodeHit())
-				mgr.increateQrCodeHitCounter(matchResult.MappingId);
+				mgr.increaseQrCodeHitCounter(matchResult.MappingId);
 
 			// Get request HTTP headers.
 			for (@SuppressWarnings("unchecked")
