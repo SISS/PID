@@ -10,7 +10,7 @@
 		<!-- JavaScript Frameworks and extensions -->
 		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
 		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
-		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.2.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.include.min.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
@@ -101,7 +101,7 @@
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="javascript:Main.delete();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="#" id="cmdQrCode" class="__supersededLock"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdQrCode"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 				</div>
 				<div id="ConfigSection" style="width: 1050px;">
 					<table border="0" cellpadding="1" cellspacing="5" width="100%">
@@ -165,7 +165,7 @@
 							<td style="width: 10px"></td>
 							<!--td style="width: 2px; background: #bed600;"></td-->
 							<td width="30%">
-								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" class="__supersededLock" style="display: none;">
+								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" style="display: none;">
 									<tr valign="top">
 										<td>
 											<a target="_blank"><img id="QRCode" width="120" height="120" border="0"/></a>
@@ -181,10 +181,6 @@
 									<b class="caps">Change history:</b>
 									<div style="overflow: auto; height: 225px;"><ul></ul></div>
 								</div>
-								<div id="Tip" style="margin-top: 25px; padding: 3px; background: #bed600; display: none;">
-									<b class="caps">Tips:</b>
-									<div style="background: #fff; padding: 5px 3px 5px 3px;"></div>
-								</div>
 							</td>
 						</tr>
 					</table>
@@ -192,7 +188,7 @@
 			</div>
 		</div>
 		<div id="QRCodeInstructions" style="display: none;">
-			<h2>How to publish QR Code? </h2>
+			<h2>How to publish QR Code?</h2>
 			<br/><br/>
 			Publishing of QR Codes for any PID Service recognised URIs is a simple and straighforward process. To get QR Code
 			add <span style="font-family: Courier New; font-weight: bold;">_pidsvcqr=&lt;size&gt;</span> querystring parameter at the end of your
@@ -207,6 +203,13 @@
 			To add QR Code to a web page use the following syntax:
 			<br/><br/>
 			<span style="font-family: Courier New; font-weight: bold;">&lt;img src="http://www.pidservice.org/my/uri?_pidsvcqr=120" width="120" height="120"/&gt;</span>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<div id="Tip" style="display: none;">
+			<h2>Tips</h2>
+			<br/><br/>
+			<div></div>
 			<br/><br/>
 			<a href="javascript:$J.unblockUI();">Close</a>
 		</div>

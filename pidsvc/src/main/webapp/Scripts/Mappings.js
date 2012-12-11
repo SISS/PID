@@ -1,23 +1,42 @@
 ﻿var Main = Class.construct({
 	_actionTypesDescriptions: {
-		"301": "Moved permanently to a target URL<br/><br/>Value points to resource location.",
-		"302": "Simple redirection to a target URL<br/><br/>Value points to resource location.",
-		"303": "See other URLs<br/><br/>Value points to resource location.",
-		"307": "Temporary redirect to a target URL<br/><br/>Value points to resource location.",
-		"404": "Temporarily gone<br/><br/>No action parameters are required.",
-		"410": "Permanently gone<br/><br/>No action parameters are required.",
-		"415": "Unsupported Media Type<br/><br/>No action parameters are required.",
-		"AddHttpHeader": "Add HTTP response header<br/><br/>Action name specifies a new HTTP header name and value defines its value.",
-		"RemoveHttpHeader": "Remove HTTP response header<br/><br/>Action name specifies HTTP header name that is to be removed from HTTP header collection. No value is required.",
-		"ClearHttpHeaders": "Clear HTTP response headers<br/><br/>No action parameters are required.",
-		"Proxy": "Proxy request<br/><br/>Value points to resource location."
+		"301": "Moved permanently to a target URL.<br/>Value points to resource location.",
+		"302": "Simple redirection to a target URL.<br/>Value points to resource location.",
+		"303": "See other URLs.<br/>Value points to resource location.",
+		"307": "Temporary redirect to a target URL.<br/>Value points to resource location.",
+		"404": "Temporarily gone.<br/>No action parameters are required.",
+		"410": "Permanently gone.<br/>No action parameters are required.",
+		"415": "Unsupported Media Type.<br/>No action parameters are required.",
+		"AddHttpHeader": "Add HTTP response header.<br/>Action name specifies a new HTTP header name and value defines its value.",
+		"RemoveHttpHeader": "Remove HTTP response header.<br/>Action name specifies HTTP header name that is to be removed from HTTP header collection. No value is required.",
+		"ClearHttpHeaders": "Clear HTTP response headers.<br/>No action parameters are required.",
+		"Proxy": "Proxy request.<br/>Value points to resource location."
+	},
+	_defaultOverlaySettings: {
+		overlayCSS: {
+			opacity: .8,
+			backgroundColor: "#fff",
+			cursor: ""
+		},
+		css: {
+			width: "700px",
+			top: "100px",
+			left: "15px",
+			border: "solid 2px #bed600",
+			backgroundColor: "#fff",
+			color: "#000",
+			padding: "15px",
+			cursor: "",
+			textAlign: "left"
+		},
+		onOverlayClick: $J.unblockUI
 	},
 
 	_focusPager: false,
 
 	init: function()
 	{
-		// Initialise UI elements.
+		// Initialise global event handlers.
 		$J("#UriSearchSection")
 			.find("input:not(#PagerInput)")
 				.keypress(this.searchOnKeyPress)
@@ -28,9 +47,8 @@
 		$J(document).keydown(this.globalDocumentOnKeyDown);
 		$J("#MappingPath").change(this.mappingPathOnChange);
 
-		$J("#Tip > div").css("opacity", .7);
+		// Initialise UI elements.
 		this.appendAction($J("#DefaultAction"), null);
-
 		$J("#TopMenu > DIV.MenuButton").click(this.openTab);
 		this.openTab(0);
 
@@ -89,7 +107,7 @@
 		this.blockSaving(true);
 
 		// Reset mapping configuration.
-		this.create(true);
+		this.create();
 
 		// Automatically retrieve mapping configuration.
 		var qsMappingPath = location.href.getQueryParam("mapping_path");
@@ -190,6 +208,7 @@
 			$J("#ConfigSection input, #ConfigSection select").attr("disabled", "disabled");
 			$J("#ConfigSupersededWarning").show();
 			$J("*.__supersededLock, #ConfigSaveWarning").hide();
+			Main.displayQrCodeUI(false);
 
 			// Remove section title if there're no conditions defined.
 			if (!$J("#ConditionSection").children().size())
@@ -205,7 +224,7 @@
 			if ($J("#MappingType").val() != "1:1")
 				$J("#cmdQrCode").hide();
 			else if (!$J("#ConfigSection").data("config") || $J("#ChangeHistory").attr("isDeprecated") == "1")
-				$J("#QRCodeSection, #cmdQrCode").hide();
+				Main.displayQrCodeUI(false);
 			
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
@@ -215,6 +234,13 @@
 
 			Main.monitorChanges();
 		}
+	},
+
+	getOverlaySettings: function(jqMessage)
+	{
+		var obj = { message: jqMessage };
+		jQuery.extend(obj, this._defaultOverlaySettings);
+		return obj;
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -397,10 +423,8 @@
 	///////////////////////////////////////////////////////////////////////////
 	//	Configuration UI.
 
-	create: function(initialize)
+	create: function()
 	{
-		if (initialize !== true)
-			$J("#Tip").hide();
 		this.renderConfig(null);
 	},
 
@@ -440,9 +464,7 @@
 		var internalCall = Object.isNumber(id);
 		var mappingId = internalCall ? id : $J(this).attr("mapping_id");
 
-		$J("#Tip").hide();
 		Main.openTab(1);
-
 		if (!internalCall)
 			Main.blockUI($J("#ConfigSection"));
 
@@ -459,7 +481,6 @@
 
 	getConfigByMappingPath: function(mappingPath)
 	{
-		$J("#Tip").hide();
 		Main.openTab(1);
 		Main.blockUI($J("#ConfigSection"));
 		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
@@ -480,7 +501,6 @@
 			$J("#MappingType").val("1:1");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val("");
-			$J("#QRCodeSection, #cmdQrCode").hide();
 
 			$J("#DefaultAction")
 				.find("td.__actionType > select")
@@ -494,6 +514,7 @@
 			$J("#ConditionSection").empty();
 			$J("#ChangeHistory").hide();
 
+			Main.displayQrCodeUI(false);
 			Main.blockSaving(true);
 			Main.blockEditing(false);
 			Main.unblockUI();
@@ -527,7 +548,7 @@
 			
 		}
 		$J("#QRCodeHits").text(data.qr_hits);
-		$J("#QRCodeSection").show();
+		Main.displayQrCodeUI(true);
 
 		$J("#DefaultAction")
 			.find("td.__actionType > select")
@@ -885,14 +906,10 @@
 		var description		= Main._actionTypesDescriptions[val];
 
 		if (!description)
-		{
-			$J("#Tip").hide();
 			return;
-		}
-		$J("#Tip")
-			.show()
-			.find("div")
-				.html(description);
+
+		$J("#Tip > div").html(description);
+		$J.blockUI(Main.getOverlaySettings($J("#Tip")));
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1030,6 +1047,11 @@
 	///////////////////////////////////////////////////////////////////////////
 	//	QR Codes.
 
+	displayQrCodeUI: function(show)
+	{
+		$J("#QRCodeSection, #cmdQrCode")[show ? "show" : "hide"]();
+	},
+
 	publishQrCode: function(key, options)
 	{
 		var size = key.toInt(0);
@@ -1049,26 +1071,6 @@
 
 	publishQrCodeInstructions: function()
 	{
-		var settings = {
-				message: $J("#QRCodeInstructions"),
-				overlayCSS: {
-					opacity: .8,
-					backgroundColor: "#fff",
-					cursor: ""
-				},
-				css: {
-					width: "700px",
-					top: "100px",
-					left: "15px",
-					border: "solid 2px #bed600",
-					backgroundColor: "#fff",
-					color: "#000",
-					padding: "15px",
-					cursor: "",
-					textAlign: "left"
-				},
-				onOverlayClick: $J.unblockUI
-			};
-		$J.blockUI(settings);
+		$J.blockUI(this.getOverlaySettings($J("#QRCodeInstructions")));
 	}
 });
