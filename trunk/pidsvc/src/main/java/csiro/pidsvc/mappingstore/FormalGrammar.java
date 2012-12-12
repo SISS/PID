@@ -36,8 +36,6 @@ public class FormalGrammar
 	public String parse(String expression, boolean urlSafe) throws UnsupportedEncodingException
 	{
 		_log.clear();
-		_log.add(expression);
-
 		String lastState = expression;
 
 		// Bring all place-holders and function calls to the same syntax.
@@ -75,6 +73,9 @@ public class FormalGrammar
 			ret = ret.substring(0, m.start()) + m.group(1).replaceAll("\\\\([\\\\{\\}])", "$1") + ret.substring(m.end());
 			_log.add(ret);
 		}
+
+		if (_log.size() > 0)
+			_log.add(0, expression);
 		return ret;
 	}
 
