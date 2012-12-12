@@ -15,7 +15,6 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +50,7 @@ import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXException;
 
+import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
@@ -94,13 +94,9 @@ public class Manager
 
 	public Manager() throws NamingException, SQLException, IOException
 	{
-		Properties properties = new Properties(); 
-		properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("../mappingstore.properties"));
-
 		InitialContext initCtx = new InitialContext(); 
 		Context envCtx = (Context)initCtx.lookup("java:comp/env"); 
-		DataSource ds = (DataSource)envCtx.lookup(properties.getProperty("jndiReferenceName"));
-		
+		DataSource ds = (DataSource)envCtx.lookup(Settings.getInstance().getProperty("jndiReferenceName"));
 		_connection = ds.getConnection();
 	}
 
@@ -216,7 +212,7 @@ public class Manager
 //				String fileContent = Stream.readInputStream(gis);
 				String ret = callback.process(gis);
 				gis.close();
-				
+
 				// Process the first uploaded file only.
 				return ret;
 			}

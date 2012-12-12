@@ -10,6 +10,7 @@ import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.Manager;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
@@ -152,7 +153,14 @@ public class Runner
 	{
 		try
 		{
-			Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.action.Action" + descriptor.Type);
+			String actionType = descriptor.Type;
+			if (actionType.equals("Proxy") && !Settings.getInstance().getProperty("allowProxyAction").equalsIgnoreCase("true"))
+			{
+				trace("Proxy action is disallowed for this PID Service instance. Invoking 302 Simple Redirection action instead...");
+				actionType = "302";
+			}
+
+			Class<?> impl = Class.forName("csiro.pidsvc.mappingstore.action.Action" + actionType);
 			Constructor<?> ctor = impl.getDeclaredConstructor(Runner.class, Descriptor.class, MappingMatchResults.class);
 			return (AbstractAction)ctor.newInstance(this, descriptor, matchResult);
 		}
