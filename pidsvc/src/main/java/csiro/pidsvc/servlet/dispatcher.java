@@ -47,8 +47,10 @@ public class dispatcher extends HttpServlet
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		response.setDateHeader("Expires", 0); 
-		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
+		response.setHeader("Pragma", "no-cache"); // HTTP 1.0.
+		response.setHeader("Cache-Control", "no-cache, no-store, private, must-revalidate, max-stale=0, post-check=0, pre-check=0"); // HTTP 1.1.
+		response.setDateHeader("Expires", 0); // Proxies.
+
 
 		///////////////////////////////////////////////////////////////////////
 		//	Get and decode input URI.

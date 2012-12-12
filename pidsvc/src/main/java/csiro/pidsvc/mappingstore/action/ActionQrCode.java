@@ -27,9 +27,10 @@ public class ActionQrCode extends AbstractAction
 		HttpServletRequest request = _controller.getRequest();
 
 		// Set HTTP response parameters.
-		response.setDateHeader("Expires", 0);
-		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
-		response.addHeader("Content-Disposition", "attachment; filename=qrcode.png");
+		response.setHeader("Pragma", "");
+		response.setHeader("Cache-Control", "");
+		response.setDateHeader("Expires", System.currentTimeMillis() + 604800000L); // 1 week in future.
+		response.setHeader("Content-Disposition", "attachment; filename=qrcode.png");
 		response.setContentType("image/png");
 
 		// Construct fully-qualified URI with tracing parameter.
