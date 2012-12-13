@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
 import csiro.pidsvc.mappingstore.ManagerJson;
@@ -79,6 +80,10 @@ public class info extends HttpServlet
 				String ns = request.getParameter("ns");
 				response.getWriter().write(mgr.getLookupConfig(ns));
 			}
+			else if (cmd.equalsIgnoreCase("get_manifest"))
+				response.getWriter().write(Settings.getInstance().getManifestJson());
+			else if (cmd.equalsIgnoreCase("is_new_version_available"))
+				response.getWriter().write(Settings.getInstance().isNewVersionAvailableJson());
 		}
 		catch (Exception e)
 		{

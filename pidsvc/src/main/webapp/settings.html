@@ -2,7 +2,7 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" >
 	<head>
-		<title>Backup/restore</title>
+		<title>Settings</title>
 
 		<meta http-equiv="cache-control" content="no-cache"/>
 		<meta http-equiv="pragma" content="no-cache"/>
@@ -13,7 +13,7 @@
 		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
-		<script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
 
 		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
 		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
@@ -26,15 +26,15 @@
 			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
 				General
 			</div>
-			<!--div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
-				Restore
-			</div-->
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
+				About
+			</div>
 		</div>
 		
 		<div id="Containers" style="position: relative;">
 			<div style="position: absolute; top: 0;">
 				<h2>General Settings</h2>
-				<div id="GeneralSection" style="width: 1000px;">
+				<div id="GeneralSection" style="width: 730px;">
 					<br/>
 					<input type="checkbox" id="DispatcherTracingMode" class="__persistent_option"/> <label for="DispatcherTracingMode" style="position: relative; top: -1px;">Dispatcher tracing mode</label><br/>
 					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
@@ -42,6 +42,29 @@
 					</div>
 					<br/>
    					<input type="button" id="cmdSave" value="Save" onclick="javascript:Main.save();" style="width:100px;" />
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>About</h2>
+				<div id="AboutSection" style="width: 730px; display: none;">
+					<br/>
+					<b>Build Manifest</b>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top: 5px;">
+						<tr bgcolor="#e2e2e2">
+							<td>
+								<table id="BuildManifest" border="0" cellspacing="1" cellpadding="3" width="100%"></table>
+							</td>
+						</tr>
+					</table>
+					<br/>
+					<b>Server Environment</b>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top: 5px;">
+						<tr bgcolor="#e2e2e2">
+							<td>
+								<table id="ServerEnvironment" border="0" cellspacing="1" cellpadding="3" width="100%"></table>
+							</td>
+						</tr>
+					</table>
 				</div>
 			</div>
 		</div>
