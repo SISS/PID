@@ -51,6 +51,9 @@
 			$J("#Containers > DIV:not(" + tabIndex + ")").fadeOut();
 			$J("#Containers > DIV:eq(" + tabIndex + ")").fadeIn();
 		}
+
+		if (tabIndex == 1)
+			Main.retrieveManifest();
 	},
 
 	blockUI: function(jq)
@@ -132,5 +135,28 @@
 			})
 			.done(this.unblockUI)
 			.fail(ExceptionHandler.displayGenericException);
+	},
+
+	///////////////////////////////////////////////////////////////////////////
+	//	Manifest.
+
+	retrieveManifest: function()
+	{
+		if ($J("#BuildManifest TR").size() > 0)
+			return;
+		Main.blockUI();
+		$J.getJSON("info?cmd=get_manifest", Main.renderManifest).fail(ExceptionHandler.displayGenericException);
+	},
+
+	renderManifest: function(data)
+	{
+		var jq = $J("#BuildManifest");
+		for (var key in data.manifest)
+			jq.append("<tr><td width=\"30%\" style=\"border-top: 1px solid #fafafa;\">" + key + "</td><td width=\"70%\" bgcolor=\"#fafafa\">" + data.manifest[key] + "</td></tr>");
+		jq = $J("#ServerEnvironment");
+		for (var key in data.server)
+			jq.append("<tr><td width=\"30%\">" + key + "</td><td width=\"70%\" bgcolor=\"#fafafa\">" + data.server[key] + "</td></tr>");
+		$J("#AboutSection").show();
+		Main.unblockUI();
 	}
 });

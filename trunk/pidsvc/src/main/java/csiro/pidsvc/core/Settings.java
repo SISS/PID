@@ -3,8 +3,15 @@ package csiro.pidsvc.core;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.json.simple.JSONObject;
+
+import csiro.pidsvc.helper.Http;
 
 public class Settings
 {
@@ -70,5 +77,66 @@ public class Settings
 	public Map<String, String> getServerProperties()
 	{
 		return _serverProperties;
+	}
+
+	public String getManifestJson()
+	{
+		boolean isFirst = true;
+		String ret = "{";
+
+		// Build repository.
+		ret += JSONObject.toString("repository", getProperty("buildRepository")) + ",";
+
+		// Build manifest.
+		ret += "\"manifest\":{";
+		for (Entry<Object, Object> entry : _manifest.getMainAttributes().entrySet())
+		{
+			ret += (isFirst ? "" : ",") + JSONObject.toString(entry.getKey().toString(), entry.getValue());
+			isFirst = false;
+		}
+		ret += "},";
+
+		// Server environment.
+		ret += "\"server\":{";
+		isFirst = true;
+		for (Entry<String, String> entry : _serverProperties.entrySet())
+		{
+			ret += (isFirst ? "" : ",") + JSONObject.toString(entry.getKey(), entry.getValue());
+			isFirst = false;
+		}
+		ret += "}}";
+		return ret;
+	}
+
+	public boolean isNewVersionAvailable()
+	{
+		String		content = Http.simpleGetRequest(getProperty("buildRepository"));
+		Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?.(\\d+).war\"", Pattern.CASE_INSENSITIVE);
+		Matcher		m = re.matcher(content);
+
+		try
+		{
+			if (m.find())
+			{
+				int currentVersion = Integer.parseInt(_manifest.getMainAttributes().getValue("Implementation-Build"));
+				int newVersion = Integer.parseInt(m.group(2));
+	
+				if (newVersion > currentVersion)
+					return true;
+			}
+		}
+		catch (Exception e)
+		{
+		}
+		return false;
+	}
+
+	public String isNewVersionAvailableJson()
+	{
+		return
+			"{" +
+				JSONObject.toString("isAvailable", isNewVersionAvailable()) + "," +
+				JSONObject.toString("repository", getProperty("buildRepository")) +
+			"}";
 	}
 }
