@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:mapping:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:mapping:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:element name="mapping" type="pidsvc:MappingType"/>
+	<xs:complexType name="MappingType">
+		<xs:sequence>
+			<xs:element name="path">
+				<xs:annotation>
+					<xs:documentation>Mapping URI pattern.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="pidsvc:NonEmptyString">
+							<xs:attribute name="rename" type="pidsvc:NonEmptyString" use="optional">
+								<xs:annotation>
+									<xs:documentation>Old mapping URI pattern (if you need to rename an existing mapping).</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Mapping URI pattern type that is supported by a specific version of the PID Service (e.g. 1:1, Regex, etc.).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Textual descriptions of the URI mapping (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="creator" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Creator's note of the URI mapping (optional).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="255"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="action" type="pidsvc:ActionType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Default fall back action for the URI mapping. Fired when no specific matching conditions were found.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditions" type="pidsvc:ConditionsType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>A set of request specific URI mapping conditions.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ActionType">
+		<xs:sequence>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Action type that is supported by a specific version of the PID Service (e.g. 302, 404, Proxy, etc.).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="name" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Action parameter name that depends on the action type (optional).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="value" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Action parameter value that depends on the action type (optional).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="512"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ConditionsType">
+		<xs:sequence>
+			<xs:element name="condition" type="pidsvc:ConditionType" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Request specific URI mapping condition.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ConditionType">
+		<xs:sequence>
+			<xs:element name="type">
+				<xs:annotation>
+					<xs:documentation>Condition type that is supported by a specific version of the PID Service (e.g. ContentType, Extension, QueryString, etc.).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:pattern value="\S+"/>
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="match">
+				<xs:annotation>
+					<xs:documentation>Parameter for the specific condition type that is used to find a match.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="255"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="actions" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>A set of actions that is executed when a specific condition is met.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="action" type="pidsvc:ActionType" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Action to be executed when a specific condition is met.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="NonEmptyString">
+		<xs:restriction base="xs:string">
+			<xs:pattern value=".*\S+.*"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

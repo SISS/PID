@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Settings</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
+
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/Settings.js"></script>
+
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				General
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
+				About
+			</div>
+		</div>
+		
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>General Settings</h2>
+				<div id="GeneralSection" style="width: 730px;">
+					<br/>
+					<input type="checkbox" id="DispatcherTracingMode" class="__persistent_option"/> <label for="DispatcherTracingMode" style="position: relative; top: -1px;">Dispatcher tracing mode</label><br/>
+					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
+						Set dispatcher in a mode that allows to trace execution of the rules instead of actually running mappings actions.
+					</div>
+					<br/>
+   					<input type="button" id="cmdSave" value="Save" onclick="javascript:Main.save();" style="width:100px;" />
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>About</h2>
+				<div id="AboutSection" style="width: 730px; display: none;">
+					<br/>
+					<b>Build Manifest</b>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top: 5px;">
+						<tr bgcolor="#e2e2e2">
+							<td>
+								<table id="BuildManifest" border="0" cellspacing="1" cellpadding="3" width="100%"></table>
+							</td>
+						</tr>
+					</table>
+					<br/>
+					<b>Server Environment</b>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top: 5px;">
+						<tr bgcolor="#e2e2e2">
+							<td>
+								<table id="ServerEnvironment" border="0" cellspacing="1" cellpadding="3" width="100%"></table>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

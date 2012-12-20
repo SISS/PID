@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Mappings</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.include.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
+
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/Mappings.js"></script>
+
+		<link href="Scripts/jQuery/contextMenu/jquery.contextMenu.css" type="text/css" rel="stylesheet" />
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Search <span id="MenuResultsCount"></span>
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 200px; white-space: nowrap; overflow: hidden;">
+				Mapping Configuration
+			</div>
+		</div>
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>URI Mapping Search</h2>
+				<div id="UriSearchSection" style="background: #fafafa; width: 1000px;">
+					<div style="background: #fff; margin-bottom: 5px;">
+						<table border="0" cellpadding="5" cellspacing="1" width="100%">
+							<tr>
+								<td nowrap="nowrap">URI pattern:</td>
+								<td width="50%"><input type="text" id="SearchUriPattern" maxlength="255" style="width: 400px;"/></td>
+								<td align="right" nowrap="nowrap">Mapping type:</td>
+								<td width="50%">
+									<select id="SearchMappingType" class="input" style="width: 100px;">
+										<option value="">Any</option>
+										<option value="1:1">1:1</option>
+										<option value="Regex">Regex</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td nowrap="nowrap">Author:</td>
+								<td width="50%"><input type="text" id="SearchCreator" maxlength="50" style="width: 400px;"/></td>
+								<td align="right" nowrap="nowrap"></td>
+								<td width="50%">
+									<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.search();" style="width:100px;" />
+								</td>
+							</tr>
+							<tr valign="top">
+								<td></td>
+								<td>
+									<input type="checkbox" id="MappingDeprecatedInclude"/> <label for="MappingDeprecatedInclude" style="position: relative; top: -1px;">Include deprecated mappings</label><br/>
+									<input type="checkbox" id="MappingDeprecatedOnly"/> <label for="MappingDeprecatedOnly" style="position: relative; top: -1px;">Deprecated mappings only</label>
+								</td>
+								<td></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+					<div id="SearchResults" style="display: none;">
+						<table id="SearchResultsTable" border="0" cellpadding="5" cellspacing="1" width="1000">
+							<tr bgcolor="#e2e2e2">
+								<td width="55%">
+									<b>Mapping</b>
+								</td>
+								<td width="20%">
+									<b>Author</b>
+								</td>
+								<td width="25%">
+									<b>Date</b>
+								</td>
+							</tr>
+						</table>
+						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
+							<div style="position: relative; top: -2px;">
+								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -20px; top: 5px;"/></a>
+								Page <input type="text" id="PagerInput" style="width: 40px; font-size: 10px; text-align: center; padding: 0;" maxlength="5"/> / <span></span>
+								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -20px; top: 5px;"/></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Mapping Configuration</h2>
+				<div style="position: relative; top: -18px; left: 170px; width: 94px; height: 5px;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdQrCode"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="ConfigSection" style="width: 1050px;">
+					<table border="0" cellpadding="1" cellspacing="5" width="100%">
+						<tr valign="top">
+							<td width="70%">
+								<b>URI pattern:</b>
+								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
+									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
+								</div>
+								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+									<b>Note:</b> This mapping has been reinstated and has not been saved yet.
+								</div>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr valign="top">
+										<td width="80%" style="position: relative;">
+											<input id="MappingPath" type="text" style="width: 565px;" />
+										</td>
+										<td width="20%">
+											<select id="MappingType" class="input" style="width: 140px;">
+												<option value="1:1">1:1</option>
+												<option value="Regex">Regex</option>
+											</select>
+										</td>
+									</tr>
+								</table>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr valign="top">
+										<td width="20%" align="right">
+											Description:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingDescription" maxlength="500" style="width: 570px;" />
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="20%" align="right">
+											Author:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingCreator" maxlength="50" style="width: 570px;" />
+										</td>
+									</tr>
+								</table>
+								<b>Default action:</b>
+								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
+								<b>Conditions:</b>
+								<div id="ConditionSection" style="margin-bottom: 5px;">
+								</div>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%">
+									<tr>
+										<td>
+											<a href="javascript:Main.addCondition();" class="tip __supersededLock"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+										</td>
+										<td align="right">
+											<input type="button" id="cmdSave" value="Save" class="__supersededLock" onclick="javascript:Main.save();" style="width:100px;" />
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td style="width: 10px"></td>
+							<!--td style="width: 2px; background: #bed600;"></td-->
+							<td width="30%">
+								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" style="display: none;">
+									<tr valign="top">
+										<td>
+											<a target="_blank"><img id="QRCode" width="120" height="120" border="0"/></a>
+										</td>
+										<td>
+											<br/>
+											QR Code hits: <span id="QRCodeHits"></span><br/>
+											<a href="javascript:Main.publishQrCodeInstructions();" class="tip">How to publish QR Code?</a>
+										</td>
+									</tr>
+								</table>
+								<div id="ChangeHistory" style="display: none;">
+									<b class="caps">Change history:</b>
+									<div style="overflow: auto; height: 225px;"><ul></ul></div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div id="QRCodeInstructions" style="display: none;">
+			<h2>How to publish QR Code?</h2>
+			<br/><br/>
+			Publishing of QR Codes for any PID Service recognised URIs is a simple and straighforward process. To get QR Code
+			add <span style="font-family: Courier New; font-weight: bold;">_pidsvcqr=&lt;size&gt;</span> querystring parameter at the end of your
+			URI, where <span style="font-family: Courier New;">&lt;size&gt;</span> is the size of generated image in pixels. If
+			size parameter is missing then the default size of 100px will be used.
+			<br/><br/>
+			Even though QR Codes are not automatically generated for Regex-based URI mappings they can still be published for concrete
+			URIs that are matched by a regular expression. To generate a QR Code for concrete URI follow the same procedure as described above.
+			<br/><br/>
+			Note that QR Codes may only be generated for URIs registered and recognised by the PID Service.
+			<br/><br/>
+			To add QR Code to a web page use the following syntax:
+			<br/><br/>
+			<span style="font-family: Courier New; font-weight: bold;">&lt;img src="http://www.pidservice.org/my/uri?_pidsvcqr=120" width="120" height="120"/&gt;</span>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<div id="Tip" style="display: none;">
+			<h2>Tips</h2>
+			<br/><br/>
+			<div></div>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+	</body>
+</html>
