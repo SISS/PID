@@ -51,7 +51,6 @@ public class dispatcher extends HttpServlet
 		response.setHeader("Cache-Control", "no-cache, no-store, private, must-revalidate, max-stale=0, post-check=0, pre-check=0"); // HTTP 1.1.
 		response.setDateHeader("Expires", 0); // Proxies.
 
-
 		///////////////////////////////////////////////////////////////////////
 		//	Get and decode input URI.
 

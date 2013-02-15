@@ -3,9 +3,21 @@
 	<xsl:output method="text" version="1.0" encoding="UTF-8"/>
 
 	<xsl:template match="/">
-		<!-- Single lookup import -->
 		<xsl:choose>
+			<xsl:when test="backup">
+				<!-- Lookup maps backup -->
+				<xsl:choose>
+					<xsl:when test="backup/lookup">
+						<xsl:value-of select='concat("--OK: Successfully imported ", count(backup/lookup), " lookup map(s).")'/>
+					</xsl:when>
+					<xsl:otherwise>--OK: Backup file is empty. No changes have been made.</xsl:otherwise>
+				</xsl:choose>
+				BEGIN;
+				<xsl:apply-templates select="backup/lookup"/>
+				COMMIT;
+			</xsl:when>
 			<xsl:when test="lookup/ns">
+				<!-- Single lookup import -->
 				<xsl:value-of select='concat("--OK: Successfully imported [[[", lookup/ns/text(), "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="lookup"/>
@@ -44,7 +56,7 @@
 	</xsl:template>
 	<xsl:template match="pair">
 		<xsl:variable name="ns">
-			<xsl:value-of select='replace(replace(/lookup/ns/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
+			<xsl:value-of select='replace(replace(../../ns/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 		</xsl:variable>
 		<xsl:variable name="key">
 			<xsl:value-of select='replace(replace(key/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
@@ -57,7 +69,7 @@
 
 	<xsl:template match="HttpResolver">
 		<xsl:variable name="ns">
-			<xsl:value-of select='replace(replace(/lookup/ns/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
+			<xsl:value-of select='replace(replace(../ns/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
 		</xsl:variable>
 		<xsl:variable name="key">
 			<xsl:value-of select='replace(replace(endpoint/text(), "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>

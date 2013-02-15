@@ -218,6 +218,7 @@
 			}
 			else
 			{
+				$J("#MenuResultsCount").text("");
 				$J("#SearchResultsTable")
 					.append(
 						"<tr valign='top'>" +
@@ -738,6 +739,11 @@
 			location.href = "controller?cmd=export_lookup&ns=" + encodeURIComponent($J("#Namespace").val());
 		else
 			alert("You must save the mapping before exporting!");
+	},
+
+	exportAll: function()
+	{
+		location.href = "controller?cmd=export_lookup";
 	},
 
 	///////////////////////////////////////////////////////////////////////////

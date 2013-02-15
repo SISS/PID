@@ -68,7 +68,7 @@ public class controller extends HttpServlet
 			{
 				String ns = request.getParameter("ns");
 				String serializedConfig = mgr.exportLookup(ns);
-				returnAttachment(response, "lookup." + _sdfBackupStamp.format(new Date()) + ".psl", serializedConfig);
+				returnAttachment(response, "lookup." + (ns == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + ".psl", serializedConfig);
 			}
 		}
 		catch (Exception e)

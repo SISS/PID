@@ -993,80 +993,110 @@ public class Manager
 	public String exportLookup(String ns) throws SQLException
 	{
 		PreparedStatement	pst = null;
-		ResultSet			rs = null;
-		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+		ResultSet			rs = null, rsMap = null;
+		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT type, behaviour_type, behaviour_value FROM lookup_ns WHERE ns = ?;SELECT key, value FROM lookup WHERE ns = ?;");
-			pst.setString(1, ns);
-			pst.setString(2, ns);
+			if (ns == null)
+			{
+				// Export all lookup maps.
+				pst = _connection.prepareStatement("SELECT ns, type, behaviour_type, behaviour_value FROM lookup_ns;");
+			}
+			else
+			{
+				// Export a particular lookup map.
+				pst = _connection.prepareStatement("SELECT ns, type, behaviour_type, behaviour_value FROM lookup_ns WHERE ns = ?;");
+				pst.setString(1, ns);
+			}
 
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
-				if (!rs.next())
+				boolean dataAvailable = rs.next();
+
+				if (ns == null)
+					ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+				else if (!dataAvailable)
 					throw new SQLException("Lookup map configuration cannot be exported. Data may be corrupted.");
 
-				String lookupType = rs.getString("type");
-				ret += "<ns>" + StringEscapeUtils.escapeXml(ns) + "</ns>";
-
-				String behaviourValue = rs.getString("behaviour_value");
-				ret += "<default type=\"" + StringEscapeUtils.escapeXml(rs.getString("behaviour_type")) + "\">" + (behaviourValue == null ? "" : StringEscapeUtils.escapeXml(behaviourValue)) + "</default>";
-
-				pst.getMoreResults();
-				rs = pst.getResultSet();
-				if (lookupType.equalsIgnoreCase("Static"))
+				if (dataAvailable)
 				{
-					ret += "<Static>";
-					while (rs.next())
+					do
 					{
-						ret += "<pair>";
-						ret += "<key>" + StringEscapeUtils.escapeXml(rs.getString(1)) + "</key>";
-						ret += "<value>" + StringEscapeUtils.escapeXml(rs.getString(2)) + "</value>";
-						ret += "</pair>";
+						String lookupNamespace = rs.getString("ns");
+						String lookupType = rs.getString("type");
+	
+						ret += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+						ret += "<ns>" + StringEscapeUtils.escapeXml(lookupNamespace) + "</ns>";
+		
+						String behaviourValue = rs.getString("behaviour_value");
+						ret += "<default type=\"" + StringEscapeUtils.escapeXml(rs.getString("behaviour_type")) + "\">" + (behaviourValue == null ? "" : StringEscapeUtils.escapeXml(behaviourValue)) + "</default>";
+		
+						pst = _connection.prepareStatement("SELECT key, value FROM lookup WHERE ns = ?;");
+						pst.setString(1, lookupNamespace);
+						if (!pst.execute())
+							throw new SQLException("Lookup map configuration cannot be exported. Data may be corrupted.");
+						rsMap = pst.getResultSet();
+						if (lookupType.equalsIgnoreCase("Static"))
+						{
+							ret += "<Static>";
+							while (rsMap.next())
+							{
+								ret += "<pair>";
+								ret += "<key>" + StringEscapeUtils.escapeXml(rsMap.getString(1)) + "</key>";
+								ret += "<value>" + StringEscapeUtils.escapeXml(rsMap.getString(2)) + "</value>";
+								ret += "</pair>";
+							}
+							ret += "</Static>";
+						}
+						else if (lookupType.equalsIgnoreCase("HttpResolver"))
+						{
+							ret += "<HttpResolver>";
+							if (!rsMap.next())
+								throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
+		
+							final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+							Matcher				m;
+							String				namespaces = "";
+							String				buf = rsMap.getString(2);
+		
+							ret += "<endpoint>" + StringEscapeUtils.escapeXml(rsMap.getString(1)) + "</endpoint>";
+		
+							// Type.
+							m = reType.matcher(buf);
+							m.find();
+							ret += "<type>" + m.group(1) + "</type>";
+		
+							// Extractor.
+							m = reExtract.matcher(buf);
+							m.find();
+							ret += "<extractor>" + StringEscapeUtils.escapeXml(m.group(1)) + "</extractor>";
+		
+							// Namespaces.
+							m = reNamespace.matcher(buf);
+							while (m.find())
+								namespaces += "<ns prefix=\"" + StringEscapeUtils.escapeXml(m.group(1)) + "\">" + StringEscapeUtils.escapeXml(m.group(2)) + "</ns>";
+							if (!namespaces.isEmpty())
+								ret += "<namespaces>" + namespaces + "</namespaces>";
+		
+							ret += "</HttpResolver>";
+						}
+						ret += "</lookup>";
 					}
-					ret += "</Static>";
+					while (rs.next());
 				}
-				else if (lookupType.equalsIgnoreCase("HttpResolver"))
-				{
-					ret += "<HttpResolver>";
-					if (!rs.next())
-						throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
 
-					final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-					final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-					final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-					Matcher				m;
-					String				namespaces = "";
-					String				buf = rs.getString(2);
-
-					ret += "<endpoint>" + StringEscapeUtils.escapeXml(rs.getString(1)) + "</endpoint>";
-
-					// Type.
-					m = reType.matcher(buf);
-					m.find();
-					ret += "<type>" + m.group(1) + "</type>";
-
-					// Extractor.
-					m = reExtract.matcher(buf);
-					m.find();
-					ret += "<extractor>" + StringEscapeUtils.escapeXml(m.group(1)) + "</extractor>";
-
-					// Namespaces.
-					m = reNamespace.matcher(buf);
-					while (m.find())
-						namespaces += "<ns prefix=\"" + StringEscapeUtils.escapeXml(m.group(1)) + "\">" + StringEscapeUtils.escapeXml(m.group(2)) + "</ns>";
-					if (!namespaces.isEmpty())
-						ret += "<namespaces>" + namespaces + "</namespaces>";
-
-					ret += "</HttpResolver>";
-				}
-				ret += "</lookup>";
+				if (ns == null)
+					ret += "</backup>";
 			}
 		}
 		finally
 		{
+			if (rsMap != null)
+				rsMap.close();
 			if (rs != null)
 				rs.close();
 			if (pst != null)
