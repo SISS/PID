@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:lookup:1.0" xmlns:psvcl="urn:csiro:xmlns:pidsvc:lookup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:element name="backup" type="psvcl:BackupType"/>
 	<xs:element name="lookup" type="psvcl:LookupType"/>
+	<xs:complexType name="BackupType">
+		<xs:annotation>
+			<xs:documentation>Allows to backup multiple lookup maps.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element ref="psvcl:lookup" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
 	<xs:complexType name="LookupType">
 		<xs:sequence>
 			<xs:element name="ns">
