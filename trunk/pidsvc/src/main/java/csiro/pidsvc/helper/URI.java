@@ -129,7 +129,7 @@ public class URI
 		}
 
 		// Detect QR Code hit flag.
-		for (m = RE_URI_QRCODE_HIT.matcher(_uri.toString()); m.matches(); m = RE_URI_QRCODE_REQUEST.matcher(_uri.toString())) 
+		for (m = RE_URI_QRCODE_HIT.matcher(_uri.toString()); m.matches(); m = RE_URI_QRCODE_HIT.matcher(_uri.toString())) 
 		{
 			_qrCodeHit = true;
 			_uri = new java.net.URI(_originalUri = m.replaceAll("$1$2"));
