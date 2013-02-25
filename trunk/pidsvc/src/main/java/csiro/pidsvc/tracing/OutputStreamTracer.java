@@ -1,8 +1,23 @@
+/*
+ * CSIRO Open Source Software License Agreement (variation of the BSD / MIT License)
+ * 
+ * Copyright (c) 2013, Commonwealth Scientific and Industrial Research Organisation (CSIRO)
+ * ABN 41 687 119 230.
+ * 
+ * All rights reserved. This code is licensed under CSIRO Open Source Software
+ * License Agreement license, available at the root application directory.
+ */
+
 package csiro.pidsvc.tracing;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Execution tracer implementation that streams the log into an java.io.OutputStream class.
+ * 
+ * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
+ */
 public class OutputStreamTracer implements ITracer
 {
 	protected final OutputStream _stream;

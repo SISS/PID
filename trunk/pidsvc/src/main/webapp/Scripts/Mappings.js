@@ -1,4 +1,14 @@
-﻿var Main = Class.construct({
+﻿/*
+ * CSIRO Open Source Software License Agreement (variation of the BSD / MIT License)
+ * 
+ * Copyright (c) 2013, Commonwealth Scientific and Industrial Research Organisation (CSIRO)
+ * ABN 41 687 119 230.
+ * 
+ * All rights reserved. This code is licensed under CSIRO Open Source Software
+ * License Agreement license, available at the root application directory.
+ */
+
+var Main = Class.construct({
 	_actionTypesDescriptions: {
 		"301": "Moved permanently to a target URL.<br/>Value points to resource location.",
 		"302": "Simple redirection to a target URL.<br/>Value points to resource location.",
