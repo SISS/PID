@@ -20,6 +20,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
 import csiro.pidsvc.mappingstore.Manager;
@@ -32,6 +35,8 @@ import csiro.pidsvc.mappingstore.ManagerJson;
  */
 public class controller extends HttpServlet
 {
+	private static Logger _logger = LogManager.getLogger(controller.class.getName());
+
 	private static final long serialVersionUID = -6453299989235903216L;
 
 	protected final SimpleDateFormat _sdfBackupStamp = new SimpleDateFormat("yyyy-MM-dd.HHmmss");
@@ -61,7 +66,8 @@ public class controller extends HttpServlet
 		try
 		{
 			mgr = new ManagerJson();
-			
+
+			_logger.info("Processing \"{}\" command.", cmd);
 			if (cmd.matches("(?i)^(?:full|partial)_export$"))
 			{
 				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), 0);
@@ -85,8 +91,8 @@ public class controller extends HttpServlet
 		}
 		catch (Exception e)
 		{
+			_logger.error(e);
 			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
-			e.printStackTrace();
 		}
 		finally
 		{
@@ -111,6 +117,7 @@ public class controller extends HttpServlet
 			// Create mapping store manager object.
 			mgr = new Manager();
 
+			_logger.info("Processing \"{}\" command.", cmd);
 			if (cmd.equalsIgnoreCase("create_mapping"))
 				mgr.createMapping(request.getInputStream(), false);
 			else if (cmd.equalsIgnoreCase("delete_mapping"))
@@ -132,8 +139,8 @@ public class controller extends HttpServlet
 		}
 		catch (Exception e)
 		{
+			_logger.error(e);
 			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
-			e.printStackTrace();
 		}
 		finally
 		{

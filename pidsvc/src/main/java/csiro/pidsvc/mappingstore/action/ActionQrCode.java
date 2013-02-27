@@ -16,6 +16,9 @@ import java.util.Hashtable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -30,6 +33,8 @@ import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
  */
 public class ActionQrCode extends AbstractAction
 {
+	private static Logger _logger = LogManager.getLogger(ActionQrCode.class.getName());
+
 	public ActionQrCode(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
 		super(controller, descriptor, matchResult);
@@ -70,11 +75,11 @@ public class ActionQrCode extends AbstractAction
 		}
 		catch (com.google.zxing.WriterException e)
 		{
-			e.printStackTrace();
+			_logger.error("Exception occurred while generating QR code.", e);
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 	}
 

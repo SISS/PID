@@ -20,6 +20,9 @@ import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.Manager;
@@ -33,6 +36,8 @@ import csiro.pidsvc.tracing.ITracer;
  */
 public class Runner
 {
+	private static Logger _logger = LogManager.getLogger(Runner.class.getName());
+
 	protected final URI _uri;
 	protected final HttpServletRequest _request;
 	protected final HttpServletResponse _response;
@@ -166,9 +171,9 @@ public class Runner
 
 	protected AbstractAction instantiateActionObject(Descriptor descriptor, MappingMatchResults matchResult)
 	{
+		String actionType = descriptor.Type;
 		try
 		{
-			String actionType = descriptor.Type;
 			if (actionType.equals("Proxy") && !Settings.getInstance().getProperty("allowProxyAction").equalsIgnoreCase("true"))
 			{
 				trace("Proxy action is disallowed for this PID Service instance. Invoking 302 Simple Redirection action instead...");
@@ -179,9 +184,9 @@ public class Runner
 			Constructor<?> ctor = impl.getDeclaredConstructor(Runner.class, Descriptor.class, MappingMatchResults.class);
 			return (AbstractAction)ctor.newInstance(this, descriptor, matchResult);
 		}
-		catch (Exception ex)
+		catch (Exception e)
 		{
-			ex.printStackTrace();
+			_logger.error("Failed to instantiate csiro.pidsvc.mappingstore.action.Action{}", actionType, e);
 		}
 		return null;
 	}

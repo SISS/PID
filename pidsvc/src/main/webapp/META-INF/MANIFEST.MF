@@ -7,7 +7,7 @@ javaVersion: 1.6.0_31
 Built-By: gol123
 projectName: PID Service Maven Webapp
 Created-By: Apache Maven
-buildDate: 15-02-2013 11:12
+buildDate: 27-02-2013 15:08
 osVersion: 6.1
 version: 1.0-SNAPSHOT
 osName: Windows 7
@@ -16,5 +16,5 @@ Build-Jdk: 1.6.0_31
 Specification-Title: PID Service Maven Webapp
 javaVmVendor: Sun Microsystems Inc.
 Specification-Version: 1.0-SNAPSHOT
-Implementation-Build: 50
+Implementation-Build: 69
 

@@ -56,7 +56,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
-				<version>2.2</version>
+				<version>2.3</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -79,6 +79,7 @@
 					<goals>
 						<goal>manifest</goal>
 					</goals>
+					<packagingExcludes>WEB-INF/classes/log4j2-test.xml</packagingExcludes>
 				</configuration>
 				<!-- This is needed to create ${basedir}/src/main/webapp/META-INF/MANIFEST.MF file -->
 				<executions>
@@ -154,6 +155,16 @@
 			<artifactId>junit</artifactId>
 			<version>3.8.1</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.0-beta4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.0-beta4</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.saxon</groupId>

@@ -17,6 +17,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
@@ -30,6 +33,8 @@ import csiro.pidsvc.mappingstore.ManagerJson;
  */
 public class info extends HttpServlet
 {
+	private static Logger _logger = LogManager.getLogger(info.class.getName());
+
 	private static final long serialVersionUID = -2660354665193002690L;
 
 	/**
@@ -59,6 +64,7 @@ public class info extends HttpServlet
 //			Thread.sleep(1500);
 			mgr = new ManagerJson();
 
+			_logger.info("Processing \"{}\" command.", cmd);
 			if (cmd.equalsIgnoreCase("search"))
 			{
 				int page = 1;
@@ -100,8 +106,8 @@ public class info extends HttpServlet
 		}
 		catch (Exception e)
 		{
+			_logger.error(e);
 			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
-			e.printStackTrace();
 		}
 		finally
 		{
