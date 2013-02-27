@@ -13,6 +13,9 @@ package csiro.pidsvc.tracing;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Execution tracer implementation that streams the log into an java.io.OutputStream class.
  * 
@@ -20,6 +23,8 @@ import java.io.OutputStream;
  */
 public class OutputStreamTracer implements ITracer
 {
+	private static Logger _logger = LogManager.getLogger(OutputStreamTracer.class.getName());
+
 	protected final OutputStream _stream;
 	protected final long _start;
 
@@ -41,6 +46,7 @@ public class OutputStreamTracer implements ITracer
 		}
 		catch (IOException e)
 		{
+			_logger.error(e);
 		}
 	}
 

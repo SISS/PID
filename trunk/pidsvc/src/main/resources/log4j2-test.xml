@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="debug">
+	<properties>
+		<property name="path">C:\Temp\pidsvc\logs\</property>
+		<property name="filename">pidsvc</property>
+	</properties>
+	<appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+			</PatternLayout>
+		</Console>
+		<RollingFile name="File" fileName="${path}${filename}.log" filePattern="${path}${filename}.%i.log.gz">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %p %logger{36} - %m%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<!--TimeBasedTriggeringPolicy/-->
+				<SizeBasedTriggeringPolicy size="1 MB"/>
+			</Policies>
+			<DefaultRolloverStrategy max="7"/>
+		</RollingFile>
+	</appenders>
+	<loggers>
+		<root level="trace">
+			<appender-ref ref="Console"/>
+			<!--appender-ref ref="File"/-->
+		</root>
+	</loggers>
+</configuration>

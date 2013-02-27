@@ -23,6 +23,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Simple HTTP request handling.
@@ -31,6 +33,8 @@ import org.apache.http.util.EntityUtils;
  */
 public class Http
 {
+	private static Logger _logger = LogManager.getLogger(Http.class.getName());
+
 	private static final String PID_SERVICE_ERROR_HTTP_HEADER = "X-PID-Service-Exception";
 	private static final String PID_SERVICE_MSG_HTTP_HEADER = "X-PID-Service-Message";
 
@@ -57,7 +61,7 @@ public class Http
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			_logger.debug(e);
 		}
 	}
 
@@ -82,7 +86,7 @@ public class Http
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.warn("Exception occurred while executing an HTTP request.", e);
 			return null;
 		}
 		finally

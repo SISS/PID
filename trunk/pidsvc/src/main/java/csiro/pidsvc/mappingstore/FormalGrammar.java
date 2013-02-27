@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
 
@@ -29,6 +32,8 @@ import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubsti
  */
 public class FormalGrammar
 {
+	private static Logger _logger = LogManager.getLogger(FormalGrammar.class.getName());
+
 	protected final URI					_uri;
 	protected final HttpServletRequest	_request;
 	protected final Object				_matchAuxiliaryData;
@@ -50,19 +55,26 @@ public class FormalGrammar
 
 	public String parse(String expression, boolean urlSafe) throws UnsupportedEncodingException
 	{
+		_logger.trace("Parsing formal grammar expression: {}", expression);
 		_log.clear();
 		String lastState = expression;
 
 		// Bring all place-holders and function calls to the same syntax.
 		String ret = expression.replaceAll("\\$(\\d+)", "\\${URI:$1}");
 		if (ret != lastState)
+		{
+			_logger.trace(">>> {}", ret);
 			_log.add(lastState = ret);
+		}
 
 		// Escape characters (enclose \ and & characters by a RAW function call).
 		ret = ret.replaceAll("\\\\([\\\\\\$])", "\\${RAW:$1}");
 		ret = ret.replace("${RAW:\\}", "${RAW:\\\\}");
 		if (ret != lastState)
+		{
+			_logger.trace(">>> {}", ret);
 			_log.add(lastState = ret);
+		}
 
 		// Process string functions.
 		final Pattern reFunction = Pattern.compile("(?<!\\\\)\\$\\{((?:(?!RAW)\\w)+)(?::([^$]*?))?\\}", Pattern.CASE_INSENSITIVE);
@@ -77,6 +89,7 @@ public class FormalGrammar
 			else
 				// Nested function call.
 				ret = ret.substring(0, m.start()) + fnRet + ret.substring(m.end());
+			_logger.trace(">>> {}", ret);
 			_log.add(ret);
 		}
 
@@ -86,16 +99,19 @@ public class FormalGrammar
 		{
 			// Unescape \\, \{ and \}
 			ret = ret.substring(0, m.start()) + m.group(1).replaceAll("\\\\([\\\\{\\}])", "$1") + ret.substring(m.end());
+			_logger.trace(">>> {}", ret);
 			_log.add(ret);
 		}
 
 		if (_log.size() > 0)
 			_log.add(0, expression);
+		_logger.trace("Result: {}", ret);
 		return ret;
 	}
 
 	protected String invokeFunction(String name, String param)
 	{
+		_logger.trace("Invoking internal function ${{}:{}}", name, param);
 		Manager mgr = null;
 		try
 		{
@@ -241,8 +257,9 @@ public class FormalGrammar
 				return URLDecoder.decode(_uri.getQuerystringParameter(param), "UTF-8");
 			}
 		}
-		catch (Exception ex)
+		catch (Exception e)
 		{
+			_logger.debug("Internal function invocation exception.", e);
 		}
 		finally
 		{

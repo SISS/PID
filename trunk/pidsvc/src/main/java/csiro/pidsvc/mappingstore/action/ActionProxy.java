@@ -22,6 +22,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
@@ -33,6 +35,8 @@ import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
  */
 public class ActionProxy extends AbstractAction
 {
+	private static Logger _logger = LogManager.getLogger(ActionProxy.class.getName());
+
 	public ActionProxy(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
 		super(controller, descriptor, matchResult);
@@ -115,11 +119,11 @@ public class ActionProxy extends AbstractAction
 		}
 		catch (Exception e)
 		{
+			_logger.error("Exception occurred while proxying HTTP request.", e);
 			if (isTraceMode())
 				trace("Set response status: 500; exception: " + e.getCause().getMessage());
 			else
 				Http.returnErrorCode(_controller.getResponse(), 500, e);
-			e.printStackTrace();
 		}
 		finally
 		{

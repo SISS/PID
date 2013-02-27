@@ -10,6 +10,9 @@
 
 package csiro.pidsvc.mappingstore.action;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
 
@@ -20,6 +23,8 @@ import csiro.pidsvc.mappingstore.Manager.MappingMatchResults;
  */
 public class Action301 extends AbstractAction
 {
+	private static Logger _logger = LogManager.getLogger(Action301.class.getName());
+
 	public Action301(Runner controller, Descriptor descriptor, MappingMatchResults matchResult)
 	{
 		super(controller, descriptor, matchResult);
@@ -35,8 +40,8 @@ public class Action301 extends AbstractAction
 		}
 		catch (Exception e)
 		{
+			_logger.error(e);
 			Http.returnErrorCode(_controller.getResponse(), 500, e);
-			e.printStackTrace();
 		}
 	}
 
@@ -49,8 +54,8 @@ public class Action301 extends AbstractAction
 		}
 		catch (Exception e)
 		{
+			_logger.error(e);
 			trace("Set HTTP response status: 500; exception: " + e.getCause().getMessage());
-			e.printStackTrace();
 		}
 	}
 }

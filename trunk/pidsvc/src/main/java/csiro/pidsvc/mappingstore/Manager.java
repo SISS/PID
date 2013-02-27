@@ -56,6 +56,8 @@ import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXException;
@@ -77,6 +79,8 @@ import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
  */
 public class Manager
 {
+	private static Logger _logger = LogManager.getLogger(Manager.class.getName());
+	
 	protected Connection _connection = null;
 	
 	public class MappingMatchResults
@@ -123,7 +127,7 @@ public class Manager
 		}
 		catch (SQLException e)
 		{
-			e.printStackTrace();
+			_logger.error("Closing connection failed.", e);
 		}
 		finally
 		{
@@ -155,11 +159,12 @@ public class Manager
 	
 				Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
 				Validator validator = schema.newValidator();
+				_logger.trace("Validating XML Schema.");
 				validator.validate(new StreamSource(new StringReader(inputData))); 
 			}
 			catch (SAXException ex)
 			{
-				ex.printStackTrace();
+				_logger.debug("Unknown format.", ex);
 				throw new ValidationException("Unknown format.", ex);
 			}
 		}
@@ -174,6 +179,7 @@ public class Manager
 		StringWriter swSqlQuery = new StringWriter();
 		transformer.setInitialContextNode(processor.newDocumentBuilder().build(new StreamSource(new StringReader(inputData))));
 		transformer.setDestination(new Serializer(swSqlQuery));
+		_logger.trace("Generating SQL query.");
 		transformer.transform();
 
 		// Update mappings in the database.
@@ -235,6 +241,7 @@ public class Manager
 		catch (Exception ex)
 		{
 			String msg = ex.getMessage();
+			_logger.warn(msg);
 			if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
 				return "ERROR: Unknown file format.";
 			else
@@ -260,6 +267,7 @@ public class Manager
 				}
 			}
 		}
+		_logger.trace("No file found.");
 		return "ERROR: No file.";
 	}
 
@@ -399,7 +407,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -470,7 +478,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		return null;
 	}
@@ -669,7 +677,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -767,7 +775,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -780,7 +788,7 @@ public class Manager
 			}
 			catch (SQLException e)
 			{
-				e.printStackTrace();
+				_logger.error(e);
 			}
 		}
 		return null;
@@ -830,7 +838,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -843,7 +851,7 @@ public class Manager
 			}
 			catch (SQLException e)
 			{
-				e.printStackTrace();
+				_logger.error(e);
 			}
 		}
 		return null;
@@ -869,7 +877,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -882,7 +890,7 @@ public class Manager
 			}
 			catch (SQLException e)
 			{
-				e.printStackTrace();
+				_logger.error(e);
 			}
 		}
 		return null;
@@ -907,7 +915,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		finally
 		{
@@ -920,7 +928,7 @@ public class Manager
 			}
 			catch (SQLException e)
 			{
-				e.printStackTrace();
+				_logger.error(e);
 			}
 		}
 		return null;
@@ -1000,7 +1008,7 @@ public class Manager
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			_logger.error(e);
 		}
 		return lookupDescriptor.getDefaultValue(key);
 	}

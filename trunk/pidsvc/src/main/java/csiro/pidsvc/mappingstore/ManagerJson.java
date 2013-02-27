@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 
 /**
@@ -29,6 +31,8 @@ import org.json.simple.JSONObject;
  */
 public class ManagerJson extends Manager
 {
+	private static Logger _logger = LogManager.getLogger(ManagerJson.class.getName());
+
 //	protected final SimpleDateFormat _sdfdb = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 //	protected final SimpleDateFormat _sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 	
@@ -326,6 +330,7 @@ public class ManagerJson extends Manager
 		}
 		catch (Exception e)
 		{
+			_logger.debug(e);
 		}
 		finally
 		{
@@ -488,6 +493,7 @@ public class ManagerJson extends Manager
 							}
 							catch (Exception e)
 							{
+								_logger.debug(e);
 								ret += "{}";
 							}
 						}

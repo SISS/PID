@@ -21,6 +21,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.Manager;
@@ -36,6 +39,8 @@ import csiro.pidsvc.tracing.OutputStreamTracer;
  */
 public class dispatcher extends HttpServlet
 {
+	private static Logger _logger = LogManager.getLogger(dispatcher.class.getName());
+
 	private static final long serialVersionUID = 1975810034384367312L;
 
 	/**
@@ -81,15 +86,16 @@ public class dispatcher extends HttpServlet
 			uri = new URI(preparedUri);
 			mgr = new Manager();
 		}
-		catch (URISyntaxException ex)
+		catch (URISyntaxException e)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_NOT_FOUND, ex);
+			_logger.error("URI syntax exception has occurred.", e);
+			Http.returnErrorCode(response, HttpServletResponse.SC_NOT_FOUND, e);
 			return;
 		}
-		catch (Exception ex)
+		catch (Exception e)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex);
-			ex.printStackTrace();
+			_logger.error(e);
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 			if (mgr != null)
 				mgr.close();
 			return;
@@ -107,6 +113,7 @@ public class dispatcher extends HttpServlet
 		///////////////////////////////////////////////////////////////////////
 		//	Find a matching mapping and run action items.
 
+		_logger.info("Resolving {}", uri.getOriginalUriAsString());
 		try
 		{
 			MappingMatchResults matchResult;
@@ -151,11 +158,10 @@ public class dispatcher extends HttpServlet
 			// Run actions.
 			(new Runner(uri, request, response, tracer)).Run(matchResult);
 		}
-		catch (Exception ex)
+		catch (Exception e)
 		{
-			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex);
-			ex.printStackTrace();
-			return;
+			_logger.error(e);
+			Http.returnErrorCode(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
 		}
 		finally
 		{

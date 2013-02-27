@@ -19,6 +19,8 @@ import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 
 import csiro.pidsvc.helper.Http;
@@ -30,6 +32,8 @@ import csiro.pidsvc.helper.Http;
  */
 public class Settings
 {
+	private static Logger _logger = LogManager.getLogger(Settings.class.getName());
+
 	private static Settings			_instance = null;
 	protected Properties			_properties = new Properties();
 	protected Manifest				_manifest = new Manifest();
@@ -52,7 +56,7 @@ public class Settings
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			_logger.warn("Exception occurred while retrieving application settings.", e);
 		}
 	}
 
@@ -142,6 +146,7 @@ public class Settings
 		}
 		catch (Exception e)
 		{
+			_logger.debug(e);
 		}
 		return false;
 	}
