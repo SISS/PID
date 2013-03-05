@@ -4,8 +4,8 @@
 	<artifactId>pidsvc</artifactId>
 	<packaging>war</packaging>
 	<version>1.0-SNAPSHOT</version>
-	<name>PID Service Maven Webapp</name>
-	<url>http://maven.apache.org</url>
+	<name>Persistent Identifiers PID Service (PID Service)</name>
+	<url>https://www.seegrid.csiro.au/wiki/Siss/PIDService</url>
 	<scm>
 		<connection>scm:svn:https://www.seegrid.csiro.au/subversion/PID/trunk/pidsvc</connection>
         <developerConnection>scm:svn:https://www.seegrid.csiro.au/subversion/PID/trunk/pidsvc</developerConnection>
