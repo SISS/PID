@@ -853,7 +853,7 @@ var Main = Class.construct({
 				"		<input type='text' value='" + (json.name ? json.name : "") + "' class='__actionName' maxlength='50' style='width: " + elementWidth.name +";' />" +
 				"	</td>" +
 				"	<td align='right'>" +
-				"		<input type='text' value='" + (json.value ? json.value : "") + "' class='__actionValue' maxlength='512' style='width: " + elementWidth.value +";' />" +
+				"		<input type='text' value='" + (json.value ? json.value : "") + "' class='__actionValue' maxlength='4096' style='width: " + elementWidth.value +";' />" +
 				"	</td>" +
 				(
 						json.type != null ? "<td><a href='#' class='__removeAction'><img src='Images/delete.png' title='Remove' width='16' height='16' border='0' style='position: relative; top: 1px;'/></a></td>" : ""
