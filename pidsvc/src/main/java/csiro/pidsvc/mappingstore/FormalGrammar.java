@@ -254,7 +254,12 @@ public class FormalGrammar
 			else if (name.equalsIgnoreCase("QS"))
 			{
 				// Returns query string parameter from original request URI.
-				return URLDecoder.decode(_uri.getQuerystringParameter(param), "UTF-8");
+				return param == null || param.isEmpty() ? _uri.getQueryString() : URLDecoder.decode(_uri.getQuerystringParameter(param), "UTF-8");
+			}
+			else if (name.equalsIgnoreCase("HTTP_HEADER"))
+			{
+				// Returns HTTP header from original HTTP request.
+				return param == null || param.isEmpty() ? "" : _request.getHeader(param);
 			}
 		}
 		catch (Exception e)

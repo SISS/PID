@@ -67,7 +67,7 @@ public class controller extends HttpServlet
 		{
 			mgr = new ManagerJson();
 
-			_logger.info("Processing \"{}\" command.", cmd);
+			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.matches("(?i)^(?:full|partial)_export$"))
 			{
 				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), 0);

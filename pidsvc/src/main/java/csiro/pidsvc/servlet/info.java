@@ -64,7 +64,7 @@ public class info extends HttpServlet
 //			Thread.sleep(1500);
 			mgr = new ManagerJson();
 
-			_logger.info("Processing \"{}\" command.", cmd);
+			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.equalsIgnoreCase("search"))
 			{
 				int page = 1;
