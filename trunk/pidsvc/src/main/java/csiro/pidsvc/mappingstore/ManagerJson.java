@@ -20,8 +20,6 @@ import java.util.regex.Pattern;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
@@ -50,13 +48,7 @@ public class ManagerJson extends Manager
 	{
 		super();
 
-		final String authorization = request.getHeader("Authorization");
-	    if (authorization != null && authorization.startsWith("Basic"))
-	    {
-	        // Authorization: Basic base64credentials
-	        String base64Credentials = authorization.substring(5).trim();
-	        _authorizationName = StringUtils.newStringUtf8(Base64.decodeBase64(base64Credentials)).split(":", 2)[0];
-	    }
+        _authorizationName = request.getRemoteUser();
 	}
 
 	public String getAuthorizationName()
