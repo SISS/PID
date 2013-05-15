@@ -80,7 +80,7 @@ public class dispatcher extends HttpServlet
 			String preparedUri = request.getQueryString();
 			preparedUri = preparedUri.replace("%26", "%2526"); // Double escape &.
 			preparedUri = URLDecoder.decode(preparedUri, "UTF-8");
-			preparedUri = preparedUri.replace(" ", "+");
+			preparedUri = preparedUri.replace(" ", "+"); // Required to avoid java.net.URISyntaxException: Illegal character in path.
 			preparedUri = preparedUri.replaceAll("^([^&]+)&(.+)?$", "$1?$2"); // Replace first & with ? marking the start of the query string.
 
 			uri = new URI(preparedUri);

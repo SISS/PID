@@ -81,8 +81,7 @@ public class FormalGrammar
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
 			String fnRet = invokeFunction(m.group(1), m.group(2));
-			if (fnRet == null)
-				fnRet = "";
+			fnRet = (fnRet == null ? "" : URLDecoder.decode(fnRet, "UTF-8"));
 			if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
 				// Non-nested function call.
 				ret = ret.substring(0, m.start()) + URLEncoder.encode(fnRet, "UTF-8") + ret.substring(m.end());
