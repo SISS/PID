@@ -103,6 +103,11 @@ public class info extends HttpServlet
 				response.getWriter().write(Settings.getInstance().getManifestJson());
 			else if (cmd.equalsIgnoreCase("is_new_version_available"))
 				response.getWriter().write(Settings.getInstance().isNewVersionAvailableJson());
+			else if (cmd.equalsIgnoreCase("global_js"))
+			{
+				response.setContentType("text/javascript");
+				response.getWriter().write(mgr.getGlobalSettings());
+			}
 		}
 		catch (Exception e)
 		{

@@ -123,6 +123,10 @@ var Main = Class.construct({
 		var qsMappingPath = location.href.getQueryParam("mapping_path");
 		if (qsMappingPath !== false)
 			this.getConfigByMappingPath(decodeURIComponent(qsMappingPath));
+
+		// Tip about Author field behaviour.
+		if (GlobalSettings.AuthorizationName)
+			$J("#MappingCreator").val(GlobalSettings.AuthorizationName).attr("title", "The author is automatically taken from your access credentials.");
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -242,6 +246,10 @@ var Main = Class.construct({
 			// Reinitialise action selectors.
 			$J("#DefaultAction td.__actionType > select, #ConditionSection td.__actionType > select").change();
 
+			// Disable author/creator input for authenticate requests.
+			if (GlobalSettings.AuthorizationName)
+				$J("#MappingCreator").attr("disabled", "disabled");
+
 			Main.monitorChanges();
 		}
 	},
@@ -275,7 +283,11 @@ var Main = Class.construct({
 		if (state)
 			$J("#cmdSave").attr("disabled", "disabled");
 		else
+		{
 			$J("#cmdSave").removeAttr("disabled");
+			if (GlobalSettings.AuthorizationName)
+				$J("#MappingCreator").val(GlobalSettings.AuthorizationName);
+		}
 	},
 
 	isSavingBlocked: function()
@@ -510,7 +522,7 @@ var Main = Class.construct({
 			$J("#MappingPath").val("");
 			$J("#MappingType").val("1:1");
 			$J("#MappingDescription").val("");
-			$J("#MappingCreator").val("");
+			$J("#MappingCreator").val(GlobalSettings.AuthorizationName ? GlobalSettings.AuthorizationName : "");
 
 			$J("#DefaultAction")
 				.find("td.__actionType > select")

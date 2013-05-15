@@ -18,7 +18,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
+import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
@@ -32,6 +35,8 @@ import org.json.simple.JSONObject;
 public class ManagerJson extends Manager
 {
 	private static Logger _logger = LogManager.getLogger(ManagerJson.class.getName());
+	
+	private String _authorizationName = null;
 
 //	protected final SimpleDateFormat _sdfdb = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 //	protected final SimpleDateFormat _sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -39,6 +44,31 @@ public class ManagerJson extends Manager
 	public ManagerJson() throws NamingException, SQLException, IOException
 	{
 		super();
+	}
+
+	public ManagerJson(HttpServletRequest request) throws NamingException, SQLException, IOException
+	{
+		super();
+
+		final String authorization = request.getHeader("Authorization");
+	    if (authorization != null && authorization.startsWith("Basic"))
+	    {
+	        // Authorization: Basic base64credentials
+	        String base64Credentials = authorization.substring(5).trim();
+	        _authorizationName = StringUtils.newStringUtf8(Base64.decodeBase64(base64Credentials)).split(":", 2)[0];
+	    }
+	}
+
+	public String getAuthorizationName()
+	{
+		return _authorizationName;
+	}
+
+	public String getGlobalSettings()
+	{
+		return "var GlobalSettings = {" +
+				JSONObject.toString("AuthorizationName", _authorizationName) +
+			"};";
 	}
 
 	public String getSettings() throws SQLException
