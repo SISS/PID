@@ -42,7 +42,7 @@
 					<div style="background: #fff; margin-bottom: 5px;">
 						<table border="0" cellpadding="5" cellspacing="1" width="100%">
 							<tr>
-								<td nowrap="nowrap">URI pattern:</td>
+								<td nowrap="nowrap">URI stem pattern:</td>
 								<td width="50%"><input type="text" id="SearchUriPattern" maxlength="255" style="width: 400px;"/></td>
 								<td align="right" nowrap="nowrap">Mapping type:</td>
 								<td width="50%">
@@ -108,7 +108,7 @@
 					<table border="0" cellpadding="1" cellspacing="5" width="100%">
 						<tr valign="top">
 							<td width="70%">
-								<b>URI pattern:</b>
+								<b>URI stem pattern:</b>
 								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
 									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
 									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
@@ -147,6 +147,18 @@
 										</td>
 									</tr>
 								</table>
+								<div id="RegexTester">
+									<b>URI/Regex testing:</b> <a href="javascript:Main.showRegexTester();"><i>(toggle view)</i></a>
+									<table id="URITesting" border="0" cellpadding="5" cellspacing="1" width="100%" style="display: none;">
+										<tr>
+											<td><input type="text" id="txtUriTesting" maxlength="500" style="width: 695px; font-family: Arial; font-size: 18px; height: 20px;" /><img id="imgUriTestingStatus" src="Images/help-faq.png" width="16" height="16" style="margin-left: 5px;"/></td>
+										</tr>
+										<tr>
+											<td id="phMatchingGroupInfo"></td>
+										</tr>
+									</table>
+									<div style="height: 7px;"></div>
+								</div>
 								<b>Default action:</b>
 								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
 								<b>Conditions:</b>
