@@ -90,6 +90,10 @@ var Main = Class.construct({
 			}
 		});
 
+		// Regex tester.
+		$J("#MappingPath, #txtUriTesting").keyup(this.testUriChanged);
+		$J("#MappingType").change(this.mappingTypeOnChange);
+
 		// Allow either MappingDeprecatedInclude or MappingDeprecatedOnly to be checked.
 		$J("#UriSearchSection input:checkbox[id^='MappingDeprecated']")
 			.removeAttr("checked")
@@ -111,7 +115,7 @@ var Main = Class.construct({
 		else if (type)
 		{
 			$J("#SearchMappingType").val(type);
-			$J("#MappingType").val(type);
+			$J("#MappingType").val(type).change();
 			this.search();
 		}
 		this.blockSaving(true);
@@ -127,10 +131,6 @@ var Main = Class.construct({
 		// Tip about Author field behaviour.
 		if (GlobalSettings.AuthorizationName)
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName).attr("title", "The author is automatically taken from your access credentials.");
-
-		// Regex tester.
-		$J("#MappingPath, #txtUriTesting").keyup(this.testUriChanged);
-		$J("#MappingType").change(this.mappingTypeOnChange);
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -355,7 +355,7 @@ var Main = Class.construct({
 			// Matching.
 			var i = 0;
 			m.each(function(it) {
-				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + (i++) + " = " + it + "</div>";
+				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + (i++) + " = " + (it ? it : "") + "</div>";
 			});
 			$J("#imgUriTestingStatus").attr("src", "Images/tick.png").attr("title", "URI is matching this mapping rule");
 		}
@@ -597,7 +597,7 @@ var Main = Class.construct({
 				alert("Mapping is not found!");
 
 			$J("#MappingPath").val("");
-			$J("#MappingType").val("1:1");
+			$J("#MappingType").val("1:1").change();
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName ? GlobalSettings.AuthorizationName : "");
 
@@ -622,7 +622,7 @@ var Main = Class.construct({
 
 		// Show configuration.
 		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
-		$J("#MappingType").val(data.type);
+		$J("#MappingType").val(data.type).change();
 		$J("#MappingDescription").val(data.description);
 		$J("#MappingCreator").val(data.creator);
 
