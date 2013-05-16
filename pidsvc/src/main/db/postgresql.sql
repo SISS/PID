@@ -149,7 +149,7 @@ CREATE TABLE action
   condition_id smallint,
   type character varying(50) NOT NULL,
   action_name character varying(50),
-  action_value character varying(255),
+  action_value character varying(4096),
   CONSTRAINT "action_pkey" PRIMARY KEY (action_id ),
   CONSTRAINT "FK_action_condition_id" FOREIGN KEY (condition_id)
       REFERENCES condition (condition_id) MATCH SIMPLE
