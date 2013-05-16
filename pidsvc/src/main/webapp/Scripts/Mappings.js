@@ -127,6 +127,10 @@ var Main = Class.construct({
 		// Tip about Author field behaviour.
 		if (GlobalSettings.AuthorizationName)
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName).attr("title", "The author is automatically taken from your access credentials.");
+
+		// Regex tester.
+		$J("#MappingPath, #txtUriTesting").keyup(this.testUriChanged);
+		$J("#MappingType").change(this.mappingTypeOnChange);
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -293,6 +297,79 @@ var Main = Class.construct({
 	isSavingBlocked: function()
 	{
 		return $J("#cmdSave").is(":disabled");
+	},
+
+	mappingTypeOnChange: function()
+	{
+		var showRegexTester = $J("#MappingType").val() != "1:1";
+		if (showRegexTester)
+		{
+			$J("#RegexTester").show();
+			Main.testUriChanged();
+		}
+		else
+			$J("#RegexTester").hide();
+	},
+
+	///////////////////////////////////////////////////////////////////////////
+	//	URI and regex testing.
+
+	testUriChanged: function(event)
+	{
+		if ($J("#MappingType").val() == "1:1")
+			return;
+
+		var mappingPath		= $J("#MappingPath").val();
+		var val				= $J("#txtUriTesting").val();
+
+		// Validate regular expression.
+		var re;
+		try
+		{
+			re = new RegExp(mappingPath, "i");
+		}
+		catch (ex)
+		{
+			$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "Regex exception occurred");
+			$J("#phMatchingGroupInfo").html("<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">" + ex + "</div>");
+			return;
+		}
+
+		var m				= val.match(re);
+		var html			= "";
+
+		if (!m)
+		{
+			// Count non capturing groups.
+			var count = mappingPath.match(/\((?!\?\:)/);
+			for (var i = 0; i <= count.length; ++i)
+				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + i + " = </div>";
+
+			if (!mappingPath.trim() || !val.trim())
+				$J("#imgUriTestingStatus").attr("src", "Images/help-faq.png").attr("title", "Start typing URI...");
+			else
+				$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "URI is NOT matching this mapping rule");
+		}
+		else
+		{
+			// Matching.
+			var i = 0;
+			m.each(function(it) {
+				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + (i++) + " = " + it + "</div>";
+			});
+			$J("#imgUriTestingStatus").attr("src", "Images/tick.png").attr("title", "URI is matching this mapping rule");
+		}
+		$J("#phMatchingGroupInfo").html(html);
+	},
+
+	showRegexTester: function()
+	{
+		var jq = $J("#URITesting");
+		var isVisible = jq.is(":visible");
+		if (isVisible)
+			jq.hide();
+		else
+			jq.show();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -567,7 +644,7 @@ var Main = Class.construct({
 				.attr("title", "No QR Code is generated for Regex-based mappings.")
 				.parent()
 					.removeAttr("href");
-			
+			Main.testUriChanged(null);
 		}
 		$J("#QRCodeHits").text(data.qr_hits);
 		Main.displayQrCodeUI(true);
