@@ -320,7 +320,7 @@ var Main = Class.construct({
 			return;
 
 		var mappingPath		= $J("#MappingPath").val();
-		var val				= $J("#txtUriTesting").val();
+		var val				= $J("#txtUriTesting").val().trim();
 
 		// Validate regular expression.
 		var re;
@@ -335,20 +335,23 @@ var Main = Class.construct({
 			return;
 		}
 
-		var m				= val.match(re);
-		var html			= "";
+		var m = val.match(re);
+		var html = "";
 
 		if (!m)
 		{
 			// Count non capturing groups.
-			var count = mappingPath.match(/\((?!\?\:)/);
-			for (var i = 0; i <= count.length; ++i)
+			var count = mappingPath.match(/\((?!\?\:)/g);
+			for (var i = 0; i <= (count ? count.length : 0); ++i)
 				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + i + " = </div>";
 
 			if (!mappingPath.trim() || !val.trim())
 				$J("#imgUriTestingStatus").attr("src", "Images/help-faq.png").attr("title", "Start typing URI...");
 			else
 				$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "URI is NOT matching this mapping rule");
+
+			// Reset QR code image.
+			Main.setQrCode(null);
 		}
 		else
 		{
@@ -358,6 +361,9 @@ var Main = Class.construct({
 				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + (i++) + " = " + (it ? it : "") + "</div>";
 			});
 			$J("#imgUriTestingStatus").attr("src", "Images/tick.png").attr("title", "URI is matching this mapping rule");
+
+			// Set QR code image.
+			Main.setQrCode(val.trim());
 		}
 		$J("#phMatchingGroupInfo").html(html);
 	},
@@ -585,6 +591,29 @@ var Main = Class.construct({
 		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
 	},
 
+	setQrCode: function(mapping_path)
+	{
+		if (mapping_path)
+		{
+			var qruri = mapping_path + (mapping_path.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr";
+			$J("#QRCode")
+				.data("uri", qruri)
+				.attr("src", qruri + "=120")
+				.attr("title", "Open in a new window\n" + location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + mapping_path))
+				.parent()
+					.attr("href", mapping_path);
+		}
+		else
+		{
+			$J("#QRCode")
+				.data("uri", null)
+				.attr("src", "Images/emptyqr.png")
+				.attr("title", "No QR Code is generated for Regex-based mappings.")
+				.parent()
+					.removeAttr("href");
+		}
+	},
+
 	renderConfig: function(data)
 	{
 		// Save last loaded configuration in memory.
@@ -628,22 +657,11 @@ var Main = Class.construct({
 
 		if (data.type == "1:1")
 		{
-			var qruri = data.mapping_path + (data.mapping_path.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr";
-			$J("#QRCode")
-				.data("uri", qruri)
-				.attr("src", qruri + "=120")
-				.attr("title", "Open in a new window\n" + location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + data.mapping_path))
-				.parent()
-					.attr("href", data.mapping_path);
+			Main.setQrCode(data.mapping_path);
 		}
 		else
 		{
-			$J("#QRCode")
-				.data("uri", null)
-				.attr("src", "Images/emptyqr.png")
-				.attr("title", "No QR Code is generated for Regex-based mappings.")
-				.parent()
-					.removeAttr("href");
+			Main.setQrCode(null);
 			Main.testUriChanged(null);
 		}
 		$J("#QRCodeHits").text(data.qr_hits);
