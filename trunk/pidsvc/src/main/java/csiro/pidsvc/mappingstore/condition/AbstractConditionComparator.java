@@ -41,11 +41,20 @@ public abstract class AbstractConditionComparator extends AbstractCondition
 			for (String pair : nameValuePairs)
 			{
 				operands		= pair.replace("\\&", "&").split("(?<!\\\\)=", 2);
-				leftOperand		= grammar.parse(operands[0].replace("\\=", "="), false);
-				rightOperand	= grammar.parse(operands[1].replace("\\=", "="), false);
+				leftOperand		= grammar.parse(FormalGrammar.unescape(operands[0]), false);
 
-				if (leftOperand.isEmpty() || rightOperand.isEmpty() || !this.compare(leftOperand, rightOperand))
-					return false;
+				if (operands.length == 1)
+				{
+					// If only one operand is present and is not empty then expression equates to true.
+					if (leftOperand.isEmpty())
+						return false;
+				}
+				else
+				{
+					rightOperand = grammar.parse(FormalGrammar.unescape(operands[1]), false);
+					if (leftOperand.isEmpty() || rightOperand.isEmpty() || !this.compare(leftOperand, rightOperand))
+						return false;
+				}
 			}
 			return true;
 		}

@@ -937,7 +937,7 @@ public class Manager
 	public String resolveLookupValue(String ns, String key)
 	{
 		LookupMapDescriptor lookupDescriptor = getLookupMapType(ns);
-		if (lookupDescriptor == null)				
+		if (lookupDescriptor == null)
 			return null;
 
 		try

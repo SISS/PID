@@ -12,7 +12,6 @@ package csiro.pidsvc.servlet;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -77,13 +76,7 @@ public class dispatcher extends HttpServlet
 
 		try
 		{
-			String preparedUri = request.getQueryString();
-			preparedUri = preparedUri.replace("%26", "%2526"); // Double escape &.
-			preparedUri = URLDecoder.decode(preparedUri, "UTF-8");
-			preparedUri = preparedUri.replace(" ", "+"); // Required to avoid java.net.URISyntaxException: Illegal character in path.
-			preparedUri = preparedUri.replaceAll("^([^&]+)&(.+)?$", "$1?$2"); // Replace first & with ? marking the start of the query string.
-
-			uri = new URI(preparedUri);
+			uri = new URI(URI.prepareURI(request.getQueryString()));
 			mgr = new Manager();
 		}
 		catch (URISyntaxException e)
