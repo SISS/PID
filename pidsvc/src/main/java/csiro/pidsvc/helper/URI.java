@@ -10,7 +10,10 @@
 
 package csiro.pidsvc.helper;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,6 +51,20 @@ public class URI
 		parse();
 	}
 
+	public static String prepareURI(String str) throws UnsupportedEncodingException
+	{
+		str = str.replace("%26", "%2526"); // Double escape &.
+		str = URLDecoder.decode(str, "UTF-8");
+		str = str.replace(" ", "+"); // Required to avoid java.net.URISyntaxException: Illegal character in path.
+		str = str.replaceAll("^([^&]+)&(.+)?$", "$1?$2"); // Replace first & with ? marking the start of the query string.
+		return str;
+	}
+
+	public static URI create(String str) throws UnsupportedEncodingException, URISyntaxException
+	{
+		return new URI(prepareURI(URLEncoder.encode(str, "UTF-8")));
+	}
+	
 	private URI(URI src)
 	{
 		this._originalUri = src._originalUri;

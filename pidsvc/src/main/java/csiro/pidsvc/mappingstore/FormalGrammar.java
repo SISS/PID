@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubstitutionGroup;
+import csiro.pidsvc.mappingstore.condition.ConditionComparator;
 
 /**
  * Implementation class of a formal grammar used in URI rewrite actions.
@@ -32,6 +33,31 @@ import csiro.pidsvc.mappingstore.condition.AbstractCondition.NameValuePairSubsti
  */
 public class FormalGrammar
 {
+	protected class FunctionArguments
+	{
+		final private String _arguments[];
+
+		public FunctionArguments(String arguments)
+		{
+			_arguments = (arguments == null || arguments.isEmpty() ? new String[] {} : arguments.split("(?<!\\\\):"));
+		}
+
+		public String get(int index)
+		{
+			return index < _arguments.length ? unescape(_arguments[index]) : "";
+		}
+
+		public String getUnescaped(int index)
+		{
+			return index < _arguments.length ? _arguments[index] : "";
+		}
+
+		public int getCount()
+		{
+			return _arguments.length;
+		}
+	}
+
 	private static Logger _logger = LogManager.getLogger(FormalGrammar.class.getName());
 
 	protected final URI					_uri;
@@ -67,37 +93,36 @@ public class FormalGrammar
 			_log.add(lastState = ret);
 		}
 
-		// Escape characters (enclose \ and & characters by a RAW function call).
-		ret = ret.replaceAll("\\\\([\\\\\\$])", "\\${RAW:$1}");
-		ret = ret.replace("${RAW:\\}", "${RAW:\\\\}");
-		if (ret != lastState)
-		{
-			_logger.trace(">>> {}", ret);
-			_log.add(lastState = ret);
-		}
-
-		// Process string functions.
-		final Pattern reFunction = Pattern.compile("(?<!\\\\)\\$\\{((?:(?!RAW)\\w)+)(?::([^$]*?))?\\}", Pattern.CASE_INSENSITIVE);
+		/*
+		 * Process function calls.
+		 * 		Expand function calls going inside out (from innermost to outermost calls).
+		 * 		The result of outermost function calls is URL encoded.
+		 * 		The result of nested function calls is escaped.
+		 */
+		final Pattern reFunction = Pattern.compile("(?<!\\\\)\\$(?<!\\\\)\\{(\\w+)(?::([^$]*?))?(?<!\\\\)\\}", Pattern.CASE_INSENSITIVE);
 		for (Matcher m = reFunction.matcher(ret); m.find(); m = reFunction.matcher(ret))
 		{
-			String fnRet = invokeFunction(m.group(1), m.group(2));
+			String fnName		= m.group(1);
+			String fnRet		= invokeFunction(fnName, m.group(2));
+			boolean isNested	= ret.lastIndexOf("${", m.start() - 1) != -1;
+
 			fnRet = (fnRet == null ? "" : URLDecoder.decode(fnRet, "UTF-8"));
-			if (urlSafe && ret.lastIndexOf("${", m.start() - 1) == -1)
+
+			if (isNested)
+			{
+				// Nested function call.
+				ret = ret.substring(0, m.start()) + escape(fnRet) + ret.substring(m.end());
+			}
+			else if (urlSafe && !fnName.equalsIgnoreCase("RAW"))
+			{
 				// Non-nested function call.
 				ret = ret.substring(0, m.start()) + URLEncoder.encode(fnRet, "UTF-8") + ret.substring(m.end());
+			}
 			else
-				// Nested function call.
+			{
+				// Non-nested function call.
 				ret = ret.substring(0, m.start()) + fnRet + ret.substring(m.end());
-			_logger.trace(">>> {}", ret);
-			_log.add(ret);
-		}
-
-		// Process RAW function separately. 
-		final Pattern reFnRaw = Pattern.compile("\\$\\{RAW:(.+?)(?:(?<!(?<!\\\\)\\\\)\\})", Pattern.CASE_INSENSITIVE);
-		for (Matcher m = reFnRaw.matcher(ret); m.find(); m = reFnRaw.matcher(ret))
-		{
-			// Unescape \\, \{ and \}
-			ret = ret.substring(0, m.start()) + m.group(1).replaceAll("\\\\([\\\\{\\}])", "$1") + ret.substring(m.end());
+			}
 			_logger.trace(">>> {}", ret);
 			_log.add(ret);
 		}
@@ -108,20 +133,36 @@ public class FormalGrammar
 		return ret;
 	}
 
+	public static String escape(String str)
+	{
+		return str.replaceAll("[:\\\\\\$\\{\\}=&]", "\\\\$0");
+	}
+	
+	public static String unescape(String str)
+	{
+		return str.replaceAll("\\\\([:\\\\\\$\\{\\}=&])", "$1");
+	}
+	
 	protected String invokeFunction(String name, String param)
 	{
 		_logger.trace("Invoking internal function ${{}:{}}", name, param);
 		Manager mgr = null;
 		try
 		{
-			if (name.equalsIgnoreCase("URI"))
+			FunctionArguments args = new FunctionArguments(param);
+
+			if (name.equalsIgnoreCase("RAW"))
+			{
+				return unescape(param);
+			}
+			else if (name.equalsIgnoreCase("URI"))
 			{
 				// Regex from URI matching.
 				if (param == null || param.isEmpty() || param.equals("0"))
 					return URLDecoder.decode(_uri.getOriginalUriAsString(), "UTF-8");
 				else if (_matchAuxiliaryData instanceof Pattern)
 				{
-					int groupIndex = Integer.parseInt(param);
+					int groupIndex = Integer.parseInt(args.get(0));
 					Matcher m = ((Pattern)_matchAuxiliaryData).matcher(_uri.getPathNoExtension());
 					if (m.find() && groupIndex <= m.groupCount())
 						return URLDecoder.decode(m.group(groupIndex), "UTF-8");
@@ -132,19 +173,17 @@ public class FormalGrammar
 				// Matches from condition regex matching.
 				if (_conditionAuxiliaryData != null)
 				{
-					if (param == null || param.isEmpty())
-						param = "0";
 					if (_conditionAuxiliaryData instanceof Matcher)
 					{
 						Matcher m = (Matcher)_conditionAuxiliaryData;
-						int groupIndex = Integer.parseInt(param);
+						int groupIndex = args.get(0).isEmpty() ? 0 : Integer.parseInt(args.get(0));
 						if (groupIndex <= m.groupCount())
 							return m.group(groupIndex);
 					}
 					else if (_conditionAuxiliaryData instanceof NameValuePairSubstitutionGroup)
 					{
 						NameValuePairSubstitutionGroup aux = (NameValuePairSubstitutionGroup)_conditionAuxiliaryData;
-						Matcher m = Pattern.compile("^(.+?)(?::(.+))?$").matcher(param);
+						Matcher m = Pattern.compile("^(.+?)(?::(.+))?$").matcher(args.get(0));
 						if (m.find())
 						{
 							String val = m.group(2);
@@ -164,23 +203,23 @@ public class FormalGrammar
 			else if (name.equalsIgnoreCase("ENV"))
 			{
 				// Environment variables.
-				if (param.equalsIgnoreCase("REQUEST_URI"))
+				if (args.get(0).equalsIgnoreCase("REQUEST_URI"))
 				{
 					// E.g. /id/test
 					return _uri.getPathNoExtension();
 				}
-				else if (param.equalsIgnoreCase("REQUEST_URI_EXT"))
+				else if (args.get(0).equalsIgnoreCase("REQUEST_URI_EXT"))
 				{
 					// E.g. /id/test.ext
 					String ext = _uri.getExtension();
 					return (ext == null || ext.equals("")) ? _uri.getPathNoExtension() : _uri.getPathNoExtension() + "." + ext;
 				}
-				else if (param.equalsIgnoreCase("REQUEST_URI_QS") || param.equalsIgnoreCase("ORIGINAL_URI"))
+				else if (args.get(0).equalsIgnoreCase("REQUEST_URI_QS") || args.get(0).equalsIgnoreCase("ORIGINAL_URI"))
 				{
 					// E.g. /id/test.ext?arg=1
 					return _uri.getOriginalUriAsString();
 				}
-				else if (param.equalsIgnoreCase("FULL_REQUEST_URI"))
+				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI"))
 				{
 					// E.g. http://example.org:8080/id/test
 					String val = _request.getScheme() + "://" + _request.getServerName();
@@ -188,7 +227,7 @@ public class FormalGrammar
 						val += ":" + _request.getServerPort();
 					return val + _uri.getPathNoExtension();
 				}
-				else if (param.equalsIgnoreCase("FULL_REQUEST_URI_EXT"))
+				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_EXT"))
 				{
 					// E.g. http://example.org:8080/id/test.ext
 					String val = _request.getScheme() + "://" + _request.getServerName();
@@ -200,7 +239,7 @@ public class FormalGrammar
 					String ext = _uri.getExtension();
 					return (ext == null || ext.equals("")) ? val : val + "." + ext;
 				}
-				else if (param.equalsIgnoreCase("FULL_REQUEST_URI_QS"))
+				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_QS"))
 				{
 					// E.g. http://example.org:8080/id/test.ext?arg=1
 					String val = _request.getScheme() + "://" + _request.getServerName();
@@ -208,28 +247,28 @@ public class FormalGrammar
 						val += ":" + _request.getServerPort();
 					return val + _uri.getOriginalUriAsString();
 				}
-				else if (param.equalsIgnoreCase("QUERY_STRING"))
+				else if (args.get(0).equalsIgnoreCase("QUERY_STRING"))
 				{
 					// E.g. arg=1
 					return _uri.getQueryString();
 				}
-				else if (param.equalsIgnoreCase("EXTENSION") || param.equalsIgnoreCase("EXT"))
+				else if (args.get(0).equalsIgnoreCase("EXTENSION") || args.get(0).equalsIgnoreCase("EXT"))
 				{
 					// E.g. ext
 					return _uri.getExtension();
 				}
-				else if (param.equalsIgnoreCase("DOT_EXTENSION") || param.equalsIgnoreCase("DOT_EXT"))
+				else if (args.get(0).equalsIgnoreCase("DOT_EXTENSION") || args.get(0).equalsIgnoreCase("DOT_EXT"))
 				{
 					// E.g. .ext
 					String ext = _uri.getExtension();
 					return (ext == null || ext.equals("")) ? "" : "." + ext;
 				}
-				else if (param.equalsIgnoreCase("SERVER_NAME"))
+				else if (args.get(0).equalsIgnoreCase("SERVER_NAME"))
 				{
 					// E.g. example.org
 					return _request.getServerName();
 				}
-				else if (param.equalsIgnoreCase("SERVER_ADDR"))
+				else if (args.get(0).equalsIgnoreCase("SERVER_ADDR"))
 				{
 					// E.g. http://example.org:8080
 					String val = _request.getScheme() + "://" + _request.getServerName();
@@ -240,25 +279,53 @@ public class FormalGrammar
 			}
 			else if (name.equalsIgnoreCase("LOOKUP"))
 			{
-				// Extracts [(namespace)]:(value).
-				final Pattern reNsValue = Pattern.compile("^\\[(.+?)\\]:(.+)$");
-				Matcher m = reNsValue.matcher(param);
-
-				if (m.find())
-				{
-					String value = (mgr = new Manager()).resolveLookupValue(m.group(1), m.group(2));
-					return value == null ? "" : value;
-				}
+				return (mgr = new Manager()).resolveLookupValue(args.get(0), args.get(1));
 			}
 			else if (name.equalsIgnoreCase("QS"))
 			{
 				// Returns query string parameter from original request URI.
-				return param == null || param.isEmpty() ? _uri.getQueryString() : URLDecoder.decode(_uri.getQuerystringParameter(param), "UTF-8");
+				if (args.get(0).isEmpty())
+					return _uri.getQueryString();
+				else
+				{
+					String val = _uri.getQuerystringParameter(args.get(0));
+					return val == null ? "" : URLDecoder.decode(val, "UTF-8");
+				}
 			}
 			else if (name.equalsIgnoreCase("HTTP_HEADER"))
 			{
 				// Returns HTTP header from original HTTP request.
-				return param == null || param.isEmpty() ? "" : _request.getHeader(param);
+				return args.get(0).isEmpty() ? "" : _request.getHeader(args.get(0));
+			}
+			else if (name.equalsIgnoreCase("IF_THEN_ELSE"))
+			{
+				ConditionComparator cmp = new ConditionComparator(_uri, _request, 0, args.getUnescaped(0), _matchAuxiliaryData);
+				return cmp.matches() ? args.get(1) : args.get(2);
+			}
+			else if (name.equalsIgnoreCase("ISNULL"))
+			{
+				return args.get(args.get(0).isEmpty() ? 1 : 0);
+			}
+			else if (name.equalsIgnoreCase("NULLIF"))
+			{
+				return args.get(0).equals(args.get(1)) ? null : args.get(0);
+			}
+			else if (name.equalsIgnoreCase("COALESCE"))
+			{
+				for (int i = 0; i < args.getCount(); ++i)
+				{
+					String val = args.get(i);
+					if (!val.isEmpty())
+						return val;
+				}
+			}
+			else if (name.equalsIgnoreCase("LOWERCASE"))
+			{
+				return args.get(0).toLowerCase();
+			}
+			else if (name.equalsIgnoreCase("UPPERCASE"))
+			{
+				return args.get(0).toUpperCase();
 			}
 		}
 		catch (Exception e)
