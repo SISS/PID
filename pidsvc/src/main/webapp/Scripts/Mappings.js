@@ -314,13 +314,18 @@ var Main = Class.construct({
 	///////////////////////////////////////////////////////////////////////////
 	//	URI and regex testing.
 
+	timerLoadQrCodeImg: null,
+
 	testUriChanged: function(event)
 	{
 		if ($J("#MappingType").val() == "1:1")
 			return;
 
-		var mappingPath		= $J("#MappingPath").val();
+		var mappingPath		= $J("#MappingPath").val().trim();
 		var val				= $J("#txtUriTesting").val().trim();
+
+		// Get rid of hostname in URI if present.
+		val = val.replace(new RegExp("^\\w+://[^/]+", "i"), "");
 
 		// Validate regular expression.
 		var re;
@@ -330,12 +335,18 @@ var Main = Class.construct({
 		}
 		catch (ex)
 		{
+			// Display regular expression error message.
 			$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "Regex exception occurred");
 			$J("#phMatchingGroupInfo").html("<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">" + ex + "</div>");
+
+			// Reset QR code image.
+			Main.setQrCode(null);
+
 			return;
 		}
 
-		var m = val.match(re);
+		// Value must begin with / and have at least on more character following it.
+		var m = val.match(/^\/.+/) ? val.match(re) : null;
 		var html = "";
 
 		if (!m)
@@ -345,7 +356,7 @@ var Main = Class.construct({
 			for (var i = 0; i <= (count ? count.length : 0); ++i)
 				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + i + " = </div>";
 
-			if (!mappingPath.trim() || !val.trim())
+			if (!mappingPath || !val)
 				$J("#imgUriTestingStatus").attr("src", "Images/help-faq.png").attr("title", "Start typing URI...");
 			else
 				$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "URI is NOT matching this mapping rule");
@@ -362,12 +373,30 @@ var Main = Class.construct({
 			});
 			$J("#imgUriTestingStatus").attr("src", "Images/tick.png").attr("title", "URI is matching this mapping rule");
 
-			// Set QR code image.
-			Main.setQrCode(val.trim());
+			// Set QR code image (only if mapping path has not been changed).
+			var config			= $J("#ConfigSection").data("config");
+			var originalPath	= config ? config.mapping_path : null;
+
+			if (originalPath == null || originalPath == "" || originalPath != mappingPath)
+				Main.setQrCode(null);
+			else
+			{
+				clearTimeout(Main.timerLoadQrCodeImg);
+				$J("<img/>")
+					.attr("src", val + (val.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr=1")
+					.load(Main.setQrCodeFromRegexTester.bind(Main, val));
+				Main.timerLoadQrCodeImg = setTimeout(Main.setQrCode, 500);
+			}
 		}
 		$J("#phMatchingGroupInfo").html(html);
 	},
 
+	setQrCodeFromRegexTester: function(uri)
+	{
+		clearTimeout(this.timerLoadQrCodeImg);
+		this.setQrCode(uri);
+	},
+	
 	showRegexTester: function()
 	{
 		var jq = $J("#URITesting");
@@ -727,7 +756,7 @@ var Main = Class.construct({
 		originalPath = originalPath.trim();
 		jq.val(newPath);
 		if (originalPath != "" && originalPath != newPath && !confirm("You have changed the URI pattern. It may override another mapping or cause some URIs to work incorrectly.\n\nDo you wish to continue?"))
-			jq.val(originalPath);
+			jq.val(originalPath).keyup();
 	},
 
 	//
