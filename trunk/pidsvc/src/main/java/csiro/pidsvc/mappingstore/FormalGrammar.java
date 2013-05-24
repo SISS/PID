@@ -227,6 +227,15 @@ public class FormalGrammar
 						val += ":" + _request.getServerPort();
 					return val + _uri.getPathNoExtension();
 				}
+				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_BASE"))
+				{
+					// E.g. Returns http://example.org:8080/id/ for http://example.org:8080/id/test
+					String val = _request.getScheme() + "://" + _request.getServerName();
+					if (_request.getServerPort() != 80)
+						val += ":" + _request.getServerPort();
+					val += _uri.getPathNoExtension();
+					return val.replaceAll("[^/]*$", "");
+				}
 				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_EXT"))
 				{
 					// E.g. http://example.org:8080/id/test.ext
@@ -251,6 +260,18 @@ public class FormalGrammar
 				{
 					// E.g. arg=1
 					return _uri.getQueryString();
+				}
+				else if (args.get(0).equalsIgnoreCase("FILENAME") || args.get(0).equalsIgnoreCase("RESOURCE_NAME"))
+				{
+					// E.g. returns test for /id/test
+					return _uri.getPathNoExtension().replaceFirst("^.+/", "");
+				}
+				else if (args.get(0).equalsIgnoreCase("FILENAME_EXT") || args.get(0).equalsIgnoreCase("RESOURCE_NAME_EXT"))
+				{
+					// E.g. returns test.ext for /id/test.ext
+					String ext = _uri.getExtension();
+					String val = _uri.getPathNoExtension().replaceFirst("^.+/", "");
+					return (ext == null || ext.equals("")) ? val : val + "." + ext;
 				}
 				else if (args.get(0).equalsIgnoreCase("EXTENSION") || args.get(0).equalsIgnoreCase("EXT"))
 				{
