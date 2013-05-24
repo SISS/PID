@@ -13,8 +13,11 @@ package csiro.pidsvc.mappingstore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.http.HttpServletRequest;
+
 import junit.framework.Assert;
 
+import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.junit.Test;
@@ -30,7 +33,6 @@ import csiro.pidsvc.helper.URI;
 @RunWith(JMock.class)
 public class TestFormalGrammar
 {
-	@SuppressWarnings("unused")
 	private Mockery _mockContext = new Mockery();
 
 //	@Test
@@ -130,6 +132,82 @@ public class TestFormalGrammar
 		Assert.assertEquals(
 			"%2FORIGINAL_URI%3Fquerystring%3D1",
 			grammar.parse("${ENV:${RAW:$1}}", true)
+		);
+	}
+
+	@Test
+	public void testParseEvnFn_FULL_REQUEST_URI_BASE() throws Throwable
+	{
+		final HttpServletRequest mkRequest = _mockContext.mock(HttpServletRequest.class);
+	
+		_mockContext.checking(new Expectations() {
+			{
+				allowing(mkRequest).getScheme(); will(returnValue("http"));
+				allowing(mkRequest).getServerName(); will(returnValue("example.org"));
+				allowing(mkRequest).getServerPort(); will(returnValue(8080));
+			}
+		});
+
+		FormalGrammar grammar = new FormalGrammar(URI.create("/id/test"), mkRequest, null, null);
+		Assert.assertEquals(
+			"http://example.org:8080/id/",
+			grammar.parse("${RAW:${ENV:FULL_REQUEST_URI_BASE}}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/id/"), mkRequest, null, null);
+		Assert.assertEquals(
+			"http://example.org:8080/id/",
+			grammar.parse("${RAW:${ENV:FULL_REQUEST_URI_BASE}}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/"), mkRequest, null, null);
+		Assert.assertEquals(
+			"http://example.org:8080/",
+			grammar.parse("${RAW:${ENV:FULL_REQUEST_URI_BASE}}", true)
+		);
+	}
+
+	@Test
+	public void testParseEvnFn_FILENAME() throws Throwable
+	{
+		FormalGrammar grammar = new FormalGrammar(URI.create("/id/test.ext"), null, null, null);
+		Assert.assertEquals(
+			"test",
+			grammar.parse("${ENV:FILENAME}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/id/test"), null, null, null);
+		Assert.assertEquals(
+			"test",
+			grammar.parse("${ENV:FILENAME}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/id/"), null, null, null);
+		Assert.assertEquals(
+			"",
+			grammar.parse("${ENV:FILENAME}", true)
+		);
+	}
+
+	@Test
+	public void testParseEvnFn_FILENAME_EXT() throws Throwable
+	{
+		FormalGrammar grammar = new FormalGrammar(URI.create("/id/test.ext"), null, null, null);
+		Assert.assertEquals(
+			"test.ext",
+			grammar.parse("${ENV:FILENAME_EXT}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/id/test"), null, null, null);
+		Assert.assertEquals(
+			"test",
+			grammar.parse("${ENV:FILENAME_EXT}", true)
+		);
+
+		grammar = new FormalGrammar(URI.create("/id/"), null, null, null);
+		Assert.assertEquals(
+			"",
+			grammar.parse("${ENV:FILENAME_EXT}", true)
 		);
 	}
 
