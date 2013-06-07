@@ -69,7 +69,7 @@ public class Http
 	{
 		return Stream.readInputStream(request.getInputStream());
 	}
-	
+
 	public static String simpleGetRequest(String uri)
 	{
 		HttpClient httpClient = new DefaultHttpClient();
@@ -79,6 +79,33 @@ public class Http
 
 			// Get the data.
 			HttpResponse response = httpClient.execute(httpGet);
+			HttpEntity entity = response.getEntity();
+
+			// Return content.
+			return EntityUtils.toString(entity);
+		}
+		catch (Exception e)
+		{
+			_logger.warn("Exception occurred while executing an HTTP request.", e);
+			return null;
+		}
+		finally
+		{
+			httpClient.getConnectionManager().shutdown();
+		}
+	}
+
+	public static String simpleGetRequestStrict(String uri)
+	{
+		HttpClient httpClient = new DefaultHttpClient();
+		try
+		{
+			HttpGet httpGet = new HttpGet(uri);
+
+			// Get the data.
+			HttpResponse response = httpClient.execute(httpGet);
+			if (response.getStatusLine().getStatusCode() != 200)
+				return null;
 			HttpEntity entity = response.getEntity();
 
 			// Return content.

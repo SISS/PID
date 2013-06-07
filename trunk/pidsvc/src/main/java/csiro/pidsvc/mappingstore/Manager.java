@@ -56,8 +56,8 @@ import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXException;
@@ -402,7 +402,7 @@ public class Manager
 
 			// Get list of conditions.
 			Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = new Vector<csiro.pidsvc.mappingstore.condition.Descriptor>();
-			for (rs = pst.getResultSet(); rs.next(); conditions.add(new csiro.pidsvc.mappingstore.condition.Descriptor(rs.getInt("condition_id"), rs.getString("type"), rs.getString("match"))));
+			for (rs = pst.getResultSet(); rs.next(); conditions.add(new csiro.pidsvc.mappingstore.condition.Descriptor(rs.getInt("condition_id"), rs.getString("type"), rs.getString("match"), rs.getString("description"))));
 			return conditions;
 		}
 		catch (Exception e)
@@ -618,12 +618,18 @@ public class Manager
 					ret += "<path>" + StringEscapeUtils.escapeXml(path) + "</path>";
 					ret += "<type>" + rs.getString("type") + "</type>";
 
+					buf = rs.getString("title");
+					if (buf != null)
+						ret += "<title>" + StringEscapeUtils.escapeXml(buf) + "</title>";
 					buf = rs.getString("description");
 					if (buf != null)
 						ret += "<description>" + StringEscapeUtils.escapeXml(buf) + "</description>";
 					buf = rs.getString("creator");
 					if (buf != null)
 						ret += "<creator>" + StringEscapeUtils.escapeXml(buf) + "</creator>";
+					buf = rs.getString("commit_note");
+					if (buf != null)
+						ret += "<commitNote>" + StringEscapeUtils.escapeXml(buf) + "</commitNote>";
 
 					// Default action.
 					defaultActionId = rs.getInt("default_action_id");
@@ -636,6 +642,9 @@ public class Manager
 							ret += "<name>" + StringEscapeUtils.escapeXml(action.Name) + "</name>";
 						if (action.Value != null)
 							ret += "<value>" + StringEscapeUtils.escapeXml(action.Value) + "</value>";
+						buf = rs.getString("default_action_description");
+						if (buf != null)
+							ret += "<description>" + StringEscapeUtils.escapeXml(buf) + "</description>";
 						ret += "</action>";
 					}
 					
@@ -649,7 +658,8 @@ public class Manager
 							ret += "<condition>";
 							ret += "<type>" + condition.Type + "</type>";
 							ret += "<match>" + StringEscapeUtils.escapeXml(condition.Match) + "</match>";
-							
+							if (condition.Description != null)
+								ret += "<description>" + StringEscapeUtils.escapeXml(condition.Description) + "</description>";
 
 							actions = getActionsByConditionId(condition.ID);
 							if (actions != null && actions.size() > 0)
@@ -977,8 +987,10 @@ public class Manager
 				extractor = m.group(1);
 	
 				// Execute HTTP GET request.
-				content = Http.simpleGetRequest(endpoint);
-	
+				content = Http.simpleGetRequestStrict(endpoint);
+				if (content == null)
+					return lookupDescriptor.getDefaultValue(key);
+
 				// Retrieve data.
 				if (extractor.equals(""))
 					return content;

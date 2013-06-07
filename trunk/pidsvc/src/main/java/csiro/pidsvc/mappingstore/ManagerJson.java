@@ -180,7 +180,7 @@ public class ManagerJson extends Manager
 	public String getPidConfig(String mappingPath) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
 			"FROM vw_latest_mapping m\n" +
 			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
 			"WHERE mapping_path = ?";
@@ -190,7 +190,7 @@ public class ManagerJson extends Manager
 	public String getPidConfig(int mappingId) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.description, m.creator, m.type, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
 			"FROM mapping m\n" +
 			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
 			"WHERE mapping_id = ?";
@@ -233,8 +233,10 @@ public class ManagerJson extends Manager
 						JSONObject.toString("mapping_path", mappingPath) + ", " +
 						JSONObject.toString("original_path", rsMapping.getString("original_path")) + ", " +
 						JSONObject.toString("type", rsMapping.getString("type")) + ", " +
+						JSONObject.toString("title", rsMapping.getString("title")) + ", " +
 						JSONObject.toString("description", rsMapping.getString("description")) + ", " +
 						JSONObject.toString("creator", rsMapping.getString("creator")) + ", " +
+						JSONObject.toString("commit_note", rsMapping.getString("commit_note")) + ", " +
 						JSONObject.toString("ended", rsMapping.getBoolean("ended")) + ", " +
 						JSONObject.toString("qr_hits", this.getTotalQrCodeHits(mappingPath)) + ", " +
 						"\"action\": ";
@@ -246,13 +248,14 @@ public class ManagerJson extends Manager
 							"{" +
 								JSONObject.toString("type", actionType) + ", " +
 								JSONObject.toString("name", rsMapping.getString("action_name")) + ", " +
-								JSONObject.toString("value", rsMapping.getString("action_value")) +
+								JSONObject.toString("value", rsMapping.getString("action_value")) + ", " +
+								JSONObject.toString("description", rsMapping.getString("default_action_description")) +
 							"}";
 					}
 					ret += ",";
 
 					// Serialise change history.
-					pst = _connection.prepareStatement("SELECT mapping_id, creator, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM mapping WHERE mapping_path = ? ORDER BY mapping.date_start DESC");
+					pst = _connection.prepareStatement("SELECT mapping_id, creator, commit_note, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM mapping WHERE mapping_path = ? ORDER BY mapping.date_start DESC");
 					pst.setString(1, rsMapping.getString("mapping_path"));
 
 					ret += "\"history\": [";
@@ -266,6 +269,7 @@ public class ManagerJson extends Manager
 								"{" +
 									JSONObject.toString("mapping_id", rsHistory.getInt("mapping_id")) + ", " +
 									JSONObject.toString("creator", rsHistory.getString("creator")) + ", " +
+									JSONObject.toString("commit_note", rsHistory.getString("commit_note")) + ", " +
 									JSONObject.toString("date_start", rsHistory.getString("date_start")) + ", " +
 									JSONObject.toString("date_end", rsHistory.getString("date_end")) +
 								"}";
@@ -288,6 +292,7 @@ public class ManagerJson extends Manager
 								"{" +
 									JSONObject.toString("type", rsCondition.getString("type")) + ", " +
 									JSONObject.toString("match", rsCondition.getString("match")) + ", " +
+									JSONObject.toString("description", rsCondition.getString("description")) + ", " +
 									"\"actions\": [";
 
 							// Serialise actions.

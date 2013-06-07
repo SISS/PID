@@ -98,7 +98,7 @@
 			</div>
 			<div style="display: none; position: absolute; top: 0;">
 				<h2>Mapping Configuration</h2>
-				<div style="position: relative; top: -18px; left: 170px; width: 94px; height: 5px;">
+				<div style="position: relative; top: -25px; width: 732px; height: 5px; text-align: right;">
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="javascript:Main.delete();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
@@ -132,10 +132,18 @@
 								<table border="0" cellpadding="5" cellspacing="1" width="100%">
 									<tr valign="top">
 										<td width="20%" align="right">
+											Title:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingTitle" title="Provides a sensible title for the mapping rule" maxlength="50" style="width: 570px;" />
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="20%" align="right">
 											Description:
 										</td>
 										<td width="80%">
-											<input type="text" id="MappingDescription" maxlength="500" style="width: 570px;" />
+											<textarea id="MappingDescription" rows="3" style="width: 569px;"></textarea>
 										</td>
 									</tr>
 									<tr valign="top">
@@ -160,15 +168,30 @@
 									<div style="height: 7px;"></div>
 								</div>
 								<b>Default action:</b>
-								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
+								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff;"></table>
 								<b>Conditions:</b>
 								<div id="ConditionSection" style="margin-bottom: 5px;">
 								</div>
+								<div style="margin-bottom: 10px;">
+									<a href="javascript:Main.addCondition();" class="tip __supersededLock"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+								</div>
+								<div id="CommitNoteSection">
+									<b>Commit note:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%" style="margin-bottom: 5px;">
+										<tr	valign="top">
+											<td>
+												<a href="javascript:Main.addCommitNote();" class="tip __supersededLock"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add commit note</a><br/>
+												<a href="javascript:Main.preserveCommitNote();" class="tip __preserveCommitNote"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Copy last commit note</a>
+											</td>
+											<td align="right">
+												<div id="CommitNoteRO" class="inputlike" style="overflow: auto; width: 484px; height: 60px; text-align: left; color: #777; display: none;"></div>
+												<textarea id="CommitNote" style="width: 483px; height: 58px; display: none;"></textarea>
+											</td>
+										</tr>
+									</table>
+								</div>
 								<table border="0" cellpadding="0" cellspacing="0" width="100%">
 									<tr>
-										<td>
-											<a href="javascript:Main.addCondition();" class="tip __supersededLock"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
-										</td>
 										<td align="right">
 											<input type="button" id="cmdSave" value="Save" class="__supersededLock" onclick="javascript:Main.save();" style="width:100px;" />
 										</td>
@@ -192,7 +215,7 @@
 								</table>
 								<div id="ChangeHistory" style="display: none;">
 									<b class="caps">Change history:</b>
-									<div style="overflow: auto; height: 225px;"><ul></ul></div>
+									<div style="overflow: hidden; height: 195px; margin-top: 5px;"><ul></ul></div>
 								</div>
 							</td>
 						</tr>
@@ -226,5 +249,6 @@
 			<br/><br/>
 			<a href="javascript:$J.unblockUI();">Close</a>
 		</div>
+		<img id="RegexTesterImg" style="display: none;"/>
 	</body>
 </html>
