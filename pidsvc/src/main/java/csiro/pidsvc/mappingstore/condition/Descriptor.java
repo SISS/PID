@@ -20,11 +20,13 @@ public class Descriptor
 	public final int ID;
 	public final String Type;
 	public final String Match;
+	public final String Description;
 	
-	public Descriptor(int id, String type, String match)
+	public Descriptor(int id, String type, String match, String description)
 	{
 		this.ID = id;
 		this.Type = type;
 		this.Match = match;
+		this.Description = description;
 	}
 }

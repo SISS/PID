@@ -1,3 +1,38 @@
+/*
+ * Web Fonts from fontspring.com
+ *
+ * All OpenType features and all extended glyphs have been removed.
+ * Fully installable fonts can be purchased at http://www.fontspring.com
+ *
+ * The fonts included in this stylesheet are subject to the End User License you purchased
+ * from Fontspring. The fonts are protected under domestic and international trademark and 
+ * copyright law. You are prohibited from modifying, reverse engineering, duplicating, or
+ * distributing this font software.
+ *
+ * (c) 2010-2012 Fontspring
+ *
+ *
+ *
+ *
+ * The fonts included are copyrighted by the vendor listed below.
+ *
+ * Vendor:      exljbris Font Foundry
+ * License URL: http://www.fontspring.com/fflicense/exljbris
+ *
+ *
+ */
+@font-face
+{
+    font-family: 'AniversRegular';
+    src: url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.eot');
+    src: url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.woff') format('woff'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.ttf') format('truetype'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.svg#AniversRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
 BODY
 {
 	margin: 0;
@@ -46,13 +81,12 @@ H1.nopadding
 }
 H2
 {
-	font-family: Trebuchet MS, Georgia;
-	font-size: 14px;
-	font-weight: bold;
+	font-family: AniversRegular, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	font-weight: normal;
 	padding-top: 1px;
-	margin-bottom: 0px;
-	color: #555555;
-	font-variant: small-caps;
+	margin-bottom: 5px;
+	color: #333333;
 }
 H3
 {
@@ -77,7 +111,7 @@ A.white:visited
 }
 
 
-INPUT[type=text], SELECT.input, TEXTAREA.input
+INPUT[type=text], SELECT.input, TEXTAREA.input, DIV.inputlike
 {
 	background-color: #fff;
 	border-left: solid 1px #b3b3b3;

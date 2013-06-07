@@ -30,7 +30,7 @@ var Main = Class.construct({
 		},
 		css: {
 			width: "700px",
-			top: "100px",
+			top: "120px",
 			left: "15px",
 			border: "solid 2px #bed600",
 			backgroundColor: "#fff",
@@ -42,7 +42,9 @@ var Main = Class.construct({
 		onOverlayClick: $J.unblockUI
 	},
 
-	_focusPager: false,
+	_focusPager:					false,
+	_timerCollapseChangeHistory:	null,
+	_timerLoadQrCodeImg:			null,
 
 	init: function()
 	{
@@ -89,6 +91,35 @@ var Main = Class.construct({
 				"custom_size": { name: "Custom size", icon: "barcode" }
 			}
 		});
+
+		// Set change history style.
+		$J("#ChangeHistory DIV").hover(
+			function() {
+				if ($J(this).get(0).scrollHeight <= 195)
+					return;
+				clearTimeout(Main._timerCollapseChangeHistory);
+				Main._timerCollapseChangeHistory = null;
+				$J(this)
+					.css({ "overflow": "auto", "border-bottom": "2px solid #bed600" })
+					.animate({ height: "383px" }, "fast");
+			},
+			function()
+			{
+				clearTimeout(Main._timerCollapseChangeHistory)
+				Main._timerCollapseChangeHistory = setTimeout(function() {
+					$J("#ChangeHistory").css("border", "none");
+					$J(this)
+						.css({ "overflow": "hidden", "border-bottom": "none" })
+						.animate({ height: "195px" }, "slow");
+				}.bind(this), 1000);
+			}
+		);
+
+		// Set commit note styles.
+		$J("#CommitNoteRO").dblclick(this.addCommitNote);
+		$J("#CommitNote").attr("configurationOnChange", "1"); // Disable change monitoring for this field (this is not an actual change).
+
+		$J("#DefaultAction").hover(Main.conditionHoverOn, Main.conditionHoverOff);
 
 		// Regex tester.
 		$J("#MappingPath, #txtUriTesting").keyup(this.testUriChanged);
@@ -223,10 +254,13 @@ var Main = Class.construct({
 	{
 		if (state)
 		{
-			$J("#ConfigSection input, #ConfigSection select").attr("disabled", "disabled");
+			$J("#ConfigSection input, #ConfigSection select, #ConfigSection textarea").attr("disabled", "disabled");
 			$J("#ConfigSupersededWarning").show();
 			$J("*.__supersededLock, #ConfigSaveWarning").hide();
 			Main.displayQrCodeUI(false);
+
+			$J("#CommitNoteSection A").hide();
+			$J("#CommitNoteRO").removeAttr("title").css("cursor", "default");
 
 			// Remove section title if there're no conditions defined.
 			if (!$J("#ConditionSection").children().size())
@@ -234,14 +268,21 @@ var Main = Class.construct({
 		}
 		else
 		{
-			$J("#ConfigSection input, #ConfigSection select").removeAttr("disabled");
+			var config = $J("#ConfigSection").data("config");
+
+			$J("#ConfigSection input, #ConfigSection select, #ConfigSection textarea").removeAttr("disabled");
 			$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 			$J("*.__supersededLock").show();
 
+			$J("#CommitNoteSection").show();
+			if (config && config.commit_note)
+				$J("#CommitNoteSection A.__preserveCommitNote").show();
+			$J("#CommitNoteRO").attr("title", "Double click to add note").css("cursor", "pointer");
+			
 			// Open URI link is only visible for 1-to-1 mappings.
 			if ($J("#MappingType").val() != "1:1")
 				$J("#cmdQrCode").hide();
-			else if (!$J("#ConfigSection").data("config") || $J("#ChangeHistory").attr("isDeprecated") == "1")
+			else if (!config || $J("#ChangeHistory").attr("isDeprecated") == "1")
 				Main.displayQrCodeUI(false);
 			
 			// Ensure condition section title is visible.
@@ -265,13 +306,31 @@ var Main = Class.construct({
 		return obj;
 	},
 
+	addCommitNote: function()
+	{
+		if (Main.isEditingBlocked())
+			return;
+		$J("#CommitNoteRO").hide();
+		$J("#CommitNote").show().val("").select();
+	},
+
+	preserveCommitNote: function()
+	{
+		if (Main.isEditingBlocked())
+			return;
+		var config = $J("#ConfigSection").data("config");
+
+		$J("#CommitNoteRO").hide();
+		$J("#CommitNote").show().val(config.commit_note).select().change();
+	},
+
 	///////////////////////////////////////////////////////////////////////////
 	//	Change monitoring.
 
 	monitorChanges: function()
 	{
 		$J("#ConfigSection")
-			.find("input[configurationOnChange != '1'], select[configurationOnChange != '1']")
+			.find("input[configurationOnChange != '1'], select[configurationOnChange != '1'], textarea[configurationOnChange != '1']")
 				.attr("configurationOnChange", "1")
 				.change(Main.configurationOnChange);
 	},
@@ -314,8 +373,6 @@ var Main = Class.construct({
 	///////////////////////////////////////////////////////////////////////////
 	//	URI and regex testing.
 
-	timerLoadQrCodeImg: null,
-
 	testUriChanged: function(event)
 	{
 		if ($J("#MappingType").val() == "1:1")
@@ -324,8 +381,8 @@ var Main = Class.construct({
 		var mappingPath		= $J("#MappingPath").val().trim();
 		var val				= $J("#txtUriTesting").val().trim();
 
-		// Get rid of hostname in URI if present.
-		val = val.replace(new RegExp("^\\w+://[^/]+", "i"), "");
+		// Get rid of hostname and querystring in URI if present.
+		val = val.replace(new RegExp("^(?:\\w+://[^/]+)?([^\\?]+).*$", "i"), "$1");
 
 		// Validate regular expression.
 		var re;
@@ -381,11 +438,13 @@ var Main = Class.construct({
 				Main.setQrCode(null);
 			else
 			{
-				clearTimeout(Main.timerLoadQrCodeImg);
-				$J("<img/>")
-					.attr("src", val + (val.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr=1")
-					.load(Main.setQrCodeFromRegexTester.bind(Main, val));
-				Main.timerLoadQrCodeImg = setTimeout(Main.setQrCode, 500);
+				clearTimeout(Main._timerLoadQrCodeImg);
+				Main._timerLoadQrCodeImg = null;
+				$J("#RegexTesterImg")
+					.unbind("load")
+					.load(Main.setQrCodeFromRegexTester.bind(Main, val))
+					.attr("src", val + (val.indexOf("?") == -1 ? "?" : "&") + "_pidsvcqr=1");
+				Main._timerLoadQrCodeImg = setTimeout(Main.setQrCode, 500);
 			}
 		}
 		$J("#phMatchingGroupInfo").html(html);
@@ -393,7 +452,8 @@ var Main = Class.construct({
 
 	setQrCodeFromRegexTester: function(uri)
 	{
-		clearTimeout(this.timerLoadQrCodeImg);
+		clearTimeout(this._timerLoadQrCodeImg);
+		Main._timerLoadQrCodeImg = null;
 		this.setQrCode(uri);
 	},
 	
@@ -656,6 +716,7 @@ var Main = Class.construct({
 
 			$J("#MappingPath").val("");
 			$J("#MappingType").val("1:1").change();
+			$J("#MappingTitle").val("");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName ? GlobalSettings.AuthorizationName : "");
 
@@ -667,10 +728,17 @@ var Main = Class.construct({
 					.val("")
 				.end()
 				.find("input.__actionValue")
+					.val("")
+				.end()
+				.find("textarea.__description")
 					.val("");
 			$J("#ConditionSection").empty();
 			$J("#ChangeHistory").hide();
 
+			$J("#CommitNoteSection A.__preserveCommitNote").hide();
+			$J("#CommitNoteRO").text("").hide();
+			$J("#CommitNote").val("").hide();
+			
 			Main.displayQrCodeUI(false);
 			Main.blockSaving(true);
 			Main.blockEditing(false);
@@ -681,6 +749,7 @@ var Main = Class.construct({
 		// Show configuration.
 		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
 		$J("#MappingType").val(data.type).change();
+		$J("#MappingTitle").val(data.title);
 		$J("#MappingDescription").val(data.description);
 		$J("#MappingCreator").val(data.creator);
 
@@ -704,7 +773,10 @@ var Main = Class.construct({
 				.val(data.action ? data.action.name : "")
 			.end()
 			.find("input.__actionValue")
-				.val(data.action ? data.action.value : "");
+				.val(data.action ? data.action.value : "")
+			.end()
+			.find("textarea.__description")
+				.val(data.action ? data.action.description : "");
 
 		// Add conditions.
 		if (data.conditions)
@@ -725,12 +797,28 @@ var Main = Class.construct({
 			});
 		}
 
+		// Commit note.
+		$J("#CommitNoteSection").show();
+		if (!data.commit_note)
+		{
+			if (data.ended)
+				$J("#CommitNoteSection").hide();
+			$J("#CommitNoteSection A.__preserveCommitNote").hide();
+			$J("#CommitNote, #CommitNoteRO").hide();
+		}
+		else
+		{
+			$J("#CommitNoteSection A.__preserveCommitNote").show();
+			$J("#CommitNote").hide();
+			$J("#CommitNoteRO").html(data.commit_note.htmlEscape().replace(/\n/g, "<br/>")).show();
+		}
+
 		// Change history.
 		$J("#ChangeHistory").attr("isDeprecated", data.history[0].date_end != null ? 1 : 0).show().find("ul").empty();
 		$J(data.history).each(function() {
 			$J("#ChangeHistory ul")
 				.append(
-					"<li><a href='#' mapping_id='" + this.mapping_id + "'>" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a>" +
+					"<li><a href='#' mapping_id='" + this.mapping_id + "' title='" + (this.commit_note ? this.commit_note : "") + "'" + (this.mapping_id == data.mapping_id ? " style='font-weight: bold;'" : "") + ">" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a>" +
 						(this.creator ? "<br/><span class=\"tip\">by " + this.creator + "</span>" : "") +
 					"</li>"
 				);
@@ -810,10 +898,10 @@ var Main = Class.construct({
 	appendCondition: function(jq, json)
 	{
 		if (json == null)
-			json = { type: null, match: "" };
+			json = { type: null, match: "", description: "" };
 
 		return jq
-			.append("<table border='0' cellpadding='5' cellspacing='0' width='100%'>" +
+			.append("<table border='0' cellpadding='5' cellspacing='0' width='100%' style='border: 1px solid #fff;'>" +
 				"	<tr valign='top'>" +
 				"		<td>" +
 				"<a href='#' class='__conditionMoveUp'><img src='Images/arrow_up_small.gif' title='Move Up' width='12' height='6' border='0' style='position: relative; top: 2px;'/></a><br/>" +
@@ -831,6 +919,13 @@ var Main = Class.construct({
 				"		</td>" +
 				"		<td>" +
 				"			<input type='text' value='" + json.match + "' class='__conditionMatch' maxlength='255' style='width: 483px;' />" +
+				"		</td>" +
+				"	</tr>" +
+				"	<tr valign='top'>" +
+				"		<td></td>" +
+				"		<td align='right' class='tip' style='padding-top: 8px;'>Comment:</td>" +
+				"		<td>" +
+				"			<textarea class='__conditionDescription' rows='2' style='width: 483px; margin-bottom: 5px;'>" + (json.description ? json.description : "") + "</textarea>" +
 				"			<div align='right'>" +
 				"				<a href='#' class='__toggleActions tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Actions</a>" +
 				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
@@ -839,8 +934,8 @@ var Main = Class.construct({
 				"	</tr>" +
 				"	<tr " + (json.type == null ? "" : "style='display: none;'") + ">" +
 				"		<td colspan='3'>" +
-				"			<div style='margin-left: 70px'>" +
-				"				<div class='caps' style='background: #f2f2f2;'>Actions:</div>" +
+				"			<div style='margin-left: 21px'>" +
+				"				<div class='caps' style='background: #f2f2f2; border: 2px solid #fff; padding-left: 5px;'>Actions:</div>" +
 				"				<table class='__actions' border='0' cellpadding='5' cellspacing='1' width='100%' style='position: relative; right: -6px;'>" +
 				"				</table>" +
 				"				<div class='__supersededLock' align='right'><a href='#' class='__addAction'><img src='Images/plus_16.png' title='Add action' width='16' height='16' border='0'/></a></div>" +
@@ -866,7 +961,20 @@ var Main = Class.construct({
 			.end()
 			.find("a.__addAction:last")
 				.click(Main.addAction)
+			.end()
+			.find("> TABLE")
+				.hover(Main.conditionHoverOn, Main.conditionHoverOff)
 			.end();
+	},
+
+	conditionHoverOn: function()
+	{
+		$J(this).css({ "border": "1px solid #e2e2e2", "background": "#fafafa" });
+	},
+
+	conditionHoverOff: function()
+	{
+		$J(this).css({ "border": "1px solid #ffffff", "background": "none" });
 	},
 
 	//
@@ -933,9 +1041,12 @@ var Main = Class.construct({
 		if (json == null || json.type == null)
 			json = { type: null, name: "", value: "" };
 
+		var isDefaultAction = (json.type == null);
 		var elementWidth = null;
-		if (json.type == null)
+
+		if (isDefaultAction)
 		{
+			// Default action.
 			elementWidth = {
 				type: 	"184px",
 				name:	"134px",
@@ -944,10 +1055,11 @@ var Main = Class.construct({
 		}
 		else
 		{
+			// Condition actions.
 			elementWidth = {
-				type: 	"150px",
+				type: 	"166px",
 				name:	"120px",
-				value:	"250px"
+				value:	"283px"
 			};
 		}
 
@@ -955,7 +1067,7 @@ var Main = Class.construct({
 		var ret = jq
 			.append("<tr>" +
 				(
-						json.type != null ?
+						!isDefaultAction ?
 						"<td>" +
 						"<a href='#' class='__actionMoveUp'><img src='Images/arrow_up_small.gif' title='Move Up' width='12' height='6' border='0' style='position: relative; top: -4px;'/></a><br/>" +
 						"<a href='#' class='__actionMoveDown'><img src='Images/arrow_down_small.gif' title='Move Down' width='12' height='6' border='0' style='position: relative; top: 3px;'/></a>" +
@@ -964,7 +1076,7 @@ var Main = Class.construct({
 				) +
 				"	<td class='__actionType'>" +
 				"		<select class='input' style='width: " + elementWidth.type +";'>" +
-				(json.type != null ? "" : "<option></option>") +
+				(!isDefaultAction ? "" : "<option></option>") +
 				"			<option value='301'>301 Moved permanently</option>" +
 				"			<option value='302'>302 Simple redirection</option>" +
 				"			<option value='303'>303 See other</option>" +
@@ -974,7 +1086,7 @@ var Main = Class.construct({
 				"			<option value='415'>415 Unsupported media type</option>" +
 				"			<option value='Proxy'>Proxy</option>" +
 				(
-						json.type != null ?
+						!isDefaultAction ?
 						"<option value='AddHttpHeader'>AddHttpHeader</option>" +
 						"<option value='RemoveHttpHeader'>RemoveHttpHeader</option>" +
 						"<option value='ClearHttpHeaders'>ClearHttpHeaders</option>"
@@ -992,9 +1104,19 @@ var Main = Class.construct({
 				"		<input type='text' value='" + (json.value ? json.value : "") + "' class='__actionValue' maxlength='4096' style='width: " + elementWidth.value +";' />" +
 				"	</td>" +
 				(
-						json.type != null ? "<td><a href='#' class='__removeAction'><img src='Images/delete.png' title='Remove' width='16' height='16' border='0' style='position: relative; top: 1px;'/></a></td>" : ""
+						!isDefaultAction ? "<td><a href='#' class='__removeAction'><img src='Images/delete.png' title='Remove' width='16' height='16' border='0' style='position: relative; top: 1px;'/></a></td>" : ""
 				) +
-				"</tr>"
+				"</tr>" +
+				(
+					isDefaultAction ?
+						"<tr valign='top'>" +
+						"	<td colspan='3' align='right' class='tip' style='padding-top: 8px;'>Comment:</td>" +
+						"	<td colspan='2'>" +
+						"		<textarea class='__description' rows='2' style='width: 483px; margin-bottom: 5px;'></textarea>" +
+						"	</td>" +
+						"</tr>"
+					: ""
+				)
 			)
 			.find("td.__actionType > select:last")
 				.val(json.type)
@@ -1023,6 +1145,8 @@ var Main = Class.construct({
 
 		jq.find("input.__actionName").removeAttr("disabled");
 		jq.find("input.__actionValue").removeAttr("disabled");
+		$J("#DefaultAction TEXTAREA.__description").removeAttr("disabled");
+
 		switch ($J(this).val())
 		{
 			case "301":
@@ -1033,6 +1157,7 @@ var Main = Class.construct({
 				jq.find("input.__actionName").val("location").attr("disabled", "disabled");
 				break;
 			case "":
+				$J("#DefaultAction TEXTAREA.__description").attr("disabled", "disabled");
 			case "404":
 			case "410":
 			case "415":
@@ -1086,28 +1211,38 @@ var Main = Class.construct({
 			return;
 		}
 
-		var description	= $J("#MappingDescription").val();
-		var creator		= $J("#MappingCreator").val();
+		var title		= $J("#MappingTitle").val().trim();
+		var description	= $J("#MappingDescription").val().trim();
+		var creator		= $J("#MappingCreator").val().trim();
+		var commitNote	= $J("#CommitNote").val().trim();
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
 		cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
 		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
+		if (title)
+			cmdxml += "<title>" + title.htmlEscape() + "</title>";
 		if (description)
 			cmdxml += "<description>" + description.htmlEscape() + "</description>";
 		if (creator)
 			cmdxml += "<creator>" + creator.htmlEscape() + "</creator>";
+		if (commitNote)
+			cmdxml += "<commitNote>" + commitNote.htmlEscape() + "</commitNote>";
 
 		// Default action.
 		var jqDefault = $J("#DefaultAction");
 		var defaultActionType = jqDefault.find("td.__actionType select").val();
 		if (defaultActionType)
 		{
+			var defaultActionDescription = jqDefault.find("textarea.__description").val().trim();
+
 			cmdxml += "<action>";
 			cmdxml += "<type>" + defaultActionType + "</type>";
 			cmdxml += "<name>" + jqDefault.find("input.__actionName").val().trim().htmlEscape() + "</name>";
 			cmdxml += "<value>" + jqDefault.find("input.__actionValue").val().htmlEscape() + "</value>";
+			if (defaultActionDescription)
+				cmdxml += "<description>" + defaultActionDescription.htmlEscape() + "</description>";
 			cmdxml += "</action>";
 		}
 
@@ -1121,10 +1256,13 @@ var Main = Class.construct({
 				var match = jqCondition.find("input.__conditionMatch").val().trim();
 				if (!match)
 					return;
+				var conditionComment = jqCondition.find("textarea.__conditionDescription").val().trim();
 	
 				cmdxml += "<condition>";
 				cmdxml += "<type>" + jqCondition.find("td.__conditionType select").val() + "</type>";
 				cmdxml += "<match>" + match.htmlEscape() + "</match>";
+				if (conditionComment)
+					cmdxml += "<description>" + conditionComment.htmlEscape() + "</description>";
 
 				var jqActions = jqCondition.find("table.__actions tr");
 				if (jqActions.size() > 0)

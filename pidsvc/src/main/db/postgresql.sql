@@ -78,10 +78,13 @@ CREATE TABLE mapping
   mapping_id serial NOT NULL,
   mapping_path character varying(255) NOT NULL,
   original_path character varying(255) NOT NULL,
+  title character varying(50) NULL,
   description text,
   creator character varying(255),
   type character varying(50) NOT NULL,
+  commit_note text NULL,
   default_action_id integer,
+  default_action_description text NULL,
   date_start timestamp without time zone NOT NULL DEFAULT now(),
   date_end timestamp without time zone,
   qr_hits integer DEFAULT 0 NOT NULL,
@@ -128,6 +131,7 @@ CREATE TABLE condition
   mapping_id smallint NOT NULL,
   type character varying(50) NOT NULL,
   match character varying(255) NOT NULL,
+  description text NULL,
   CONSTRAINT condition_pkey PRIMARY KEY (condition_id ),
   CONSTRAINT "FK_condition_mapping_id" FOREIGN KEY (mapping_id)
       REFERENCES mapping (mapping_id) MATCH SIMPLE
@@ -295,7 +299,7 @@ ALTER TABLE lookup CLUSTER ON "IX_lookup_key";
 -- View: vw_latest_mapping
 -- DROP VIEW vw_latest_mapping;
 CREATE OR REPLACE VIEW vw_latest_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -307,7 +311,7 @@ ALTER TABLE vw_latest_mapping
 -- View: vw_active_mapping
 -- DROP VIEW vw_active_mapping;
 CREATE OR REPLACE VIEW vw_active_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -320,7 +324,7 @@ ALTER TABLE vw_active_mapping
 -- View: vw_deprecated_mapping
 -- DROP VIEW vw_deprecated_mapping;
 CREATE OR REPLACE VIEW vw_deprecated_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.description, f.creator, f.type, f.default_action_id, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -333,7 +337,7 @@ ALTER TABLE vw_deprecated_mapping
 -- View: vw_full_mapping_activeonly
 -- DROP VIEW vw_full_mapping_activeonly;
 CREATE OR REPLACE VIEW vw_full_mapping_activeonly AS 
- SELECT a.mapping_id, a.mapping_path, a.original_path, a.description, a.creator, a.type, a.default_action_id, a.date_start, a.date_end
+ SELECT a.mapping_id, a.mapping_path, a.original_path, a.title, a.description, a.creator, a.type, a.commit_note, a.default_action_id, a.default_action_description, a.date_start, a.date_end
    FROM mapping a
   WHERE (EXISTS ( SELECT 1
            FROM mapping b

@@ -30,6 +30,16 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
+			<xs:element name="title" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Provides a sensible title for the mapping rule (optional).</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
 			<xs:element name="description" type="xs:string" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Textual descriptions of the URI mapping (optional).</xs:documentation>
@@ -45,7 +55,12 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
-			<xs:element name="action" type="pidsvc:ActionType" minOccurs="0">
+			<xs:element name="commitNote" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Commit note (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="action" type="pidsvc:DefaultActionType" minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Default fall back action for the URI mapping. Fired when no specific matching conditions were found.</xs:documentation>
 				</xs:annotation>
@@ -92,6 +107,19 @@
 			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
+	<xs:complexType name="DefaultActionType">
+		<xs:complexContent>
+			<xs:extension base="pidsvc:ActionType">
+				<xs:sequence>
+					<xs:element name="description" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Textual descriptions of the default action (optional).</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
 	<xs:complexType name="ConditionsType">
 		<xs:sequence>
 			<xs:element name="condition" type="pidsvc:ConditionType" maxOccurs="unbounded">
@@ -123,6 +151,11 @@
 						<xs:maxLength value="255"/>
 					</xs:restriction>
 				</xs:simpleType>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Textual descriptions of the mapping condition (optional).</xs:documentation>
+				</xs:annotation>
 			</xs:element>
 			<xs:element name="actions" minOccurs="0">
 				<xs:annotation>
