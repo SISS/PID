@@ -923,10 +923,11 @@ var Main = Class.construct({
 				"	</tr>" +
 				"	<tr valign='top'>" +
 				"		<td></td>" +
-				"		<td align='right' class='tip' style='padding-top: 8px;'>Comment:</td>" +
+				"		<td align='right' class='tip' style='padding-top: 8px;'><span class='__commentHeading' " + (json.description ? "" : "style='display: none;'") + ">Comment:</span></td>" +
 				"		<td>" +
-				"			<textarea class='__conditionDescription' rows='2' style='width: 483px; margin-bottom: 5px;'>" + (json.description ? json.description : "") + "</textarea>" +
+				"			<textarea class='__conditionDescription' rows='2' style='width: 483px; margin-bottom: 5px;" + (json.description ? "" : "display: none;") + "'>" + (json.description ? json.description : "") + "</textarea>" +
 				"			<div align='right'>" +
+								(json.description ? "" : "<span class='__supersededLock'><a href='#' class='__addConditionComment tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add comment</a> &nbsp;</span>") +
 				"				<a href='#' class='__toggleActions tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Actions</a>" +
 				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
 				"			</div>" +
@@ -962,6 +963,9 @@ var Main = Class.construct({
 			.find("a.__addAction:last")
 				.click(Main.addAction)
 			.end()
+			.find("a.__addConditionComment:last")
+				.click(Main.addConditionComment)
+			.end()
 			.find("> TABLE")
 				.hover(Main.conditionHoverOn, Main.conditionHoverOff)
 			.end();
@@ -975,6 +979,21 @@ var Main = Class.construct({
 	conditionHoverOff: function()
 	{
 		$J(this).css({ "border": "1px solid #ffffff", "background": "none" });
+	},
+
+	addConditionComment: function()
+	{
+		$J(this)
+			.parents("tr:first")
+				.find("SPAN.__commentHeading")
+					.show()
+				.end()
+				.find("TEXTAREA.__conditionDescription")
+					.show()
+					.select()
+				.end()
+			.end()
+			.remove();
 	},
 
 	//
