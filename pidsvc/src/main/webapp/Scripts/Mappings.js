@@ -523,9 +523,9 @@ var Main = Class.construct({
 										"<img src='Images/earth-icon-gray.png' title='Deprecated mapping' width='16' height='16' border='0' style='position: relative; top: 4px; margin-right: 2px;'/>"
 									)
 								) +
-							"		<a href='#' mapping_id='" + this.mapping_id + "' class='__link' style='font-weight: bold;'>" + this.mapping_path + "</a>" +
+							"		<a href='#' mapping_id='" + this.mapping_id + "' class='__link' style='font-weight: bold;'" + (this.title ? " title='" + this.description + "'" : "") + ">" + this.mapping_path + "</a>" +
 							"		<br/>" +
-							"		<span class='tip' style='margin-left: 21px;'>" + (this.description ? this.description : "") + "</span>" +
+							"		<span class='tip' style='margin-left: 21px;'>" + (this.title ? this.title : (this.description ? this.description : "")) + "</span>" +
 							"	</td>" +
 							"	<td>" + (this.creator ? this.creator : "") + "</td>" +
 							"	<td nowrap='nowrap'>" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</td>" +
