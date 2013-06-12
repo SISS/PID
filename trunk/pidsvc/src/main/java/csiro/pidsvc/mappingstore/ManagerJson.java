@@ -119,7 +119,7 @@ public class ManagerJson extends Manager
 
 			query =
 				"SELECT COUNT(*) FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + ";\n" +
-				"SELECT mapping_id, mapping_path, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY mapping_path LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
+				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY mapping_path LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
 
 			int i = 1;
 			pst = _connection.prepareStatement(query);
@@ -156,6 +156,7 @@ public class ManagerJson extends Manager
 					ret += "{" +
 							JSONObject.toString("mapping_id", rs.getString("mapping_id")) + ", " +
 							JSONObject.toString("mapping_path", rs.getString("mapping_path")) + ", " +
+							JSONObject.toString("title", rs.getString("title")) + ", " +
 							JSONObject.toString("description", rs.getString("description")) + ", " +
 							JSONObject.toString("creator", rs.getString("creator")) + ", " +
 							JSONObject.toString("type", rs.getString("type")) + ", " +
