@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:mapping:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:mapping:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
 	<xs:include schemaLocation="mapping.xsd"/>
+	<xs:include schemaLocation="lookup.xsd"/>
 	<xs:element name="backup">
 		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="mapping" type="pidsvc:BackupMappingType" maxOccurs="unbounded"/>
+			<xs:sequence minOccurs="0" maxOccurs="unbounded">
+				<xs:choice>
+					<xs:element name="mapping" type="pidsvc:BackupMappingType"/>
+					<xs:element ref="pidsvc:lookup"/>
+				</xs:choice>
 			</xs:sequence>
-			<xs:attribute name="type" use="required">
+			<xs:attribute name="type" use="optional">
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
 						<xs:enumeration value="partial"/>
@@ -14,7 +18,7 @@
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:attribute>
-			<xs:attribute name="scope" use="required">
+			<xs:attribute name="scope" use="optional">
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
 						<xs:enumeration value="record"/>
