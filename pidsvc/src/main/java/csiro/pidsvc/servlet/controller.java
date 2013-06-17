@@ -79,7 +79,11 @@ public class controller extends HttpServlet
 			else if (cmd.matches("(?i)^(?:full|partial)_backup$"))
 			{
 				String includeDeprecated = request.getParameter("deprecated");
-				String serializedConfig = mgr.backupDataStore(cmd.startsWith("full"), includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"));
+				String includeLookupMaps = request.getParameter("lookup");
+				String serializedConfig = mgr.backupDataStore(
+					cmd.startsWith("full"),
+					includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"),
+					includeLookupMaps != null && includeLookupMaps.equalsIgnoreCase("true"));
 				returnAttachment(response, "backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
 			}
 			else if (cmd.matches("(?i)export_lookup$"))

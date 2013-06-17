@@ -141,8 +141,11 @@ public class Manager
 
 	protected String processGenericXmlCommand(InputStream inputStream, String xmlSchemaResourcePath, String xsltResourcePath) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
-		String inputData = Stream.readInputStream(inputStream);
+		return processGenericXmlCommand(Stream.readInputStream(inputStream), xmlSchemaResourcePath, xsltResourcePath);
+	}
 
+	protected String processGenericXmlCommand(String inputData, String xmlSchemaResourcePath, String xsltResourcePath) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
 		// Validate request.
 		if (xmlSchemaResourcePath != null)
 		{
@@ -156,7 +159,7 @@ public class Manager
 						return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
 					}
 				});
-	
+
 				Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
 				Validator validator = schema.newValidator();
 				_logger.trace("Validating XML Schema.");
@@ -277,7 +280,16 @@ public class Manager
 
 	public String createMapping(InputStream inputStream, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
-		return processGenericXmlCommand(inputStream, "xsd/" + (isBackup ? "backup" : "mapping") + ".xsd", "xslt/import_mapping_postgresql.xslt");
+		String inputData = Stream.readInputStream(inputStream);
+		String ret = processGenericXmlCommand(inputData, "xsd/" + (isBackup ? "backup" : "mapping") + ".xsd", "xslt/import_mapping_postgresql.xslt");
+		if (isBackup)
+		{
+			// Restore lookup maps.
+			String retLookup = createLookup(inputData);
+			if (retLookup.startsWith("OK: Success"))
+				ret += "\n" + retLookup;
+		}
+		return ret;
 	}
 	
 	public boolean deleteMapping(String mappingPath) throws SQLException
@@ -546,31 +558,31 @@ public class Manager
 	 *  Export/import.
 	 */
 
-	public String backupDataStore(boolean fullBackup, boolean includeDeprecated) throws SQLException
+	public String backupDataStore(boolean fullBackup, boolean includeDeprecated, boolean includeLookupMaps) throws SQLException
 	{
 		String source;
 		if (includeDeprecated)
 			source = fullBackup ? "mapping" : "vw_latest_mapping";
 		else
 			source = fullBackup ? "vw_full_mapping_activeonly" : "vw_active_mapping";
-		return exportMappingsImpl(null, "db", fullBackup, source, true);
+		return exportMappingsImpl(null, "db", fullBackup, source, true, includeLookupMaps);
 	}
 
 	public String exportMapping(int mappingId) throws SQLException
 	{
-		return exportMappingsImpl(mappingId, "record", false, "mapping", false);
+		return exportMappingsImpl(mappingId, "record", false, "mapping", false, false);
 	}
 
 	public String exportMapping(String mappingPath, boolean fullBackup) throws SQLException
 	{
-		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false);
+		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
 	}
 
-	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings) throws SQLException
+	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings, boolean includeLookupMaps) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\" xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
+		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\" xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 		int					defaultActionId;
 		List				actions;
 		Timestamp			timeStamp;
@@ -684,6 +696,10 @@ public class Manager
 					ret += "</mapping>";
 				}
 			}
+
+			// Lookup maps.
+			if (includeLookupMaps)
+				ret += exportLookupImpl(null);
 		}
 		catch (Exception e)
 		{
@@ -810,9 +826,14 @@ public class Manager
 
 	public String createLookup(InputStream inputStream) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
-		return processGenericXmlCommand(inputStream, "xsd/lookup.xsd", "xslt/import_lookup_postgresql.xslt");
+		return createLookup(Stream.readInputStream(inputStream));
 	}
 	
+	public String createLookup(String inputData) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
+		return processGenericXmlCommand(inputData, "xsd/backup.xsd", "xslt/import_lookup_postgresql.xslt");
+	}
+
 	public boolean deleteLookup(String ns) throws SQLException
 	{
 		PreparedStatement pst = null;
@@ -1027,9 +1048,19 @@ public class Manager
 
 	public String exportLookup(String ns) throws SQLException
 	{
+		String ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		if (ns == null)
+			ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">" + exportLookupImpl(ns) + "</backup>";
+		else
+			ret += exportLookupImpl(ns);
+		return ret;
+	}
+
+	protected String exportLookupImpl(String ns) throws SQLException
+	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null, rsMap = null;
-		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		String				ret = "";
 
 		try
 		{
@@ -1050,9 +1081,8 @@ public class Manager
 				rs = pst.getResultSet();
 				boolean dataAvailable = rs.next();
 
-				if (ns == null)
-					ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
-				else if (!dataAvailable)
+				// Backups may be empty. Otherwise throw an exception.
+				if (ns != null && !dataAvailable)
 					throw new SQLException("Lookup map configuration cannot be exported. Data may be corrupted.");
 
 				if (dataAvailable)
@@ -1062,7 +1092,7 @@ public class Manager
 						String lookupNamespace = rs.getString("ns");
 						String lookupType = rs.getString("type");
 	
-						ret += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+						ret += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 						ret += "<ns>" + StringEscapeUtils.escapeXml(lookupNamespace) + "</ns>";
 		
 						String behaviourValue = rs.getString("behaviour_value");
@@ -1123,9 +1153,6 @@ public class Manager
 					}
 					while (rs.next());
 				}
-
-				if (ns == null)
-					ret += "</backup>";
 			}
 		}
 		finally

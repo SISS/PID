@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="urn:csiro:xmlns:pidsvc:mapping:1.0">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="urn:csiro:xmlns:pidsvc:backup:1.0">
 	<xsl:output method="text" version="1.0" encoding="UTF-8"/>
 
 	<xsl:template match="/">
@@ -34,6 +34,7 @@
 				<xsl:apply-templates select="backup/mapping"/>
 				COMMIT;
 			</xsl:when>
+			<xsl:otherwise>--OK: Backup file is empty.</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
 	<xsl:template name="cleanup">

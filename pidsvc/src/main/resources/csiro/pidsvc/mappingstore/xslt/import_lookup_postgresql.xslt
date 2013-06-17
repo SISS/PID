@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="urn:csiro:xmlns:pidsvc:lookup:1.0">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="urn:csiro:xmlns:pidsvc:backup:1.0">
 	<xsl:output method="text" version="1.0" encoding="UTF-8"/>
 
 	<xsl:template match="/">
@@ -9,12 +9,12 @@
 				<xsl:choose>
 					<xsl:when test="backup/lookup">
 						<xsl:value-of select='concat("--OK: Successfully imported ", count(backup/lookup), " lookup map(s).")'/>
+						BEGIN;
+						<xsl:apply-templates select="backup/lookup"/>
+						COMMIT;
 					</xsl:when>
-					<xsl:otherwise>--OK: Backup file is empty. No changes have been made.</xsl:otherwise>
+					<xsl:otherwise>--OK: Backup file is empty. No lookup maps have been restored.</xsl:otherwise>
 				</xsl:choose>
-				BEGIN;
-				<xsl:apply-templates select="backup/lookup"/>
-				COMMIT;
 			</xsl:when>
 			<xsl:when test="lookup/ns">
 				<!-- Single lookup import -->

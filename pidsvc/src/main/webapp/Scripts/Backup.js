@@ -112,7 +112,11 @@ var Main = Class.construct({
 	{
 		if ($J.browser.msie)
 			Main.blockUI($J("#BackupSection"));
-		$J("#BackupLoader").attr("src", "controller?cmd=" + ($J("#BackupTypeFull").is(":checked") ? "full" : "partial") + "_backup&deprecated=" + $J("#IncludeDeprecated").is(":checked").toString().toLowerCase());
+		$J("#BackupLoader")
+			.attr("src", "controller" +
+				"?cmd=" + ($J("#BackupTypeFull").is(":checked") ? "full" : "partial") +"_backup" +
+				"&deprecated=" + $J("#IncludeDeprecated").is(":checked").toString().toLowerCase() +
+				"&lookup=" + $J("#IncludeLookupMaps").is(":checked").toString().toLowerCase());
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -190,8 +194,10 @@ var Main = Class.construct({
 					Main.uploadError(event, file, SWFUpload.UPLOAD_ERROR.HTTP_ERROR, RegExp.$1);
 				else
 				{
-					if (serverData.match(/OK:\s*(.*)/i))
-						serverData = RegExp.$1.replace(/\[\[\[(.+?)\]\]\]/gi, "<a>$1</a>");
+					serverData = serverData
+						.replace(/\[\[\[(.+?)\]\]\]/gim, "<a>$1</a>")	// expand hyperlinks
+						.replace(/^OK:\s/gim, "")						// remove status codes
+						.replace(/\n/gim, "<br/>");						// new line characters
 					$J("#trfile" + file.id)
 						.find("> td:last > img")
 							.attr("src", "Images/tick.png")
