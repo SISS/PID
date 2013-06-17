@@ -1237,7 +1237,7 @@ var Main = Class.construct({
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:mapping:1.0\">";
+		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 		cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
 		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
 		if (title)
