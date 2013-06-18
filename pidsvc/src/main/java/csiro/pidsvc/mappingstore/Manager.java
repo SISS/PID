@@ -968,11 +968,6 @@ public class Manager
 	public String resolveLookupValue(String ns, String key)
 	{
 		LookupMapDescriptor lookupDescriptor = getLookupMapType(ns);
-		//---
-		_logger.trace("lookupDescriptor == null {}", lookupDescriptor == null);
-		if (lookupDescriptor != null)
-			//---
-			_logger.trace("lookupDescriptor.isStatic {}", lookupDescriptor.isStatic());
 		if (lookupDescriptor == null)
 			return null;
 
@@ -981,10 +976,6 @@ public class Manager
 			if (lookupDescriptor.isStatic())
 			{
 				String ret = getLookupValue(ns, key);
-				//---
-				_logger.trace("getLookupValue({}, {}) = {}", ns, key, ret);
-				//---
-				_logger.trace("lookupDescriptor.getDefaultValue = ", lookupDescriptor.getDefaultValue(key));
 				return ret == null ? lookupDescriptor.getDefaultValue(key) : ret;
 			}
 			else if (lookupDescriptor.isHttpResolver())
