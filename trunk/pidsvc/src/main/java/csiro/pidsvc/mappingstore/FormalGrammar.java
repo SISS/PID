@@ -147,8 +147,6 @@ public class FormalGrammar
 	{
 		_logger.trace("Invoking internal function ${{}:{}}", name, param);
 		Manager mgr = null;
-		//---
-		_logger.trace("name.equalsIgnoreCase(LOOKUP): {}", name.equalsIgnoreCase("LOOKUP"));
 		try
 		{
 			FunctionArguments args = new FunctionArguments(param);
@@ -302,8 +300,6 @@ public class FormalGrammar
 			}
 			else if (name.equalsIgnoreCase("LOOKUP"))
 			{
-				//---
-				_logger.trace("LOOKUP({}, {})", args.get(0), args.get(1));
 				return (mgr = new Manager()).resolveLookupValue(args.get(0), args.get(1));
 			}
 			else if (name.equalsIgnoreCase("QS"))
