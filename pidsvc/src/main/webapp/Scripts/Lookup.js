@@ -669,7 +669,7 @@ var Main = Class.construct({
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-		cmdxml += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:lookup:1.0\">";
+		cmdxml += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 		cmdxml += "<ns" + (oldns && oldns != ns ? " rename=\"" + oldns.htmlEscape() + "\"" : "") + ">" + ns.htmlEscape() + "</ns>";
 		cmdxml += "<default type=\"" + defaultType + "\">" + (defaultType == "Constant" ? $J("#DefaultBehaviourConstantValue").val().htmlEscape() : "") + "</default>";
 		cmdxml += "<" + type + ">";
