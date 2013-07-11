@@ -195,7 +195,7 @@ var Main = Class.construct({
 				else
 				{
 					serverData = serverData
-						.replace(/\[\[\[(.+?)\]\]\]/gim, "<a>$1</a>")	// expand hyperlinks
+						.replace(/\[\[\[(.*)?\]\]\]/gim, "<a>$1</a>")	// expand hyperlinks
 						.replace(/^OK:\s/gim, "")						// remove status codes
 						.replace(/\n/gim, "<br/>");						// new line characters
 					$J("#trfile" + file.id)
@@ -207,7 +207,10 @@ var Main = Class.construct({
 							.find("a")
 								.each(function() {
 									var jq = $J(this);
-									jq.attr("href", "mappings.html?mapping_path=" + encodeURIComponent(jq.text()));
+									if (jq.text())
+										jq.attr("href", "mappings.html?mapping_path=" + encodeURIComponent(jq.text()));
+									else
+										jq.attr("href", "mappings.html?mapping_id=0").text("<Catch-all>");
 								});
 				}
 			})

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -109,7 +110,7 @@ public class ManagerJson extends Manager
 
 		try
 		{
-			String query = "";
+			String query = "\"mapping_path\" IS NOT NULL";
 			if (mappingPath != null && !mappingPath.isEmpty())
 				query += " AND \"mapping_path\" ILIKE ?";
 			if (type != null && !type.isEmpty())
@@ -118,8 +119,8 @@ public class ManagerJson extends Manager
 				query += " AND \"creator\" = ?";
 
 			query =
-				"SELECT COUNT(*) FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + ";\n" +
-				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY mapping_path LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
+				"SELECT COUNT(*) FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + ";\n" +
+				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + " ORDER BY mapping_path LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
 
 			int i = 1;
 			pst = _connection.prepareStatement(query);
@@ -178,30 +179,81 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
+	public String searchParentMapping(int mappingId, String searchTerm) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null;
+
+		try
+		{
+			String query =
+				"SELECT mapping_path, title " +
+				"FROM vw_active_mapping " +
+				"WHERE type = 'Regex' AND (mapping_path ILIKE ? OR title ILIKE ?) " + (mappingId > 0 ? "AND mapping_id != " + mappingId + " " : "") +
+				"ORDER BY title, mapping_path " +
+				"LIMIT 10;";
+			searchTerm = "%" + searchTerm + "%";
+
+			pst = _connection.prepareStatement(query);
+			pst.setString(1, searchTerm);
+			pst.setString(2, searchTerm);
+
+			if (pst.execute())
+			{
+				ret = "[";
+
+				int i = 0;
+				for (rs = pst.getResultSet(); rs.next(); ++i)
+				{
+					if (i > 0)
+						ret += ",";
+					ret += "{" +
+							JSONObject.toString("mapping_path", rs.getString("mapping_path")) + ", " +
+							JSONObject.toString("title", rs.getString("title")) +
+						"}";
+				}
+				ret += "]";
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
 	public String getPidConfig(String mappingPath) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value,\n" +
+			"	m.parent, vwa.title AS parent_title, CASE WHEN vwa.mapping_id IS NULL THEN 0 ELSE 1 END AS parent_is_active\n" +
 			"FROM vw_latest_mapping m\n" +
-			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
-			"WHERE mapping_path = ?";
+			"	LEFT OUTER JOIN action a ON a.action_id = m.default_action_id\n" +
+			"	LEFT OUTER JOIN vw_active_mapping vwa ON vwa.mapping_path = m.parent\n" +
+			"WHERE m.mapping_path " + (mappingPath == null ? "IS NULL" : "= ?");
 		return getPidConfigImpl(query, mappingPath);
 	}
 
 	public String getPidConfig(int mappingId) throws SQLException
 	{
 		String query =
-			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value\n" +
+			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value,\n" +
+			"	m.parent, vwa.title AS parent_title, CASE WHEN vwa.mapping_id IS NULL THEN 0 ELSE 1 END AS parent_is_active\n" +
 			"FROM mapping m\n" +
-			"	LEFT OUTER JOIN \"action\" a ON a.action_id = m.default_action_id\n" +
-			"WHERE mapping_id = ?";
+			"	LEFT OUTER JOIN action a ON a.action_id = m.default_action_id\n" +
+			"	LEFT OUTER JOIN vw_active_mapping vwa ON vwa.mapping_path = m.parent\n" +
+			"WHERE m.mapping_id = ?";
 		return getPidConfigImpl(query, mappingId);
 	}
 
 	protected String getPidConfigImpl(String query, Object value) throws SQLException
 	{
 //		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("../pid.json");
-//		byte[] bytes=new byte[inputStream.available()]; 
+//		byte[] bytes = new byte[inputStream.available()]; 
 //		inputStream.read(bytes); 
 //		String s = new String(bytes); 
 //		return s;
@@ -209,16 +261,21 @@ public class ManagerJson extends Manager
 		PreparedStatement	pst = null;
 		ResultSet			rsMapping = null, rsCondition = null, rsAction = null, rsHistory = null;
 		String				ret = null;
-		int					i, j;
+		int					mappingId, i, j;
+		String				mappingPath, parentPath;
+		boolean				isParentActive;
 
 		try
 		{
 			pst = _connection.prepareStatement(query);
-			if (value instanceof Integer)
-				pst.setInt(1, (Integer)value);
-			else
-				pst.setString(1, (String)value);
-			
+			if (value != null)
+			{
+				if (value instanceof Integer)
+					pst.setInt(1, (Integer)value);
+				else
+					pst.setString(1, (String)value);
+			}
+
 			if (pst.execute())
 			{
 				ret = "{";
@@ -228,18 +285,29 @@ public class ManagerJson extends Manager
 					if (rsMapping.wasNull())
 						actionType = null;
 
-					String mappingPath = rsMapping.getString("mapping_path");
+					mappingId		= rsMapping.getInt("mapping_id");
+					mappingPath		= rsMapping.getString("mapping_path");
+					parentPath		= rsMapping.getString("parent");
+					isParentActive	= rsMapping.getBoolean("parent_is_active");
+
 					ret +=
-						JSONObject.toString("mapping_id", rsMapping.getInt("mapping_id")) + ", " +
+						JSONObject.toString("mapping_id", mappingId) + ", " +
 						JSONObject.toString("mapping_path", mappingPath) + ", " +
 						JSONObject.toString("original_path", rsMapping.getString("original_path")) + ", " +
-						JSONObject.toString("type", rsMapping.getString("type")) + ", " +
-						JSONObject.toString("title", rsMapping.getString("title")) + ", " +
+						JSONObject.toString("type", mappingPath == null ? "Regex" : rsMapping.getString("type")) + ", " +
+						JSONObject.toString("title", mappingPath == null ? "Catch-all" : rsMapping.getString("title")) + ", " +
 						JSONObject.toString("description", rsMapping.getString("description")) + ", " +
 						JSONObject.toString("creator", rsMapping.getString("creator")) + ", " +
 						JSONObject.toString("commit_note", rsMapping.getString("commit_note")) + ", " +
 						JSONObject.toString("ended", rsMapping.getBoolean("ended")) + ", " +
 						JSONObject.toString("qr_hits", this.getTotalQrCodeHits(mappingPath)) + ", " +
+						"\"parent\": {" +
+							JSONObject.toString("mapping_path", parentPath) + ", " +
+							JSONObject.toString("title", rsMapping.getString("parent_title")) + ", " +
+							(isParentActive ? JSONObject.toString("cyclic", !this.checkNonCyclicInheritance(mappingId)) + ", " : "") +
+							JSONObject.toString("active", isParentActive) + ", " +
+							"\"graph\": " + getMappingDependencies(mappingId, parentPath) +
+						"}," +
 						"\"action\": ";
 					if (actionType == null)
 						ret += "null";
@@ -256,8 +324,15 @@ public class ManagerJson extends Manager
 					ret += ",";
 
 					// Serialise change history.
-					pst = _connection.prepareStatement("SELECT mapping_id, creator, commit_note, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM mapping WHERE mapping_path = ? ORDER BY mapping.date_start DESC");
-					pst.setString(1, rsMapping.getString("mapping_path"));
+					pst = _connection.prepareStatement(
+						"SELECT mapping_id, creator, commit_note, " +
+						"	to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, " +
+						"	to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end " +
+						"FROM mapping " +
+						"WHERE mapping_path " + (mappingPath == null ? "IS NULL " : "= ? ") +
+						"ORDER BY mapping.date_start DESC");
+					if (mappingPath != null)
+						pst.setString(1, mappingPath);
 
 					ret += "\"history\": [";
 					if (pst.execute())
@@ -313,7 +388,7 @@ public class ManagerJson extends Manager
 										"}";
 								}
 							}
-							
+
 							ret += "]"; // actions
 							ret += "}"; // condition
 						}
@@ -321,6 +396,32 @@ public class ManagerJson extends Manager
 					ret += "]"; // conditions
 				}
 				ret += "}";
+
+				if (value == null && ret.equals("{}"))
+				{
+					// Catch-all mapping is not defined yet. Return default.
+					ret = "{" +
+						JSONObject.toString("mapping_id", 0) + ", " +
+						JSONObject.toString("mapping_path", null) + ", " +
+						JSONObject.toString("original_path", null) + ", " +
+						JSONObject.toString("type", "Regex") + ", " +
+						JSONObject.toString("title", "Catch-all") + ", " +
+						JSONObject.toString("description", null) + ", " +
+						JSONObject.toString("creator", null) + ", " +
+						JSONObject.toString("commit_note", null) + ", " +
+						JSONObject.toString("ended", false) + ", " +
+						JSONObject.toString("qr_hits", 0) + ", " +
+						JSONObject.toString("parent", null) + ", " +
+						"\"action\": {" +
+							JSONObject.toString("type", "404") + ", " +
+							JSONObject.toString("name", null) + ", " +
+							JSONObject.toString("value", null) + ", " +
+							JSONObject.toString("description", null) +
+						"}," +
+						"\"history\": null," + 
+						"\"conditions\": []" +
+					"}";
+				}
 			}
 		}
 		finally
@@ -529,6 +630,303 @@ public class ManagerJson extends Manager
 				}
 				ret += "}";
 			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public String getChart() throws IOException, SQLException
+	{
+//		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("../chart_data.js");
+//		byte[] bytes = new byte[inputStream.available()]; 
+//		inputStream.read(bytes); 
+//		String s = new String(bytes); 
+//		return s;
+
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT description, creator FROM vw_active_mapping WHERE mapping_path IS NULL");
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+				{
+					ret = "{" +
+						JSONObject.toString("id", 0) + ", " +
+						JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
+						"\"data\":{" +
+							JSONObject.toString("$type", "star") + ", " + 
+							JSONObject.toString("$color", "#C72240") + ", " + 
+							JSONObject.toString("mapping_path", null) + ", " + 
+							JSONObject.toString("author", rs.getString("creator")) + ", " + 
+							JSONObject.toString("description", rs.getString("description")) +
+						"}," +
+						"\"children\":[" +
+							encodeChartChildren(null) +
+						"]}";
+				}
+			}
+
+			// Catch-all mapping is not defined yet.
+			if (ret == null)
+			{
+				ret = "{" +
+					JSONObject.toString("id", 0) + ", " +
+					JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
+					"\"data\":{" +
+						JSONObject.toString("$type", "star") + ", " + 
+						JSONObject.toString("$color", "#C72240") + ", " + 
+						JSONObject.toString("mapping_path", null) + 
+					"}," +
+					"\"children\":[" +
+						encodeChartChildren(null) +
+					"]}";
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	private String encodeChartChildren(String parent) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = "";
+		String				mappingPath, title;
+		boolean				isOneToOne;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT mapping_path, parent, title, description, creator, type FROM vw_active_mapping WHERE mapping_path IS NOT NULL AND parent " + (parent == null ? "IS NULL" : "= ?"));
+			if (parent != null)
+				pst.setString(1, parent);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				while (rs.next())
+				{
+					mappingPath		= rs.getString("mapping_path");
+					title			= rs.getString("title");
+					isOneToOne		= rs.getString("type").equalsIgnoreCase("1:1");
+
+					if (!ret.equals(""))
+						ret += ","; 
+					ret += "{" +
+						JSONObject.toString("id", mappingPath) + ", " +
+						JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
+						"\"data\":{" +
+							(isOneToOne ? JSONObject.toString("$type", "square") + ", " : "") +
+							(isOneToOne ? JSONObject.toString("$color", "#bed600") + ", " : "") +
+							JSONObject.toString("mapping_path", mappingPath) + ", " + 
+							JSONObject.toString("title", title) + ", " + 
+							JSONObject.toString("author", rs.getString("creator")) + ", " + 
+							JSONObject.toString("description", rs.getString("description")) +
+						"}," +
+						"\"children\":[" +
+							encodeChartChildren(mappingPath) +
+						"]}";
+				}
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public String getMappingDependencies(Object thisMapping, String parentPath) throws SQLException
+	{
+		Vector<String>		parentsList = new Vector<String>();
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		String				ret = null, jsonThis = "", jsonParent = null, jsonParent2 = null;
+		String				mappingPath, title;
+		int					mappingId, inheritors;
+
+		try
+		{
+			// Get current mapping descriptor.
+			if (thisMapping instanceof String)
+			{
+				jsonThis = (String)thisMapping;
+				parentsList.add("__this");
+			}
+			else
+			{
+				mappingId = (Integer)thisMapping;
+				pst = _connection.prepareStatement(
+					"SELECT a.mapping_path, a.title, a.description, a.creator, " +
+					"	(SELECT COUNT(1) FROM vw_active_mapping aa WHERE aa.parent = a.mapping_path) AS inheritors " +
+					"FROM mapping a " +
+					"WHERE a.mapping_id = ?");
+				pst.setInt(1, mappingId);
+
+				if (pst.execute())
+				{
+					jsonThis = "{";
+					rs = pst.getResultSet();
+					if (rs.next())
+					{
+						mappingPath		= rs.getString("mapping_path");
+						title			= rs.getString("title");
+						inheritors		= rs.getInt("inheritors");
+	
+						// Initial mapping ID is required for detection of cyclic inheritance.
+						parentsList.add(mappingPath);
+
+						jsonThis +=
+							JSONObject.toString("id", "__this") + ", " +
+							JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
+							"\"data\":{" +
+								JSONObject.toString("mapping_path", mappingPath) + ", " + 
+								JSONObject.toString("title", title) + ", " + 
+								JSONObject.toString("description", rs.getString("description")) + ", " +
+								JSONObject.toString("author", rs.getString("creator")) + ", " + 
+								JSONObject.toString("css", "chart_label_current") + ", " + 
+								JSONObject.toString("inheritors", inheritors) + 
+							"}" +
+							(
+								inheritors == 0 ?
+									""
+								:
+									",\"children\":[{" +
+									JSONObject.toString("id", -2) + ", " + 
+									JSONObject.toString("name", inheritors + " inheritor" + (inheritors == 1 ? "" : "s") + "...") + ", " + 
+									"\"data\":{" +
+										JSONObject.toString("css", "chart_label_hidden") + ", " + 
+										JSONObject.toString("inheritors", inheritors) + 
+									"}" +
+								"}]"
+							);
+					}
+					jsonThis += "}";
+				}
+			}
+
+			// Get parents.
+			while (parentPath != null)
+			{
+				pst = _connection.prepareStatement(
+					"SELECT mapping_path, title, description, creator, parent " +
+					"FROM vw_active_mapping " +
+					"WHERE mapping_path = ? AND type = 'Regex'"
+				);
+				pst.setString(1, parentPath);
+
+				parentPath = null;
+				if (pst.execute())
+				{
+					rs = pst.getResultSet();
+					if (rs.next())
+					{
+						mappingPath		= rs.getString("mapping_path");
+						title			= rs.getString("title");
+						parentPath		= rs.getString("parent");
+
+						// Prevent cyclic inheritance syndrome.
+						if (parentsList.contains(mappingPath))
+						{
+							jsonParent =
+								"{" +
+									JSONObject.toString("id", -3) + ", " +
+									JSONObject.toString("name", "ERROR") + ", " +
+									"\"data\":{" +
+										JSONObject.toString("description", "Cyclic inheritance encountered!<br/><br/>Please inspect the inheritance chain and rectify the problem. Mappings with detected cyclic inheritance will fall back to Catch-all mapping automatically.") + ", " +
+										JSONObject.toString("css", "chart_label_error") + 
+									"}," +
+									"\"children\":[" + jsonThis + "]" +
+								"}";
+							return jsonParent;
+						}
+
+						// Construct JSON for the first parent.
+						if (jsonParent2 == null)
+						{
+							String buf =
+								JSONObject.toString("id", mappingPath) + ", " +
+								JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
+								"\"data\":{" +
+									JSONObject.toString("mapping_path", mappingPath) + ", " + 
+									JSONObject.toString("title", title) + ", " + 
+									JSONObject.toString("description", rs.getString("description")) + ", " +
+									JSONObject.toString("author", rs.getString("creator")) + 
+								"}";
+							if (jsonParent == null)
+								jsonParent = "{" + buf + ", \"children\":[" + jsonThis + "]}";
+							else if (jsonParent2 == null)
+								jsonParent2 = "{" + buf + ", \"children\":[" + jsonParent + "]}";
+						}
+
+						// Add new parent to the list.
+						parentsList.add(mappingPath);
+					}
+				}
+			}
+			if (jsonParent == null)
+				jsonParent = jsonThis;
+
+			// Get catch-all mapping descriptor.
+			String author = null, description = null;
+			int hiddenParents = parentsList.size() - 2;
+
+			pst = _connection.prepareStatement(
+				"SELECT description, creator " +
+				"FROM vw_active_mapping " +
+				"WHERE mapping_path IS NULL AND type = 'Regex'");
+			if (pst.execute())
+			{
+				if ((rs = pst.getResultSet()).next())
+				{
+					author = rs.getString("creator");
+					description = rs.getString("description");
+				}
+			}
+			if (hiddenParents == 1)
+				jsonParent = jsonParent2;
+			else if (hiddenParents > 1)
+			{
+				jsonParent =
+					"{" +
+						JSONObject.toString("id", -1) + ", " +
+						JSONObject.toString("name", hiddenParents + " more parents...") + ", " +
+						"\"data\":{" +
+							JSONObject.toString("css", "chart_label_hidden") + 
+						"}," +
+						"\"children\":[" + jsonParent + "]" +
+					"}";
+			}
+			ret =
+				"{" +
+					JSONObject.toString("id", 0) + ", " +
+					JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
+					"\"data\":{" +
+						JSONObject.toString("author", author) + ", " +
+						JSONObject.toString("description", description) + ", " +
+						JSONObject.toString("css", "chart_label_root") + 
+					"}," +
+					"\"children\":[" + jsonParent + "]" +
+				"}";
 		}
 		finally
 		{

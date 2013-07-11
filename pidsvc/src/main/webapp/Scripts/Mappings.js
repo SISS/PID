@@ -24,27 +24,35 @@ var Main = Class.construct({
 	},
 	_defaultOverlaySettings: {
 		overlayCSS: {
-			opacity: .8,
-			backgroundColor: "#fff",
-			cursor: ""
+			opacity:				.8,
+			backgroundColor:		"#fff",
+			cursor:					""
 		},
 		css: {
-			width: "700px",
-			top: "120px",
-			left: "15px",
-			border: "solid 2px #bed600",
-			backgroundColor: "#fff",
-			color: "#000",
-			padding: "15px",
-			cursor: "",
-			textAlign: "left"
+			width:					"705px",
+			top:					"80px",
+			left:					"10px",
+			border:					"solid 2px #bed600",
+			backgroundColor:		"#fff",
+			color:					"#000",
+			padding:				"15px",
+			cursor:					"",
+			textAlign:				"left"
 		},
 		onOverlayClick: $J.unblockUI
 	},
 
+	JSON_SELF_IDENTIFIER:			encodeURIComponent("{\"id\": \"__this\", \"name\": \"&ltNew mapping&gt;\", \"data\": { \"css\": \"chart_label_current\" }}"),
+
+	_tabActivationPostHandlers:		new Array(2),
+
 	_focusPager:					false,
 	_timerCollapseChangeHistory:	null,
 	_timerLoadQrCodeImg:			null,
+	_timerResetDependencyChart:		null,
+
+	_stInheritanceGraph:			null,
+	_timerParentMappingEditing:		null,
 
 	init: function()
 	{
@@ -69,8 +77,8 @@ var Main = Class.construct({
 
 		// Initialise context menus.
 		$J.contextMenu({
-			selector: '#cmdExport',
-			trigger: 'left',
+			selector: "#cmdExport",
+			trigger: "left",
 			callback: Main.export,
 			items: {
 				"partial_export": { name: "Partial export (current only)", icon: "export", accesskey: "p" },
@@ -78,8 +86,8 @@ var Main = Class.construct({
 			}
 		});
 		$J.contextMenu({
-			selector: '#cmdQrCode',
-			trigger: 'left',
+			selector: "#cmdQrCode",
+			trigger: "left",
 			callback: Main.publishQrCode,
 			items: {
 				"1": { name: "Nano", icon: "barcode" },
@@ -93,33 +101,71 @@ var Main = Class.construct({
 		});
 
 		// Set change history style.
-		$J("#ChangeHistory DIV").hover(
-			function() {
-				if ($J(this).get(0).scrollHeight <= 195)
-					return;
-				clearTimeout(Main._timerCollapseChangeHistory);
-				Main._timerCollapseChangeHistory = null;
-				$J(this)
-					.css({ "overflow": "auto", "border-bottom": "2px solid #bed600" })
-					.animate({ height: "383px" }, "fast");
-			},
-			function()
-			{
-				clearTimeout(Main._timerCollapseChangeHistory)
-				Main._timerCollapseChangeHistory = setTimeout(function() {
-					$J("#ChangeHistory").css("border", "none");
-					$J(this)
-						.css({ "overflow": "hidden", "border-bottom": "none" })
-						.animate({ height: "195px" }, "slow");
-				}.bind(this), 1000);
-			}
-		);
+		$J("#ChangeHistory DIV")
+			.slimscroll({
+				height:			387,
+				size:			5,
+				distance:		0,
+				railVisible:	true,
+				railOpacity:	.15
+			})
+			.css("height", 195)
+			.hover(
+				function() {
+					var scrollHeight = $J(this).get(0).scrollHeight;
+					if (scrollHeight <= 195)
+						return;
+					clearTimeout(Main._timerCollapseChangeHistory);
+					Main._timerCollapseChangeHistory = null;
+					$J(this).animate({ height: (scrollHeight < 387 ? scrollHeight : 387) + "px" }, "fast", function() { $J(this).slimscroll(); });
+				},
+				function()
+				{
+					clearTimeout(Main._timerCollapseChangeHistory)
+					Main._timerCollapseChangeHistory = setTimeout(function() {
+						$J("#ChangeHistory").css("border", "none");
+						$J(this).animate({ height: "195px" }, "slow");
+					}.bind(this), 1000);
+				}
+			);
 
 		// Set commit note styles.
 		$J("#CommitNoteRO").dblclick(this.addCommitNote);
 		$J("#CommitNote").attr("configurationOnChange", "1"); // Disable change monitoring for this field (this is not an actual change).
 
-		$J("#DefaultAction").hover(Main.conditionHoverOn, Main.conditionHoverOff);
+		$J("#DefaultAction").hover(this.conditionHoverOn, this.conditionHoverOff);
+
+		// Inheritance handling.
+		$J("#MappingParentName").click(Main.openSearchParentMapping);
+		$J("#ParentEdit A, #MappingParent")
+			.focus(function() {
+				if (!Main._timerParentMappingEditing)
+					return;
+				clearTimeout(Main._timerParentMappingEditing);
+				Main._timerParentMappingEditing = null;				
+			})
+			.blur(function() {
+				if (Main._timerParentMappingEditing)
+				{
+					clearTimeout(Main._timerParentMappingEditing);
+					Main._timerParentMappingEditing = null;
+				}
+				Main._timerParentMappingEditing = setTimeout(Main.cancelParentMappingEditing, 10);
+			});
+		$J("#MappingParent")
+			.keyup(this.parentMappingOnKeyUp)
+			.autocomplete({
+				minLength:	2,
+				source:		this.searchParentMapping,
+				select:		this.selectParentMapping
+			})
+			.data("ui-autocomplete")
+				._renderItem = function(ul, item)
+				{
+					if (!item.mapping_path)
+						return $J("<li>").append("<a class=\"i\">" + item.label + "</a>").appendTo(ul);
+					return $J("<li>").append("<a>" + item.label + (item.label == item.mapping_path ? "" : "<br/><span class=\"tip\" style=\"padding-left: 15px;\">" + item.mapping_path + "</span>") + "</a>").appendTo(ul);
+				};
 
 		// Regex tester.
 		$J("#MappingPath, #txtUriTesting").keyup(this.testUriChanged);
@@ -151,13 +197,18 @@ var Main = Class.construct({
 		}
 		this.blockSaving(true);
 
-		// Reset mapping configuration.
-		this.create();
-
 		// Automatically retrieve mapping configuration.
+		var qsMappingId = location.href.getQueryParam("mapping_id");
 		var qsMappingPath = location.href.getQueryParam("mapping_path");
-		if (qsMappingPath !== false)
+		if (qsMappingId !== false)
+			this.getConfigByMappingId(qsMappingId);
+		else if (qsMappingPath !== false)
 			this.getConfigByMappingPath(decodeURIComponent(qsMappingPath));
+		else
+		{
+			// Reset mapping configuration.
+			this.create();
+		}
 
 		// Tip about Author field behaviour.
 		if (GlobalSettings.AuthorizationName)
@@ -204,7 +255,7 @@ var Main = Class.construct({
 
 		// Toggle tab.
 		if (tabIndex == -1)
-			tabIndex = $J("#TopMenu > DIV.MenuButtonActive").index() ? 0 : 1;
+			tabIndex = Main.getCurrentTabIndex() ? 0 : 1;
 
 		$J("#TopMenu > DIV:eq(" + tabIndex + ")")
 			.addClass("MenuButtonActive")
@@ -216,6 +267,23 @@ var Main = Class.construct({
 			$J("#Containers > DIV:not(" + tabIndex + ")").fadeOut();
 			$J("#Containers > DIV:eq(" + tabIndex + ")").fadeIn();
 		}
+
+		// Run tab post activation handlers.
+		if (Main._tabActivationPostHandlers[tabIndex])
+		{
+			eval(Main._tabActivationPostHandlers[tabIndex]);
+			Main._tabActivationPostHandlers[tabIndex] = null;
+		}
+	},
+
+	getCurrentTabIndex: function()
+	{
+		return $J("#TopMenu > DIV.MenuButtonActive").index();
+	},
+
+	setTabPostActivationHandler: function(tabIndex, handler)
+	{
+		Main._tabActivationPostHandlers[tabIndex] = handler;
 	},
 
 	blockUI: function(jq)
@@ -223,13 +291,13 @@ var Main = Class.construct({
 		var settings = {
 				message: "<img src='Images/loading319.gif' width='128' height='128'/>",
 				overlayCSS: {
-					opacity: .8,
-					backgroundColor: "#fff"
+					opacity:			.8,
+					backgroundColor:	"#fff"
 				},
 				css: {
-					border: "none",
-					backgroundColor: "",
-					color: "#fff"
+					border:				"none",
+					backgroundColor:	"",
+					color:				"#fff"
 				}
 			};
 		if (jq)
@@ -268,8 +336,11 @@ var Main = Class.construct({
 		}
 		else
 		{
-			var config = $J("#ConfigSection").data("config");
+			var config			= $J("#ConfigSection").data("config");
+			var isCatchAll		= config != null && (config.mapping_id == 0 || config.mapping_path == null);
 
+			if (!isCatchAll)
+				$J(".__catchAllHide").show();
 			$J("#ConfigSection input, #ConfigSection select, #ConfigSection textarea").removeAttr("disabled");
 			$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 			$J("*.__supersededLock").show();
@@ -284,11 +355,20 @@ var Main = Class.construct({
 				$J("#cmdQrCode").hide();
 			else if (!config || $J("#ChangeHistory").attr("isDeprecated") == "1")
 				Main.displayQrCodeUI(false);
-			
+
+			// Catch-all mapping.
+			if (isCatchAll)
+			{
+				$J(".__catchAllHide").hide();
+				$J("#MappingTitle").attr("disabled", "disabled");
+			}
+			else
+				$J("#MappingType").change();
+
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
 
-			// Reinitialise action selectors.
+			// Re-initialise selectors.
 			$J("#DefaultAction td.__actionType > select, #ConditionSection td.__actionType > select").change();
 
 			// Disable author/creator input for authenticate requests.
@@ -358,7 +438,7 @@ var Main = Class.construct({
 		return $J("#cmdSave").is(":disabled");
 	},
 
-	mappingTypeOnChange: function()
+	mappingTypeOnChange: function(event)
 	{
 		var showRegexTester = $J("#MappingType").val() != "1:1";
 		if (showRegexTester)
@@ -367,7 +447,17 @@ var Main = Class.construct({
 			Main.testUriChanged();
 		}
 		else
+		{
 			$J("#RegexTester").hide();
+
+			// Reset parent if 1:1 maping type is choosen.
+			if (Main.getCurrentTabIndex() == 1 &&
+				Main._timerResetDependencyChart == null &&
+				$J("#ConfigSection").data("new_parent") != null)
+			{
+				Main._timerResetDependencyChart = setTimeout(Main.resetParentMapping, 150);
+			}
+		}
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -393,6 +483,7 @@ var Main = Class.construct({
 		catch (ex)
 		{
 			// Display regular expression error message.
+			Main.showRegexTester(true);
 			$J("#imgUriTestingStatus").attr("src", "Images/messagebox_warning.png").attr("title", "Regex exception occurred");
 			$J("#phMatchingGroupInfo").html("<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">" + ex + "</div>");
 
@@ -457,14 +548,15 @@ var Main = Class.construct({
 		this.setQrCode(uri);
 	},
 	
-	showRegexTester: function()
+	showRegexTester: function(state)
 	{
 		var jq = $J("#URITesting");
-		var isVisible = jq.is(":visible");
-		if (isVisible)
+		if (state === true)
+			jq.show();
+		else if (state === false)
 			jq.hide();
 		else
-			jq.show();
+			jq.toggle();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -632,7 +724,7 @@ var Main = Class.construct({
 
 		if ((!config && !mappingPath) || $J("#ChangeHistory").attr("isDeprecated") == "1")
 			return this.create();
-		if (!confirm("Are you sure wish to delete \"" + config.mapping_path + "\" mapping?"))
+		if (!confirm("Are you sure wish to delete \"" + (config ? config.mapping_path : mappingPath) + "\" mapping?"))
 			return;
 
 		if (config)
@@ -643,7 +735,7 @@ var Main = Class.construct({
 					type: "POST",
 					cache: false
 				})
-				.done(this.getConfig.bind(this, 0))
+				.done(this.getConfig.bind(this, -1))
 				.fail(ExceptionHandler.displayGenericException);
 		}
 		else
@@ -653,28 +745,89 @@ var Main = Class.construct({
 		}
 	},
 
+	openChart: function()
+	{
+		var config = $J("#ConfigSection").data("config");
+		if (!Main.isSavingBlocked() || !config)
+		{
+			alert("The mapping must be saved first!");
+			return;
+		}
+		location.href = "chart.html" + (config.mapping_path == null ? "" : "?mapping_path=" + encodeURIComponent(config.mapping_path.trim()));
+	},
+
 	getConfig: function(id)
 	{
-		var internalCall = Object.isNumber(id);
-		var mappingId = internalCall ? id : $J(this).attr("mapping_id");
+		var internalCall	= Object.isNumber(id);
+		var mappingId		= internalCall ? id : $J(this).attr("mapping_id");
+
+		// Deactivate any post activation handlers.
+		Main._tabActivationPostHandlers[1] = null;
 
 		Main.openTab(1);
 		if (!internalCall)
 			Main.blockUI($J("#ConfigSection"));
 
-		// If mappingId === 0 then get the latest configuration for the current mapping.
-		if (mappingId === 0)
+		// If mappingId === -1 then get the latest configuration for the current mapping.
+		if (mappingId === -1)
 		{
 			var path = $J("#MappingPath").val().trim();
 			$J("#MappingPath").val(path);
-			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(path), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+			if (path == "")
+			{
+				// Catch-all mapping.
+				$J.getJSON("info?cmd=get_pid_config&mapping_id=0", Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+			}
+			else
+				$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(path), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
 		}
 		else
 			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.displayGenericException);
 	},
 
-	getConfigByMappingPath: function(mappingPath)
+	getConfigByMappingId: function(mappingId, passive)
 	{
+		if (passive === true)
+		{
+			// In passive mode when mapping is not available it gives an alert and stays are the previous mapping.
+			Main.blockUI($J("#ConfigSection"));
+			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId,
+				function(data) {
+					if (data == null || $J.isEmptyObject(data))
+					{
+						alert("Mapping is not found!");
+						Main.unblockUI();
+					}
+					else
+						Main.renderConfig(data);
+				})
+				.fail(ExceptionHandler.displayGenericException);
+			return;
+		}
+		Main.openTab(1);
+		Main.blockUI($J("#ConfigSection"));
+		$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+	},
+
+	getConfigByMappingPath: function(mappingPath, passive)
+	{
+		if (passive === true)
+		{
+			// In passive mode when mapping is not available it gives an alert and stays are the previous mapping.
+			Main.blockUI($J("#ConfigSection"));
+			$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath),
+				function(data) {
+					if (data == null || $J.isEmptyObject(data))
+					{
+						alert("Mapping is not found!");
+						Main.unblockUI();
+					}
+					else
+						Main.renderConfig(data);
+				})
+				.fail(ExceptionHandler.displayGenericException);
+			return;
+		}
 		Main.openTab(1);
 		Main.blockUI($J("#ConfigSection"));
 		$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(mappingPath), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
@@ -706,10 +859,10 @@ var Main = Class.construct({
 	renderConfig: function(data)
 	{
 		// Save last loaded configuration in memory.
-		$J("#ConfigSection").data("config", data);
+		$J("#ConfigSection").data("config", data == null || $J.isEmptyObject(data) ? null : data);
 
 		// Reset configuration.
-		if (!data || $J.isEmptyObject(data))
+		if (data == null || $J.isEmptyObject(data))
 		{
 			if (data != null && $J.isEmptyObject(data))
 				alert("Mapping is not found!");
@@ -738,7 +891,13 @@ var Main = Class.construct({
 			$J("#CommitNoteSection A.__preserveCommitNote").hide();
 			$J("#CommitNoteRO").text("").hide();
 			$J("#CommitNote").val("").hide();
-			
+
+			// Inheritance section.
+			if (Main.getCurrentTabIndex() == 1)
+				Main.resetParentMapping();
+			else
+				Main.setTabPostActivationHandler(1, "Main.resetParentMapping()");
+
 			Main.displayQrCodeUI(false);
 			Main.blockSaving(true);
 			Main.blockEditing(false);
@@ -746,6 +905,8 @@ var Main = Class.construct({
 			return;
 		}
 
+		var isCatchAll = data.mapping_id === 0;
+		
 		// Show configuration.
 		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
 		$J("#MappingType").val(data.type).change();
@@ -753,6 +914,34 @@ var Main = Class.construct({
 		$J("#MappingDescription").val(data.description);
 		$J("#MappingCreator").val(data.creator);
 
+		// Inheritance section.
+		if (!isCatchAll)
+		{
+			Main.resetParentMapping(true);
+			if (data.parent && data.parent.mapping_path)
+			{
+				$J("#MappingParentName")
+					.text(data.parent.title ? data.parent.title : data.parent.mapping_path)
+					.attr("title", data.parent.mapping_path + "\n\n" + "\"Ctrl + Click\" to follow the link...");
+				if (data.parent.active && data.parent.cyclic)
+				{
+					$J("#ParentWarningIcon")
+						.attr("src", "Images/messagebox_warning.png")
+						.attr("title", "Cyclic inheritance encountered!\nPlease inspect the inheritance chain and rectify the problem.")
+						.show();
+				}
+				else if (!data.parent.active)
+				{
+					$J("#ParentWarningIcon")
+						.attr("src", "Images/messagebox_warning.png")
+						.attr("title", "The parent mapping \"" + data.parent.mapping_path + "\" doesn't exist or has been deprecated. The resolution will fall back to Catch-All mapping.")
+						.show();
+				}
+			}
+			Main.renderInheritanceGraph(data.parent && data.parent.graph ? data.parent.graph : {});
+		}
+
+		// QR Code.
 		if (data.type == "1:1")
 		{
 			Main.setQrCode(data.mapping_path);
@@ -765,6 +954,7 @@ var Main = Class.construct({
 		$J("#QRCodeHits").text(data.qr_hits);
 		Main.displayQrCodeUI(true);
 
+		// Default action.
 		$J("#DefaultAction")
 			.find("td.__actionType > select")
 				.val(data.action ? data.action.type : "")
@@ -814,7 +1004,10 @@ var Main = Class.construct({
 		}
 
 		// Change history.
-		$J("#ChangeHistory").attr("isDeprecated", data.history[0].date_end != null ? 1 : 0).show().find("ul").empty();
+		$J("#ChangeHistory")[data.history ? "show" : "hide"]()
+			.attr("isDeprecated", data.history && data.history[0].date_end != null ? 1 : 0)
+			.find("ul")
+				.empty();
 		$J(data.history).each(function() {
 			$J("#ChangeHistory ul")
 				.append(
@@ -845,6 +1038,195 @@ var Main = Class.construct({
 		jq.val(newPath);
 		if (originalPath != "" && originalPath != newPath && !confirm("You have changed the URI pattern. It may override another mapping or cause some URIs to work incorrectly.\n\nDo you wish to continue?"))
 			jq.val(originalPath).keyup();
+	},
+
+	//
+	//	Inheritance handling.
+	//
+
+	initializeInheritanceGraph: function()
+	{
+		if (Main._stInheritanceGraph)
+			return;
+		Main._stInheritanceGraph = new $jit.ST({
+			injectInto:			"infovis",
+			levelDistance:		10,
+			duration:			100,
+			transition:			$jit.Trans.Quart.easeInOut,
+			levelsToShow:		10,
+			align:				"left",
+
+			// Set Node and Edge styles.
+			Node: {
+				color:			"#fff",
+				width:			132
+			},
+			Edge: {
+				type:			"bezier",
+				color:			"#20B4E6",
+				lineWidth:		1.5
+			},
+
+			Tips: {
+				enable: true,
+				onShow: function(tip, node)
+				{
+					$J(tip).removeClass("tip").addClass("inheritance_graph_tip");
+					if (node.id == -1)
+						tip.innerHTML = "Some parents were collapsed for readability.<br/>Inspect the whole dependency tree in the Mapping Chart.";
+					else if (node.id == -2)
+						tip.innerHTML = (node.data.inheritors == 1 ? "There's " : "There're ") + node.data.inheritors + " " + (node.data.inheritors == 1 ? "mapping that depends" : "mappings that depend") + " on this mapping.";
+					else
+						tip.innerHTML = "<div class=\"ellipsis b\">" + (node.id === 0 ? "Built-in &lt;Catch-all&gt; mapping" : node.name) + "</div>" +
+							(node.data.title ? "<div>" + node.data.mapping_path + "</div>" : "") +
+							(node.data.description ? "<div style=\"margin-top: 10px; height: 50px; overflow: hidden; text-overflow: ellipsis;\">" + node.data.description + "</div>" : "") +
+							(node.data.inheritors ? "<div style=\"margin-top: 10px; border-top: 1px solid #eee; padding-top: 7px;\"><b>Inheritors:</b> " + node.data.inheritors + "</div>" : "");
+				}
+			},
+
+			onCreateLabel: function(label, node)
+			{
+				label.id = node.id;
+				$J(label)
+					.html(node.name)
+					.addClass("chart_label")
+					.addClass(node.data.css);
+				label.onclick = Main.inheritanceGraphLabelOnClick.bind(this, node);
+			}
+		});
+		Main._stInheritanceGraph.canvas.translate(-292, -30);
+	},
+
+	renderInheritanceGraph: function(data)
+	{
+		if (Main._timerResetDependencyChart)
+		{
+			clearTimeout(Main._timerResetDependencyChart);
+			Main._timerResetDependencyChart = null;
+		}
+		Main.initializeInheritanceGraph();
+		if (data == null || $J.isEmptyObject(data))
+			return;
+		Main._stInheritanceGraph.loadJSON(data);
+		Main._stInheritanceGraph.compute();
+		Main._stInheritanceGraph.onClick(Main._stInheritanceGraph.root);
+	},
+
+	inheritanceGraphLabelOnClick: function(node)
+	{
+		if (node.id === 0)
+			Main.getConfigByMappingId(0);
+		else if (node.id == node.data.mapping_path)
+			Main.getConfigByMappingPath(node.data.mapping_path);
+	},
+
+	searchParentMapping: function(request, response)
+	{
+		var config = $J("#ConfigSection").data("config");
+		$J.ajax({
+			url:		"info?cmd=search_parent",
+			dataType:	"json",
+			data:		{ mapping_id: config && config.mapping_id, q: request.term },
+
+			success: function(data)
+			{
+				data = $J.merge(data, [{ mapping_path: null, title: "Catch-all" }]);
+				response(
+					$J.map(data, function(item) {
+						var label = item.title ? item.title : item.mapping_path;
+						return $J.extend(item, { label: label, value: label });
+					})
+				);
+			}
+		});
+	},
+
+	openSearchParentMapping: function(event)
+	{
+		// Ctrl + Click follows the link.
+		if (event.ctrlKey)
+		{
+			var config		= $J("#ConfigSection").data("config");
+			var newParent	= $J("#ConfigSection").data("new_parent");
+			var parent		= newParent ? newParent : (config && config.parent.mapping_path ? config.parent.mapping_path : 0);
+
+			event.preventDefault();
+			if (parent === 0)
+				Main.getConfigByMappingId(0, true);
+			else
+				Main.getConfigByMappingPath(parent, true);
+			return;
+		}
+
+		if (Main.isEditingBlocked())
+			return;
+		$J("#ParentView").hide();
+		$J("#ParentEdit").show();
+		$J("#MappingParent").val("").select();
+	},
+
+	selectParentMapping: function(event, ui)
+	{
+		if (!ui.item)
+			return;
+
+		if (ui.item.mapping_path && $J("#MappingType").val() == "1:1")
+		{
+			// Check that mapping URI matches pattern of the parent mapping.
+			var re = new RegExp(ui.item.mapping_path, "i");
+			if (!re.match($J("#MappingPath").val()))
+			{
+				alert("Selected parent mapping doesn't match the mapping URI.");
+				Main.cancelParentMappingEditing();
+				return;
+			}
+		}
+
+		// Redraw inheritance chart.
+		var config = $J("#ConfigSection").data("config");
+		$J.getJSON(
+				"info?cmd=get_mapping_dependencies" +
+					(config ? "&mapping_id=" + config.mapping_id : "&json=" + Main.JSON_SELF_IDENTIFIER) +
+					(ui.item.mapping_path ? "&mapping_path=" + encodeURIComponent(ui.item.mapping_path) : ""),
+				Main.renderInheritanceGraph
+			)
+			.fail(ExceptionHandler.displayGenericException);
+
+		// Save selection.
+		$J("#ConfigSection").data("new_parent", ui.item.mapping_path);
+		$J("#MappingParentName").text(ui.item.value).attr("title", ui.item.mapping_path);
+		$J("#ParentWarningIcon").hide();
+		Main.cancelParentMappingEditing();
+		Main.configurationOnChange();
+	},
+
+	resetParentMapping: function(noRedraw)
+	{
+		if (noRedraw !== true)
+		{
+			var config = $J("#ConfigSection").data("config");
+			$J.getJSON("info?cmd=get_mapping_dependencies" + (config ? "&mapping_id=" + config.mapping_id : "&json=" + Main.JSON_SELF_IDENTIFIER), Main.renderInheritanceGraph)
+				.fail(ExceptionHandler.displayGenericException);
+		}
+		$J("#ConfigSection").data("new_parent", null); 
+		$J("#MappingParentName").text("Catch-all");
+		$J("#ParentWarningIcon").hide();
+		Main.cancelParentMappingEditing();
+	},
+
+	cancelParentMappingEditing: function()
+	{
+		$J("#ParentEdit").hide();
+		$J("#ParentView").show();
+	},
+
+	parentMappingOnKeyUp: function(event)
+	{
+		if (event.which == 27) // Esc
+		{
+			event.preventDefault();
+			Main.cancelParentMappingEditing();
+		}
 	},
 
 	//
@@ -929,7 +1311,7 @@ var Main = Class.construct({
 				"			<div align='right'>" +
 								(json.description ? "" : "<span class='__supersededLock'><a href='#' class='__addConditionComment tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add comment</a> &nbsp;</span>") +
 				"				<a href='#' class='__toggleActions tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Actions</a>" +
-				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
+				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/cross10.png' width='10' height='10' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
 				"			</div>" +
 				"		</td>" +
 				"	</tr>" +
@@ -1215,12 +1597,16 @@ var Main = Class.construct({
 
 	save: function(prechecked)
 	{
-		var path = $J("#MappingPath").val();
-		if (!path || Main.isSavingBlocked())
+		if (Main.isSavingBlocked())
 			return;
 
 		var config		= $J("#ConfigSection").data("config");
 		var oldpath		= config ? config.mapping_path : null;
+		var path		= $J("#MappingPath").val();
+		var isCatchAll	= config && config.mapping_path == null;
+
+		if (!path && !isCatchAll)
+			return;
 
 		// Check and warn the user if necessary if he's just about to rewrite existing mapping.
 		if (!prechecked && oldpath && oldpath != path)
@@ -1230,18 +1616,31 @@ var Main = Class.construct({
 			return;
 		}
 
-		var title		= $J("#MappingTitle").val().trim();
-		var description	= $J("#MappingDescription").val().trim();
-		var creator		= $J("#MappingCreator").val().trim();
-		var commitNote	= $J("#CommitNote").val().trim();
+		var title			= isCatchAll ? null : $J("#MappingTitle").val().trim();
+		var description		= $J("#MappingDescription").val().trim();
+		var creator			= $J("#MappingCreator").val().trim();
+		var commitNote		= $J("#CommitNote").val().trim();
+		var newParent		= $J("#ConfigSection").data("new_parent");
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		cmdxml += "<mapping xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
-		cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
-		cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
-		if (title)
-			cmdxml += "<title>" + title.htmlEscape() + "</title>";
+		if (isCatchAll)
+		{
+			cmdxml += "<path/>";
+			cmdxml += "<type>Regex</type>";
+		}
+		else
+		{
+			cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
+			if (newParent)
+				cmdxml += "<parent>" + newParent + "</parent>";
+			else if (config && config.parent.mapping_path)
+				cmdxml += "<parent>" + config.parent.mapping_path + "</parent>";
+			cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
+			if (title)
+				cmdxml += "<title>" + title.htmlEscape() + "</title>";
+		}
 		if (description)
 			cmdxml += "<description>" + description.htmlEscape() + "</description>";
 		if (creator)
@@ -1321,7 +1720,7 @@ var Main = Class.construct({
 				contentType: "text/xml",
 				data: cmdxml
 			})
-			.done(Main.getConfig.bind(Main, 0))
+			.done(Main.getConfig.bind(Main, -1))
 			.fail(ExceptionHandler.displayGenericException);
 	},
 
@@ -1341,7 +1740,9 @@ var Main = Class.construct({
 			alert("You must save the mapping before exporting!");
 			return;
 		}
-		if (key == "full_export")
+		if (key == "full_export" && config.mapping_path == null)
+			location.href = "controller?cmd=full_export&mapping_id=0";
+		else if (key == "full_export")
 			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent(config.mapping_path.trim());
 		else
 			location.href = "controller?cmd=partial_export&mapping_id=" + config.mapping_id;

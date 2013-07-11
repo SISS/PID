@@ -76,13 +76,18 @@ public class info extends HttpServlet
 			}
 			else if (cmd.equalsIgnoreCase("get_pid_config"))
 			{
-				int mappingId = Literals.toInt(request.getParameter("mapping_id"), 0);
+				int mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
 				String mappingPath = request.getParameter("mapping_path");
 
-				response.getWriter().write(mappingId > 0 ? mgr.getPidConfig(mappingId) : mgr.getPidConfig(mappingPath));
+				response.getWriter().write(mappingId > 0 ? mgr.getPidConfig(mappingId) : (mappingId == 0 ? mgr.getPidConfig((String)null) : mgr.getPidConfig(mappingPath)));
 			}
 			else if (cmd.equalsIgnoreCase("check_mapping_path_exists"))
 				response.getWriter().write(mgr.checkMappingPathExists(request.getParameter("mapping_path")));
+			else if (cmd.equalsIgnoreCase("search_parent"))
+			{
+				int mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
+				response.getWriter().write(mgr.searchParentMapping(mappingId, request.getParameter("q")));
+			}
 			else if (cmd.equalsIgnoreCase("get_settings"))
 				response.getWriter().write(mgr.getSettings());
 			else if (cmd.equalsIgnoreCase("search_lookup"))
@@ -107,6 +112,24 @@ public class info extends HttpServlet
 			{
 				response.setContentType("text/javascript");
 				response.getWriter().write(mgr.getGlobalSettings());
+			}
+			else if (cmd.equalsIgnoreCase("chart"))
+			{
+				response.setContentType("text/json");
+				response.getWriter().write(mgr.getChart());
+			}
+			else if (cmd.equalsIgnoreCase("get_mapping_dependencies"))
+			{
+				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
+				String		mappingPath = request.getParameter("mapping_path");
+				String		jsonThis = request.getParameter("json");
+
+				if (mappingPath != null && mappingPath.isEmpty())
+					mappingPath = null;
+				if (jsonThis != null && jsonThis.isEmpty())
+					jsonThis = null;
+				response.setContentType("text/json");
+				response.getWriter().write(mappingId == -1 && jsonThis == null ? "{}" : mgr.getMappingDependencies((Object)(jsonThis == null ? mappingId : jsonThis), mappingPath));
 			}
 		}
 		catch (Exception e)
