@@ -16,15 +16,25 @@
 		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/slimScroll/jquery.slimscroll.min.js"></script>
+		<script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
 		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
 
+		<!--[if IE]><script language="javascript" type="text/javascript" src="Scripts/Jit/Extras/excanvas.js"></script><![endif]-->
+
+		<!-- JIT Library File -->
+		<script language="javascript" type="text/javascript" src="Scripts/Jit/jit-yc.js"></script>
+
+		<!-- Local scripts -->
 		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
 		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
 		<script type="text/javascript" src="Scripts/Mappings.js"></script>
 		<script type="text/javascript" src="info?cmd=global_js"></script> 
 
-		<link href="Scripts/jQuery/contextMenu/jquery.contextMenu.css" type="text/css" rel="stylesheet" />
-		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+		<link rel="stylesheet" type="text/css" href="App_Themes/Default/StyleSheet.css" />
+		<link rel="stylesheet" type="text/css" href="App_Themes/Default/InheritanceChart.css" />
+		<link rel="stylesheet" type="text/css" href="Scripts/jQuery/contextMenu/jquery.contextMenu.css"  />
+		<link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
 	</head>
 	<body style="margin: 10px;">
 		<div id="TopMenu" style="position: relative; height: 50px;">
@@ -100,35 +110,38 @@
 				<h2>Mapping Configuration</h2>
 				<div style="position: relative; top: -25px; width: 732px; height: 5px; text-align: right;">
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="javascript:Main.delete();" class="__supersededLock"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.openChart();" class="__supersededLock"><img src="Images/bremen_org_chart.png" title="Show mapping on Mapping Chart" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="#" id="cmdQrCode"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdQrCode" class="__catchAllHide"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 				</div>
 				<div id="ConfigSection" style="width: 1050px;">
 					<table border="0" cellpadding="1" cellspacing="5" width="100%">
 						<tr valign="top">
 							<td width="70%">
-								<b>URI stem pattern:</b>
-								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px;">
 									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
 									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
 								</div>
-								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-top: 3px;">
+								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px;">
 									<b>Note:</b> This mapping has been reinstated and has not been saved yet.
 								</div>
-								<table border="0" cellpadding="5" cellspacing="1" width="100%">
-									<tr valign="top">
-										<td width="80%" style="position: relative;">
-											<input id="MappingPath" type="text" style="width: 565px;" />
-										</td>
-										<td width="20%">
-											<select id="MappingType" class="input" style="width: 140px;">
-												<option value="1:1">1:1</option>
-												<option value="Regex">Regex</option>
-											</select>
-										</td>
-									</tr>
-								</table>
+								<div id="UriStemPattern" class="__catchAllHide">
+									<b>URI stem pattern:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%">
+										<tr valign="top">
+											<td width="80%" style="position: relative;">
+												<input id="MappingPath" type="text" style="width: 565px;" />
+											</td>
+											<td width="20%">
+												<select id="MappingType" class="input" style="width: 140px;">
+													<option value="1:1">1:1</option>
+													<option value="Regex">Regex</option>
+												</select>
+											</td>
+										</tr>
+									</table>
+								</div>
 								<table border="0" cellpadding="5" cellspacing="1" width="100%">
 									<tr valign="top">
 										<td width="20%" align="right">
@@ -155,7 +168,7 @@
 										</td>
 									</tr>
 								</table>
-								<div id="RegexTester">
+								<div id="RegexTester" class="__catchAllHide">
 									<b>URI/Regex testing:</b> <a href="javascript:Main.showRegexTester();"><i>(toggle view)</i></a>
 									<table id="URITesting" border="0" cellpadding="5" cellspacing="1" width="100%" style="display: none;">
 										<tr>
@@ -167,8 +180,32 @@
 									</table>
 									<div style="height: 7px;"></div>
 								</div>
+								<div class="__catchAllHide">
+									<b>Inheritance:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%">
+										<tr valign="top">
+											<td width="20%" align="right">
+												Next level mapping:
+											</td>
+											<td width="80%" style="height: 40px;">
+												<div id="ParentView" style="position: relative; width: 100%;">
+													<div class="ellipsis" style="width: 550px;"><a href="#" id="MappingParentName" class="b"></a></div>
+													<img id="ParentWarningIcon" width="16" height="16" style="position: absolute; top: 0px; right: 0px;"/>
+												</div>
+												<div id="ParentEdit" style="display: none;">
+													<input type="text" id="MappingParent" title="Set the next level mapping here." maxlength="50" style="width: 570px;" />
+													<div style="text-align: right;">
+														<a href="javascript:Main.resetParentMapping();" class="tip"><img src="Images/arrow_137.gif" width="9" height="9" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Reset to Catch-all</a> &nbsp;
+														<a href="javascript:Main.cancelParentMappingEditing();" class="tip"><img src="Images/cross10.png" width="10" height="10" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Cancel</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+									</table>
+									<div id="infovis"></div>
+								</div>
 								<b>Default action:</b>
-								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff;"></table>
+								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff; margin-bottom: 7px;"></table>
 								<b>Conditions:</b>
 								<div id="ConditionSection" style="margin-bottom: 5px;">
 								</div>
@@ -199,7 +236,6 @@
 								</table>
 							</td>
 							<td style="width: 10px"></td>
-							<!--td style="width: 2px; background: #bed600;"></td-->
 							<td width="30%">
 								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" style="display: none;">
 									<tr valign="top">

@@ -10,7 +10,7 @@ CREATE DATABASE "pidsvc"
        CONNECTION LIMIT = -1;
 CREATE LANGUAGE plpgsql;
 */
-
+/*
 DROP TABLE configuration CASCADE;
 DROP TABLE mapping_type CASCADE;
 DROP TABLE condition_type CASCADE;
@@ -20,6 +20,7 @@ DROP TABLE condition CASCADE;
 DROP TABLE action CASCADE;
 DROP FUNCTION delete_mapping_default_action() CASCADE;
 DROP FUNCTION set_original_mapping_path() CASCADE;
+*/
 
 -- Table: configuration
 -- DROP TABLE configuration;
@@ -76,15 +77,16 @@ ALTER TABLE action_type
 CREATE TABLE mapping
 (
   mapping_id serial NOT NULL,
-  mapping_path character varying(255) NOT NULL,
-  original_path character varying(255) NOT NULL,
-  title character varying(50) NULL,
+  mapping_path character varying(255),
+  original_path character varying(255),
+  parent character varying(255),
+  title character varying(50),
   description text,
   creator character varying(255),
   type character varying(50) NOT NULL,
-  commit_note text NULL,
+  commit_note text,
   default_action_id integer,
-  default_action_description text NULL,
+  default_action_description text,
   date_start timestamp without time zone NOT NULL DEFAULT now(),
   date_end timestamp without time zone,
   qr_hits integer DEFAULT 0 NOT NULL,
@@ -109,6 +111,13 @@ CREATE INDEX "IX_mapping_mapping_path"
   USING btree
   (mapping_path );
 ALTER TABLE mapping CLUSTER ON "IX_mapping_mapping_path";
+
+-- Index: "IX_mapping_parent"
+-- DROP INDEX "IX_mapping_parent";
+CREATE INDEX "IX_mapping_parent"
+  ON mapping
+  USING btree
+  (parent );
 
 -- Index: "IX_mapping_date_start"
 -- DROP INDEX "IX_mapping_date_start";
@@ -297,9 +306,10 @@ CREATE INDEX "IX_lookup_key"
 ALTER TABLE lookup CLUSTER ON "IX_lookup_key";
 
 -- View: vw_latest_mapping
+-------: List of latest mappings only INCLUDING deprecated ones.
 -- DROP VIEW vw_latest_mapping;
 CREATE OR REPLACE VIEW vw_latest_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.parent, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -309,9 +319,10 @@ ALTER TABLE vw_latest_mapping
   OWNER TO "pidsvc-admin";
 
 -- View: vw_active_mapping
+-------: List of latest currently active mappings only EXCLUDING deprecated ones.
 -- DROP VIEW vw_active_mapping;
 CREATE OR REPLACE VIEW vw_active_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.parent, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -322,9 +333,10 @@ ALTER TABLE vw_active_mapping
   OWNER TO "pidsvc-admin";
 
 -- View: vw_deprecated_mapping
+-------: List of deprecated mappings only.
 -- DROP VIEW vw_deprecated_mapping;
 CREATE OR REPLACE VIEW vw_deprecated_mapping AS 
- SELECT f.mapping_id, f.mapping_path, f.original_path, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.parent, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
    FROM mapping f
    JOIN ( SELECT max(mapping.mapping_id) AS mapping_id
            FROM mapping
@@ -335,13 +347,14 @@ ALTER TABLE vw_deprecated_mapping
   OWNER TO "pidsvc-admin";
 
 -- View: vw_full_mapping_activeonly
+-------: List of all mappings configurations (including historical records) for all active mapping EXCLUDING deprecated ones.
 -- DROP VIEW vw_full_mapping_activeonly;
 CREATE OR REPLACE VIEW vw_full_mapping_activeonly AS 
- SELECT a.mapping_id, a.mapping_path, a.original_path, a.title, a.description, a.creator, a.type, a.commit_note, a.default_action_id, a.default_action_description, a.date_start, a.date_end
-   FROM mapping a
+ SELECT f.mapping_id, f.mapping_path, f.original_path, f.parent, f.title, f.description, f.creator, f.type, f.commit_note, f.default_action_id, f.default_action_description, f.date_start, f.date_end
+   FROM mapping f
   WHERE (EXISTS ( SELECT 1
            FROM mapping b
-          WHERE b.mapping_path::text = a.mapping_path::text AND b.date_end IS NULL
+          WHERE b.mapping_path::text = f.mapping_path::text AND b.date_end IS NULL
          LIMIT 1));
 
 ALTER TABLE vw_full_mapping_activeonly

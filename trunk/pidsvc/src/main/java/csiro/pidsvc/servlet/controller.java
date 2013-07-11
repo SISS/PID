@@ -70,9 +70,9 @@ public class controller extends HttpServlet
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.matches("(?i)^(?:full|partial)_export$"))
 			{
-				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), 0);
+				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
 				String		mappingPath = request.getParameter("mapping_path");
-				String		serializedConfig = mappingId > 0 ? mgr.exportMapping(mappingId) : mgr.exportMapping(mappingPath, cmd.startsWith("full"));
+				String		serializedConfig = mappingId > 0 ? mgr.exportMapping(mappingId) : (mappingId == 0 ? mgr.exportCatchAllMapping(cmd.startsWith("full")) : mgr.exportMapping(mappingPath, cmd.startsWith("full")));
 
 				returnAttachment(response, "mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
 			}

@@ -33,6 +33,17 @@
     font-style: normal;
 }
 
+ul.ui-autocomplete.ui-menu
+{
+	font-family: Century Gothic;
+	font-size: 12px;
+	color: #000;
+}
+.ui-autocomplete-loading
+{
+	background: white url('../../Images/loading6-0.gif') right center no-repeat;
+}
+
 BODY
 {
 	margin: 0;
@@ -189,6 +200,7 @@ LABEL
 .red { color: #d42626; }
 .gray { color: #b3b3b3; }
 .white { color: #fff; }
+.black { color: #000; }
 .tip { font-size: 10px; color: #646464; }
 .floating_tip { position: absolute; padding: 0 7px 0 7px; background: #d42626; color: #fff; line-height: 14px; white-space: nowrap; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -230,5 +242,15 @@ DIV.ProgressBar > DIV
 
 .ResultRowHighlight
 {
-	background: #fff;
+	background:			#fff;
+}
+
+UL.LeftMenu
+{
+	margin-left:		-22px;
+	list-style-image:	url('../../Images/arrow_137.gif');
+}
+UL.LeftMenu LI
+{
+	margin-bottom:		10px;
 }

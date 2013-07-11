@@ -106,6 +106,52 @@ public class Manager
 		}
 	}
 
+	public class MappingParentDescriptor
+	{
+		public final int MappingId;
+		public final String MappingPath;
+		public final int DefaultActionId;
+		public final Object Aux;
+
+		public MappingParentDescriptor(int mappingId, String mappingPath, int defaultActionId, Object aux)
+		{
+			MappingId = mappingId;
+			MappingPath = mappingPath;
+			DefaultActionId = defaultActionId;
+			Aux = aux;
+		}
+	}
+
+	public class MappingParentDescriptorList extends Vector<MappingParentDescriptor>
+	{
+		private static final long serialVersionUID = 8137846998774342633L;
+
+	    public MappingParentDescriptorList(int initialCapacity)
+	    {
+	    	super(initialCapacity);
+	    }
+
+		public boolean contains(int mappingId)
+		{
+			for (MappingParentDescriptor it : this)
+			{
+				if (it.MappingId == mappingId)
+					return true;
+			}
+			return false;
+		}
+
+		public MappingParentDescriptor getFirstDefaultActionMapping()
+		{
+			for (MappingParentDescriptor it : this)
+			{
+				if (it.DefaultActionId != MappingMatchResults.NULL)
+					return it;
+			}
+			return null;
+		}
+	}
+	
 	protected interface ICallback
 	{
 		public String process(InputStream inputStream) throws Exception;
@@ -307,37 +353,25 @@ public class Manager
 				pst.close();
 		}
 	}
-	
-	public MappingMatchResults findExactMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException, InvocationTargetException
+
+	public MappingParentDescriptor getCatchAllDescriptor() throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		int					mappingId = MappingMatchResults.NULL;
 		int					defaultActionId = MappingMatchResults.NULL;
-		AbstractCondition	retCondition = null;
-		Object				matchAuxiliaryData = null;
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT mapping_id, default_action_id FROM vw_active_mapping WHERE mapping_path = ? AND type = '1:1'");
-			pst.setString(1, uri.getPathNoExtension());
-			
+			pst = _connection.prepareStatement("SELECT mapping_id, default_action_id FROM vw_active_mapping WHERE mapping_path IS NULL AND type = 'Regex'");
 			if (pst.execute())
 			{
-				// First result set.
 				rs = pst.getResultSet();
 				if (rs.next())
 				{
-					// Save default action id.
 					defaultActionId = rs.getInt(2);
 					if (rs.wasNull())
 						defaultActionId = MappingMatchResults.NULL;
-
-					// Set auxiliary data to "true" to flag that the URI has been found.
-					matchAuxiliaryData = true;
-
-					// Find matching condition.
-					retCondition = getCondition(mappingId = rs.getInt(1), uri, request, matchAuxiliaryData);
+					return new MappingParentDescriptor(rs.getInt(1), null, defaultActionId, true);
 				}
 			}
 		}
@@ -348,42 +382,143 @@ public class Manager
 			if (pst != null)
 				pst.close();
 		}
-		return new MappingMatchResults(mappingId, defaultActionId, retCondition, matchAuxiliaryData);		
+		return null;
 	}
 
-	public MappingMatchResults findRegexMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
+	public MappingParentDescriptorList getParents(int mappingId, URI uri) throws SQLException
 	{
-		PreparedStatement	pst = null;
-		ResultSet 			rs = null;
-		int					mappingId = MappingMatchResults.NULL;
-		int					defaultActionId = MappingMatchResults.NULL;
-		AbstractCondition	retCondition = null;
-		Object				matchAuxiliaryData = null;
+		MappingParentDescriptorList	ret = new MappingParentDescriptorList(1);
+		PreparedStatement			pst = null;
+		ResultSet					rs = null;
+		int							parentId;
+		int							defaultActionId = MappingMatchResults.NULL;
+		String 						mappingPath, parentPath = null, mappingType = null;
+		Object						aux = null;
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, default_action_id FROM vw_active_mapping WHERE type = 'Regex'");
+			pst = _connection.prepareStatement("SELECT mapping_path, parent, type, default_action_id FROM vw_active_mapping WHERE mapping_id = ? AND mapping_path IS NOT NULL");
+			pst.setInt(1, mappingId);
+
+			// Get initial mapping.
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
-				while (rs.next())
+				if (rs.next())
 				{
-					Pattern re = Pattern.compile(rs.getString(2), Pattern.CASE_INSENSITIVE);
-					Matcher m = re.matcher(uri.getPathNoExtension());
+					mappingPath		= rs.getString(1);
+					parentPath		= rs.getString(2);
+					mappingType		= rs.getString(3);
 
-					if (m.find())
+					defaultActionId = rs.getInt(4);
+					if (rs.wasNull())
+						defaultActionId = MappingMatchResults.NULL;
+
+					aux = mappingType.equalsIgnoreCase("1:1") ? true : Pattern.compile(mappingPath, Pattern.CASE_INSENSITIVE);
+					ret.add(new MappingParentDescriptor(mappingId, mappingPath, defaultActionId, aux));
+				}
+			}
+			rs.close();
+			pst.close();
+
+			// Get parents.
+			while (parentPath != null)
+			{
+				pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, parent, default_action_id FROM vw_active_mapping WHERE mapping_path = ? AND type = 'Regex'");
+				pst.setString(1, parentPath);
+
+				parentPath = null;
+				if (pst.execute())
+				{
+					rs = pst.getResultSet();
+					if (rs.next())
 					{
-						// Save default action id.
-						defaultActionId = rs.getInt(3);
+						parentId		= rs.getInt(1);
+						mappingPath		= rs.getString(2);
+						parentPath		= rs.getString(3);
+
+						defaultActionId = rs.getInt(4);
 						if (rs.wasNull())
 							defaultActionId = MappingMatchResults.NULL;
 
-						// Save auxiliary data.
-						matchAuxiliaryData = re;
-						
-						// Find matching condition.
-						retCondition = getCondition(mappingId = rs.getInt(1), uri, request, matchAuxiliaryData);
-						break;
+						// Prevent cyclic inheritance syndrome.
+						if (ret.contains(parentId))
+							break;
+
+						// Check that parent pattern matches URI.
+						Pattern re = Pattern.compile(mappingPath, Pattern.CASE_INSENSITIVE);
+						Matcher m = re.matcher(uri.getPathNoExtension());
+						if (!m.find())
+							break;
+
+						// Add new parent to the list.
+						ret.add(new MappingParentDescriptor(parentId, rs.getString(2), defaultActionId, re));
+					}
+				}
+			}
+
+			// Get catch-all mapping descriptor.
+			MappingParentDescriptor catchAll = getCatchAllDescriptor();
+			if (catchAll != null)
+				ret.add(catchAll);
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	public boolean checkNonCyclicInheritance(int mappingId) throws SQLException
+	{
+		Vector<Integer>				ret = new Vector<Integer>(1);
+		PreparedStatement			pst = null;
+		ResultSet					rs = null;
+		int							parentId;
+		String 						parentPath = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT parent FROM vw_active_mapping WHERE mapping_id = ? AND mapping_path IS NOT NULL");
+			pst.setInt(1, mappingId);
+
+			// Get initial mapping.
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+				{
+					parentPath = rs.getString(1);
+					ret.add(mappingId);
+				}
+			}
+			rs.close();
+			pst.close();
+
+			// Get parents.
+			while (parentPath != null)
+			{
+				pst = _connection.prepareStatement("SELECT mapping_id, parent FROM vw_active_mapping WHERE mapping_path = ? AND type = 'Regex'");
+				pst.setString(1, parentPath);
+
+				parentPath = null;
+				if (pst.execute())
+				{
+					rs = pst.getResultSet();
+					if (rs.next())
+					{
+						parentId		= rs.getInt(1);
+						parentPath		= rs.getString(2);
+
+						// Cyclic inheritance encountered.
+						if (ret.contains(parentId))
+							return false;
+
+						// Add new parent to the list.
+						ret.add(parentId);
 					}
 				}
 			}
@@ -395,10 +530,145 @@ public class Manager
 			if (pst != null)
 				pst.close();
 		}
-		
+		return true;
+	}
+
+	public MappingMatchResults findExactMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException, InvocationTargetException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, type FROM vw_active_mapping WHERE mapping_path = ? AND type = '1:1'");
+			pst.setString(1, uri.getPathNoExtension());
+			return findMatchImpl(pst, uri, request, false);
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public MappingMatchResults findRegexMatch(URI uri, HttpServletRequest request) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			/* Recursive SQL query ensures the pattern based matching starts from
+			 * the deepest level up to Catch-All mapping.
+			 */
+			pst = _connection.prepareStatement(
+				"WITH RECURSIVE F (mapping_id, mapping_path, type, level)\n" +
+				"AS\n" +
+				"(\n" +
+				"	SELECT a.mapping_id, a.mapping_path, a.type, 0\n" +
+				"	FROM vw_active_mapping a\n" +
+				"	WHERE a.type = 'Regex' AND a.mapping_path IS NOT NULL AND a.parent IS NULL\n" +
+				"	UNION ALL\n" +
+				"	SELECT a.mapping_id, a.mapping_path, a.type, level + 1\n" +
+				"	FROM vw_active_mapping a\n" +
+				"		INNER JOIN F ON F.mapping_path = a.parent\n" +
+				"	WHERE a.type = 'Regex' AND a.mapping_path IS NOT NULL\n" +
+				")\n" +
+				"SELECT mapping_id, mapping_path, type FROM F ORDER BY level DESC"
+			);
+			return findMatchImpl(pst, uri, request, true);
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}		
+	}
+
+	private MappingMatchResults findMatchImpl(PreparedStatement pst, URI uri, HttpServletRequest request, boolean patternBased) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
+	{
+		ResultSet 					rs = null;
+		int							mappingId = MappingMatchResults.NULL;
+		int							defaultActionId = MappingMatchResults.NULL;
+		AbstractCondition			retCondition = null;
+		Object						matchAuxiliaryData = null;
+		Pattern						re;
+		Matcher						m;
+
+		MappingParentDescriptorList	parents = null;
+		boolean						isOneToOne = false;
+
+		try
+		{
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				while (rs.next())
+				{
+					// Check pattern match for pattern based mappings.
+					if (!(isOneToOne = rs.getString("type").equalsIgnoreCase("1:1")))
+					{
+						re = Pattern.compile(rs.getString("mapping_path"), Pattern.CASE_INSENSITIVE);
+						m = re.matcher(uri.getPathNoExtension());
+						if (!m.find())
+							continue;
+					}
+
+					// Get mapping hierarchy.
+					parents = getParents(rs.getInt("mapping_id"), uri);
+
+					// Break the loop once first matching pattern is found.
+					break;
+				}
+
+				// If there're no matching pattern based mappings were found then resort to Catch-all.
+				if (patternBased && parents == null)
+				{
+					MappingParentDescriptor catchAll = getCatchAllDescriptor();
+					parents = new MappingParentDescriptorList(1);
+					if (catchAll != null)
+						parents.add(catchAll);
+				}
+
+				// Iterate through the inheritance tree up to Catch-All mapping to find a matching condition.
+				if (parents != null)
+				{
+					for (MappingParentDescriptor parent : parents)
+					{
+						// Find matching condition.
+						retCondition = getCondition(parent.MappingId, uri, request, parent.Aux);
+						if (retCondition != null)
+						{
+							mappingId = parent.MappingId;
+							matchAuxiliaryData = parent.Aux;
+							break;
+						}
+					}
+
+					// Iterate through the inheritance tree up to Catch-All mapping to find a default action.
+					if (retCondition == null)
+					{
+						MappingParentDescriptor defaultActionMapping = parents.getFirstDefaultActionMapping();
+						if (defaultActionMapping != null)
+						{
+							mappingId			= defaultActionMapping.MappingId;
+							defaultActionId		= defaultActionMapping.DefaultActionId;
+							matchAuxiliaryData	= defaultActionMapping.Aux;
+						}
+						else if (isOneToOne)
+						{
+							// Set a flag that one-to-one mapping has been found but neither matching conditions nor
+							// default actions defined.
+							matchAuxiliaryData = true; 
+						}
+					}
+				}
+			} //- pst.execute()
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+		}
 		return new MappingMatchResults(mappingId, defaultActionId, retCondition, matchAuxiliaryData);
 	}
-	
+
 	protected Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditions(int mappingId) throws SQLException
 	{
 		PreparedStatement	pst = null;
@@ -578,6 +848,11 @@ public class Manager
 		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
 	}
 
+	public String exportCatchAllMapping(boolean fullBackup) throws SQLException
+	{
+		return exportMappingsImpl(0, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
+	}
+
 	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings, boolean includeLookupMaps) throws SQLException
 	{
 		PreparedStatement	pst = null;
@@ -592,11 +867,20 @@ public class Manager
 		{
 			if (mappingIdentifier instanceof Integer)
 			{
-				pst = _connection.prepareStatement("SELECT * FROM " + source + " WHERE mapping_id = ? ORDER BY mapping_id");
-				pst.setInt(1, (Integer)mappingIdentifier);
+				if ((Integer)mappingIdentifier == 0)
+				{
+					// Catch all mapping.
+					pst = _connection.prepareStatement("SELECT * FROM " + source + " WHERE mapping_path IS NULL ORDER BY mapping_id");
+				}
+				else
+				{
+					pst = _connection.prepareStatement("SELECT * FROM " + source + " WHERE mapping_id = ? ORDER BY mapping_id");
+					pst.setInt(1, (Integer)mappingIdentifier);
+				}
 			}
 			else
 			{
+				// Export mapping by path or all mappings.
 				pst = _connection.prepareStatement("SELECT * FROM " + source + (mappingIdentifier == null ? "" : " WHERE mapping_path = ?") + " ORDER BY mapping_id");
 				if (mappingIdentifier != null)
 					pst.setString(1, (String)mappingIdentifier);
@@ -622,14 +906,16 @@ public class Manager
 					}
 
 					// Preserve original mapping path for full backups.
-					if (fullBackup)
+					if (fullBackup && path != null)
 						ret += " original_path=\"" + rs.getString("original_path") + "\"";
 
 					ret += ">";	// mapping
 
-					ret += "<path>" + StringEscapeUtils.escapeXml(path) + "</path>";
+					ret += (path == null ? "<path/>" : "<path>" + StringEscapeUtils.escapeXml(path) + "</path>");
+					buf = rs.getString("parent");
+					if (buf != null)
+						ret += "<parent>" + StringEscapeUtils.escapeXml(buf) + "</parent>";
 					ret += "<type>" + rs.getString("type") + "</type>";
-
 					buf = rs.getString("title");
 					if (buf != null)
 						ret += "<title>" + StringEscapeUtils.escapeXml(buf) + "</title>";
