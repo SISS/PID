@@ -110,8 +110,9 @@
 				<h2>Mapping Configuration</h2>
 				<div style="position: relative; top: -25px; width: 732px; height: 5px; text-align: right;">
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="javascript:Main.delete();" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="javascript:Main.openChart();" class="__supersededLock"><img src="Images/bremen_org_chart.png" title="Show mapping on Mapping Chart" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.clone();" id="cmdClone" class="__supersededLock __catchAllHide"><img src="Images/clone.png" title="Clone mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();" id="cmdDelete" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.openChart();" id="cmdOpenChart" class="__supersededLock"><img src="Images/bremen_org_chart.png" title="Show mapping on Mapping Chart" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdQrCode" class="__catchAllHide"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 				</div>
@@ -195,7 +196,7 @@
 												<div id="ParentEdit" style="display: none;">
 													<input type="text" id="MappingParent" title="Set the next level mapping here." maxlength="50" style="width: 570px;" />
 													<div style="text-align: right;">
-														<a href="javascript:Main.resetParentMapping();" class="tip"><img src="Images/arrow_137.gif" width="9" height="9" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Reset to Catch-all</a> &nbsp;
+														<a href="javascript:Main.resetParentToCatchAll();" class="tip"><img src="Images/arrow_137.gif" width="9" height="9" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Reset to Catch-all</a> &nbsp;
 														<a href="javascript:Main.cancelParentMappingEditing();" class="tip"><img src="Images/cross10.png" width="10" height="10" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Cancel</a>
 													</div>
 												</div>
@@ -210,14 +211,14 @@
 								<div id="ConditionSection" style="margin-bottom: 5px;">
 								</div>
 								<div style="margin-bottom: 10px;">
-									<a href="javascript:Main.addCondition();" class="tip __supersededLock"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+									<a href="javascript:Main.addCondition();" class="tip __supersededLock __supersededReinstate"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
 								</div>
 								<div id="CommitNoteSection">
 									<b>Commit note:</b>
 									<table border="0" cellpadding="5" cellspacing="1" width="100%" style="margin-bottom: 5px;">
 										<tr	valign="top">
 											<td>
-												<a href="javascript:Main.addCommitNote();" class="tip __supersededLock"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add commit note</a><br/>
+												<a href="javascript:Main.addCommitNote();" class="tip __supersededLock __supersededReinstate"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add commit note</a><br/>
 												<a href="javascript:Main.preserveCommitNote();" class="tip __preserveCommitNote"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Copy last commit note</a>
 											</td>
 											<td align="right">
@@ -230,7 +231,7 @@
 								<table border="0" cellpadding="0" cellspacing="0" width="100%">
 									<tr>
 										<td align="right">
-											<input type="button" id="cmdSave" value="Save" class="__supersededLock" onclick="javascript:Main.save();" style="width:100px;" />
+											<input type="button" id="cmdSave" value="Save" class="__supersededLock __supersededReinstate" onclick="javascript:Main.save();" style="width:100px;" />
 										</td>
 									</tr>
 								</table>

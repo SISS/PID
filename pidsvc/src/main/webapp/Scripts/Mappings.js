@@ -45,6 +45,7 @@ var Main = Class.construct({
 	JSON_SELF_IDENTIFIER:			encodeURIComponent("{\"id\": \"__this\", \"name\": \"&ltNew mapping&gt;\", \"data\": { \"css\": \"chart_label_current\" }}"),
 
 	_tabActivationPostHandlers:		new Array(2),
+	_forceMappingPathCheck:			false,
 
 	_focusPager:					false,
 	_timerCollapseChangeHistory:	null,
@@ -53,6 +54,7 @@ var Main = Class.construct({
 
 	_stInheritanceGraph:			null,
 	_timerParentMappingEditing:		null,
+	_newParent:						null,	// NULL - no change, 0 - change to Catch-all.
 
 	init: function()
 	{
@@ -192,7 +194,6 @@ var Main = Class.construct({
 		else if (type)
 		{
 			$J("#SearchMappingType").val(type);
-			$J("#MappingType").val(type).change();
 			this.search();
 		}
 		this.blockSaving(true);
@@ -200,7 +201,13 @@ var Main = Class.construct({
 		// Automatically retrieve mapping configuration.
 		var qsMappingId = location.href.getQueryParam("mapping_id");
 		var qsMappingPath = location.href.getQueryParam("mapping_path");
-		if (qsMappingId !== false)
+		if (qsMappingId === "-1")
+		{
+			// Create new mapping.
+			this.openTab(1);
+			this.create();
+		}
+		else if (qsMappingId !== false)
 			this.getConfigByMappingId(qsMappingId);
 		else if (qsMappingPath !== false)
 			this.getConfigByMappingPath(decodeURIComponent(qsMappingPath));
@@ -338,12 +345,14 @@ var Main = Class.construct({
 		{
 			var config			= $J("#ConfigSection").data("config");
 			var isCatchAll		= config != null && (config.mapping_id == 0 || config.mapping_path == null);
+			var reinstated		= $J("#ConfigSaveWarning").is(":visible");
 
 			if (!isCatchAll)
 				$J(".__catchAllHide").show();
 			$J("#ConfigSection input, #ConfigSection select, #ConfigSection textarea").removeAttr("disabled");
-			$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
-			$J("*.__supersededLock").show();
+
+			// Unlock certain control only if reinstating deprecated mapping, otherwise unlock all controls.
+			$J(reinstated ? "*.__supersededReinstate" : "*.__supersededLock").show();
 
 			$J("#CommitNoteSection").show();
 			if (config && config.commit_note)
@@ -353,7 +362,7 @@ var Main = Class.construct({
 			// Open URI link is only visible for 1-to-1 mappings.
 			if ($J("#MappingType").val() != "1:1")
 				$J("#cmdQrCode").hide();
-			else if (!config || $J("#ChangeHistory").attr("isDeprecated") == "1")
+			else if (!config || $J("#ChangeHistory").attr("isDeprecated") == "1" || reinstated)
 				Main.displayQrCodeUI(false);
 
 			// Catch-all mapping.
@@ -362,8 +371,8 @@ var Main = Class.construct({
 				$J(".__catchAllHide").hide();
 				$J("#MappingTitle").attr("disabled", "disabled");
 			}
-			else
-				$J("#MappingType").change();
+//			else
+//				$J("#MappingType").change();
 
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
@@ -375,6 +384,10 @@ var Main = Class.construct({
 			if (GlobalSettings.AuthorizationName)
 				$J("#MappingCreator").attr("disabled", "disabled");
 
+			// Set visibility for controls affected by multiple parameters.
+			$J("#cmdClone, #cmdDelete")[!isCatchAll && !reinstated ? "show" : "hide"]();
+			$J("#cmdOpenChart")[!reinstated ? "show" : "hide"]();
+
 			Main.monitorChanges();
 		}
 	},
@@ -384,6 +397,11 @@ var Main = Class.construct({
 		var obj = { message: jqMessage };
 		jQuery.extend(obj, this._defaultOverlaySettings);
 		return obj;
+	},
+
+	isOneToOneMapping: function()
+	{
+		return $J("#MappingType").val() == "1:1";
 	},
 
 	addCommitNote: function()
@@ -399,9 +417,18 @@ var Main = Class.construct({
 		if (Main.isEditingBlocked())
 			return;
 		var config = $J("#ConfigSection").data("config");
-
 		$J("#CommitNoteRO").hide();
-		$J("#CommitNote").show().val(config.commit_note).select().change();
+		$J("#CommitNote").show().val(config && config.commit_note ? config.commit_note : "").select().change();
+	},
+
+	resetCommitNote: function()
+	{
+		$J("#CommitNoteSection")
+			.show()
+			.find("A.__preserveCommitNote")
+				.hide();
+		$J("#CommitNoteRO").text("").hide();
+		$J("#CommitNote").val("").hide();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -451,11 +478,12 @@ var Main = Class.construct({
 			$J("#RegexTester").hide();
 
 			// Reset parent if 1:1 maping type is choosen.
-			if (Main.getCurrentTabIndex() == 1 &&
-				Main._timerResetDependencyChart == null &&
-				$J("#ConfigSection").data("new_parent") != null)
+			if (Main.getCurrentTabIndex() == 1 &&				// Mapping configuration view is active.
+				Main._timerResetDependencyChart == null &&		// No parent reset timer is set.
+				Main._newParent !== 0)							// New parent is not already set to Catch-all.
 			{
-				Main._timerResetDependencyChart = setTimeout(Main.resetParentMapping, 150);
+				// Forcefully reset parent to Catch-all.
+				Main._timerResetDependencyChart = setTimeout(Main.resetParentToCatchAll, 150);
 			}
 		}
 	},
@@ -465,7 +493,7 @@ var Main = Class.construct({
 
 	testUriChanged: function(event)
 	{
-		if ($J("#MappingType").val() == "1:1")
+		if (Main.isOneToOneMapping())
 			return;
 
 		var mappingPath		= $J("#MappingPath").val().trim();
@@ -714,6 +742,31 @@ var Main = Class.construct({
 		this.renderConfig(null);
 	},
 
+	clone: function()
+	{
+		$J("#ConfigSection").data("config", null);
+		Main._forceMappingPathCheck = true;
+
+		// Preserve parent.
+		var parent = Main.getParent();
+		Main.setParentMapping(parent.title, parent.mappingPath);
+
+		// Clear change history.
+		$J("#ChangeHistory")
+			.hide()
+			.attr("isDeprecated", 0)
+			.find("ul")
+				.empty();
+
+		Main.resetCommitNote();
+		Main.displayQrCodeUI(false);
+		Main.blockSaving(false);
+		Main.blockEditing(false);
+
+		// Place cursor into mapping path field.
+		$J("#MappingPath").select();
+	},
+
 	delete: function()
 	{
 		if (Main.isEditingBlocked())
@@ -888,9 +941,8 @@ var Main = Class.construct({
 			$J("#ConditionSection").empty();
 			$J("#ChangeHistory").hide();
 
-			$J("#CommitNoteSection A.__preserveCommitNote").hide();
-			$J("#CommitNoteRO").text("").hide();
-			$J("#CommitNote").val("").hide();
+			// Commit note section.
+			Main.resetCommitNote();
 
 			// Inheritance section.
 			if (Main.getCurrentTabIndex() == 1)
@@ -920,9 +972,7 @@ var Main = Class.construct({
 			Main.resetParentMapping(true);
 			if (data.parent && data.parent.mapping_path)
 			{
-				$J("#MappingParentName")
-					.text(data.parent.title ? data.parent.title : data.parent.mapping_path)
-					.attr("title", data.parent.mapping_path + "\n\n" + "\"Ctrl + Click\" to follow the link...");
+				Main.setParentMappingLink(data.parent.title ? data.parent.title : data.parent.mapping_path, data.parent.mapping_path);
 				if (data.parent.active && data.parent.cyclic)
 				{
 					$J("#ParentWarningIcon")
@@ -989,18 +1039,18 @@ var Main = Class.construct({
 
 		// Commit note.
 		$J("#CommitNoteSection").show();
-		if (!data.commit_note)
+		if (data.commit_note)
+		{
+			$J("#CommitNoteSection A.__preserveCommitNote").show();
+			$J("#CommitNote").hide();
+			$J("#CommitNoteRO").html(data.commit_note.htmlEscape().replace(/\n/g, "<br/>")).show();
+		}
+		else
 		{
 			if (data.ended)
 				$J("#CommitNoteSection").hide();
 			$J("#CommitNoteSection A.__preserveCommitNote").hide();
 			$J("#CommitNote, #CommitNoteRO").hide();
-		}
-		else
-		{
-			$J("#CommitNoteSection A.__preserveCommitNote").show();
-			$J("#CommitNote").hide();
-			$J("#CommitNoteRO").html(data.commit_note.htmlEscape().replace(/\n/g, "<br/>")).show();
 		}
 
 		// Change history.
@@ -1019,6 +1069,7 @@ var Main = Class.construct({
 		$J("#ChangeHistory a").click(Main.getConfig);
 
 		// Block editing for deprecated/superseded mappings.
+		$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 		Main.blockEditing(data.ended);
 
 		Main.blockSaving(true);
@@ -1037,7 +1088,19 @@ var Main = Class.construct({
 		originalPath = originalPath.trim();
 		jq.val(newPath);
 		if (originalPath != "" && originalPath != newPath && !confirm("You have changed the URI pattern. It may override another mapping or cause some URIs to work incorrectly.\n\nDo you wish to continue?"))
+		{
+			// Revert changes back.
 			jq.val(originalPath).keyup();
+			return;
+		}
+
+		// Check that mapping path is still consistent with the parent (for one-to-one mappings only).
+		if (Main.isOneToOneMapping() && Main._newParent !== 0)
+		{
+			var parent = Main._newParent ? Main._newParent : (config ? config.parent.mapping_path : null);
+			if (parent && !Main.isPathParentPatternConformant(newPath, parent))
+				Main.resetParentToCatchAll();
+		}
 	},
 
 	//
@@ -1130,7 +1193,7 @@ var Main = Class.construct({
 
 			success: function(data)
 			{
-				data = $J.merge(data, [{ mapping_path: null, title: "Catch-all" }]);
+				data = $J.merge(data, [{ mapping_path: 0, title: "Catch-all" }]);
 				response(
 					$J.map(data, function(item) {
 						var label = item.title ? item.title : item.mapping_path;
@@ -1147,8 +1210,7 @@ var Main = Class.construct({
 		if (event.ctrlKey)
 		{
 			var config		= $J("#ConfigSection").data("config");
-			var newParent	= $J("#ConfigSection").data("new_parent");
-			var parent		= newParent ? newParent : (config && config.parent.mapping_path ? config.parent.mapping_path : 0);
+			var parent		= Main._newParent ? Main._newParent : (config && config.parent.mapping_path ? config.parent.mapping_path : 0);
 
 			event.preventDefault();
 			if (parent === 0)
@@ -1165,16 +1227,23 @@ var Main = Class.construct({
 		$J("#MappingParent").val("").select();
 	},
 
+	isPathParentPatternConformant: function(path, pattern)
+	{
+		return (new RegExp(pattern, "i")).match(path);
+	},
+
 	selectParentMapping: function(event, ui)
 	{
-		if (!ui.item)
-			return;
+		if (ui.item)
+			Main.setParentMapping(ui.item.value, ui.item.mapping_path);
+	},
 
-		if (ui.item.mapping_path && $J("#MappingType").val() == "1:1")
+	setParentMapping: function(title, mappingPath)
+	{
+		if (mappingPath && Main.isOneToOneMapping())
 		{
 			// Check that mapping URI matches pattern of the parent mapping.
-			var re = new RegExp(ui.item.mapping_path, "i");
-			if (!re.match($J("#MappingPath").val()))
+			if (!Main.isPathParentPatternConformant($J("#MappingPath").val(), mappingPath))
 			{
 				alert("Selected parent mapping doesn't match the mapping URI.");
 				Main.cancelParentMappingEditing();
@@ -1187,20 +1256,44 @@ var Main = Class.construct({
 		$J.getJSON(
 				"info?cmd=get_mapping_dependencies" +
 					(config ? "&mapping_id=" + config.mapping_id : "&json=" + Main.JSON_SELF_IDENTIFIER) +
-					(ui.item.mapping_path ? "&mapping_path=" + encodeURIComponent(ui.item.mapping_path) : ""),
+					(mappingPath ? "&mapping_path=" + encodeURIComponent(mappingPath) : ""),
 				Main.renderInheritanceGraph
 			)
 			.fail(ExceptionHandler.displayGenericException);
 
 		// Save selection.
-		$J("#ConfigSection").data("new_parent", ui.item.mapping_path);
-		$J("#MappingParentName").text(ui.item.value).attr("title", ui.item.mapping_path);
 		$J("#ParentWarningIcon").hide();
+		Main._newParent = mappingPath;
+		Main.setParentMappingLink(title, mappingPath);
 		Main.cancelParentMappingEditing();
 		Main.configurationOnChange();
 	},
 
-	resetParentMapping: function(noRedraw)
+	setParentMappingLink: function(title, mappingPath)
+	{
+		if (!title || !mappingPath)
+			title = mappingPath = null;
+		$J("#MappingParentName")
+			.data("path", mappingPath)
+			.text(title ? title : "Catch-all")
+			.attr("title", (mappingPath ? mappingPath + "\n\n" : "") + "\"Ctrl + Click\" to follow the link...");
+	},
+
+	getParent: function()
+	{
+		var jq = $J("#MappingParentName");
+		return {
+			title:			jq.text(),
+			mappingPath:	jq.data("path")
+		};
+	},
+
+	resetParentToCatchAll: function()
+	{
+		Main.resetParentMapping(false, 0);
+	},
+
+	resetParentMapping: function(noRedraw, newParent)
 	{
 		if (noRedraw !== true)
 		{
@@ -1208,10 +1301,11 @@ var Main = Class.construct({
 			$J.getJSON("info?cmd=get_mapping_dependencies" + (config ? "&mapping_id=" + config.mapping_id : "&json=" + Main.JSON_SELF_IDENTIFIER), Main.renderInheritanceGraph)
 				.fail(ExceptionHandler.displayGenericException);
 		}
-		$J("#ConfigSection").data("new_parent", null); 
-		$J("#MappingParentName").text("Catch-all");
 		$J("#ParentWarningIcon").hide();
+		Main._newParent = newParent === 0 ? 0 : null; 
+		Main.setParentMappingLink(null, null);
 		Main.cancelParentMappingEditing();
+		Main.configurationOnChange();
 	},
 
 	cancelParentMappingEditing: function()
@@ -1309,9 +1403,9 @@ var Main = Class.construct({
 				"		<td>" +
 				"			<textarea class='__conditionDescription' rows='2' style='width: 483px; margin-bottom: 5px;" + (json.description ? "" : "display: none;") + "'>" + (json.description ? json.description : "") + "</textarea>" +
 				"			<div align='right'>" +
-								(json.description ? "" : "<span class='__supersededLock'><a href='#' class='__addConditionComment tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add comment</a> &nbsp;</span>") +
+								(json.description ? "" : "<span class='__supersededLock __supersededReinstate'><a href='#' class='__addConditionComment tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add comment</a> &nbsp;</span>") +
 				"				<a href='#' class='__toggleActions tip'><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Actions</a>" +
-				"				<span class='__supersededLock'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/cross10.png' width='10' height='10' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
+				"				<span class='__supersededLock __supersededReinstate'>&nbsp; <a href='#' class='__removeCondition tip'><img src='Images/cross10.png' width='10' height='10' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Remove</a></span>" +
 				"			</div>" +
 				"		</td>" +
 				"	</tr>" +
@@ -1321,7 +1415,7 @@ var Main = Class.construct({
 				"				<div class='caps' style='background: #f2f2f2; border: 2px solid #fff; padding-left: 5px;'>Actions:</div>" +
 				"				<table class='__actions' border='0' cellpadding='5' cellspacing='1' width='100%' style='position: relative; right: -6px;'>" +
 				"				</table>" +
-				"				<div class='__supersededLock' align='right'><a href='#' class='__addAction'><img src='Images/plus_16.png' title='Add action' width='16' height='16' border='0'/></a></div>" +
+				"				<div class='__supersededLock __supersededReinstate' align='right'><a href='#' class='__addAction'><img src='Images/plus_16.png' title='Add action' width='16' height='16' border='0'/></a></div>" +
 				"			</div>" +
 				"		</td>" +
 				"	</tr>" +
@@ -1609,7 +1703,9 @@ var Main = Class.construct({
 			return;
 
 		// Check and warn the user if necessary if he's just about to rewrite existing mapping.
-		if (!prechecked && oldpath && oldpath != path)
+		if (prechecked === true)
+			Main._forceMappingPathCheck = false;
+		if (Main._forceMappingPathCheck || !prechecked && oldpath && oldpath != path)
 		{
 			Main.blockUI();
 			$J.getJSON("info?cmd=check_mapping_path_exists&mapping_path=" + encodeURIComponent(path.htmlEscape().trim()), Main.presaveCheck).fail(ExceptionHandler.displayGenericException);
@@ -1619,8 +1715,9 @@ var Main = Class.construct({
 		var title			= isCatchAll ? null : $J("#MappingTitle").val().trim();
 		var description		= $J("#MappingDescription").val().trim();
 		var creator			= $J("#MappingCreator").val().trim();
-		var commitNote		= $J("#CommitNote").val().trim();
-		var newParent		= $J("#ConfigSection").data("new_parent");
+
+		var jqCommitNote	= $J("#CommitNote");
+		var commitNote		= jqCommitNote.is(":visible") ? jqCommitNote.val().trim() : "";
 
 		// Basic data.
 		var cmdxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
@@ -1633,8 +1730,12 @@ var Main = Class.construct({
 		else
 		{
 			cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
-			if (newParent)
-				cmdxml += "<parent>" + newParent + "</parent>";
+			if (Main._newParent === 0)
+			{
+				// Do nothing. Catch-all mapping.
+			}
+			else if (Main._newParent)
+				cmdxml += "<parent>" + Main._newParent + "</parent>";
 			else if (config && config.parent.mapping_path)
 				cmdxml += "<parent>" + config.parent.mapping_path + "</parent>";
 			cmdxml += "<type>" + $J("#MappingType").val() + "</type>";
@@ -1728,8 +1829,8 @@ var Main = Class.construct({
 	{
 		if (!confirm("Are you sure wish to reinstate this mapping configuration?\n\nYou will be given a chance to make changes before saving new configuration."))
 			return;
+		$J("#ConfigSupersededWarning, #ConfigSaveWarning").toggle();
 		this.blockEditing(false);
-		$J("#ConfigSaveWarning").show();
 	},
 
 	export: function(key, options)
