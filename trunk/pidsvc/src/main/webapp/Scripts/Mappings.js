@@ -371,6 +371,11 @@ var Main = Class.construct({
 				$J(".__catchAllHide").hide();
 				$J("#MappingTitle").attr("disabled", "disabled");
 			}
+			else
+			{
+				// Set visibility of mapping type dependent controls.
+				$J("#MappingType").change();
+			}
 
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
