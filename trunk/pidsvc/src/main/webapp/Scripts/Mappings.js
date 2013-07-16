@@ -1229,7 +1229,14 @@ var Main = Class.construct({
 
 	isPathParentPatternConformant: function(path, pattern)
 	{
-		return (new RegExp(pattern, "i")).match(path);
+		try
+		{
+			return (new RegExp(pattern, "i")).match(path);
+		}
+		catch (ex)
+		{
+			return false;
+		}
 	},
 
 	selectParentMapping: function(event, ui)
