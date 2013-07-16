@@ -371,8 +371,6 @@ var Main = Class.construct({
 				$J(".__catchAllHide").hide();
 				$J("#MappingTitle").attr("disabled", "disabled");
 			}
-//			else
-//				$J("#MappingType").change();
 
 			// Ensure condition section title is visible.
 			$J("#ConditionSection").prev().show();
@@ -402,6 +400,11 @@ var Main = Class.construct({
 	isOneToOneMapping: function()
 	{
 		return $J("#MappingType").val() == "1:1";
+	},
+
+	hideWarnings: function()
+	{
+		$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 	},
 
 	addCommitNote: function()
@@ -914,6 +917,8 @@ var Main = Class.construct({
 		// Save last loaded configuration in memory.
 		$J("#ConfigSection").data("config", data == null || $J.isEmptyObject(data) ? null : data);
 
+		Main.hideWarnings();
+
 		// Reset configuration.
 		if (data == null || $J.isEmptyObject(data))
 		{
@@ -1069,7 +1074,6 @@ var Main = Class.construct({
 		$J("#ChangeHistory a").click(Main.getConfig);
 
 		// Block editing for deprecated/superseded mappings.
-		$J("#ConfigSupersededWarning, #ConfigSaveWarning").hide();
 		Main.blockEditing(data.ended);
 
 		Main.blockSaving(true);
