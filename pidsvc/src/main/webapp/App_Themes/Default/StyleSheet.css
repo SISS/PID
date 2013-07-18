@@ -207,6 +207,12 @@ LABEL
 .caps { font-variant: small-caps; }
 .justify { text-align: justify; }
 
+.monotype
+{
+	font-family:		Courier New;
+	font-size:			11px;
+}
+
 .MenuButton
 {
 	text-align:			center;
