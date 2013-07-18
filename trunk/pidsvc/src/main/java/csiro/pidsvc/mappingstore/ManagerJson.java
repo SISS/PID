@@ -110,25 +110,29 @@ public class ManagerJson extends Manager
 
 		try
 		{
-			String query = "\"mapping_path\" IS NOT NULL";
+			String query = "mapping_path IS NOT NULL";
 			if (mappingPath != null && !mappingPath.isEmpty())
-				query += " AND \"mapping_path\" ILIKE ?";
+				query += " AND (title ILIKE ? OR mapping_path ILIKE ?)";
 			if (type != null && !type.isEmpty())
-				query += " AND \"type\" = ?";
+				query += " AND type = ?";
 			if (creator != null && !creator.isEmpty())
-				query += " AND \"creator\" = ?";
+				query += " AND creator = ?";
 
 			query =
 				"SELECT COUNT(*) FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + ";\n" +
-				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + " ORDER BY mapping_path LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
+				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + " ORDER BY COALESCE(title, mapping_path) LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
 
 			int i = 1;
 			pst = _connection.prepareStatement(query);
+
+			// Bind parameters twice to two almost identical queries.
 			for (int j = 0; j < 2; ++j)
 			{
-				// Bind parameters twice to two almost identical queries.
 				if (!mappingPath.isEmpty())
+				{
 					pst.setString(i++, "%" + mappingPath.replace("\\", "\\\\") + "%");
+					pst.setString(i++, "%" + mappingPath.replace("\\", "\\\\") + "%");
+				}
 				if (!type.isEmpty())
 					pst.setString(i++, type);
 				if (!creator.isEmpty())
