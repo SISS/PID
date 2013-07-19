@@ -253,7 +253,7 @@ var Main = Class.construct({
 				(node.data.title ? "<div class=\"ellipsis\" title=\"" + node.data.mapping_path + "\">" + node.data.mapping_path + "</div>" : "<div>&nbsp;</div>")
 			) +
 			"<br/><div class=\"ellipsis\"><b>Author:</b> " + (node.data.author ? node.data.author : "not set") + "</div>" +
-			(node.data.description ? "<br/><br/><div class=\"__description\">" + node.data.description + "</div>" : "") +
+			(node.data.description ? "<br/><br/><div class=\"__description\">" + node.data.description.htmlEscape().replace(/\n/g, "<br/>") + "</div>" : "") +
 			"<div style=\"border-top: 1px solid #eee; padding-top: 7px; margin-top: 7px;\">" +
 				"<b>Inheritors:</b> " + (node.data.inheritors ? node.data.inheritors : "none") + "<br/><br/>" +
 				"<a href='mappings.html?" + (node.data.mapping_path == null ? "mapping_id=0" : "mapping_path=" + encodeURIComponent(node.data.mapping_path)) + "'><img src='Images/arrow_137.gif' width='9' height='9' border='0' align='absmiddle' style='margin-right: 5px;'/>View/edit</a>" +
