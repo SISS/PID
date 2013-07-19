@@ -964,7 +964,7 @@ var Main = Class.construct({
 			return;
 		}
 
-		var isCatchAll = data.mapping_id === 0;
+		var isCatchAll = data.mapping_path == null;
 		
 		// Show configuration.
 		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
@@ -999,17 +999,20 @@ var Main = Class.construct({
 		}
 
 		// QR Code.
-		if (data.type == "1:1")
-		{
-			Main.setQrCode(data.mapping_path);
-		}
+		if (isCatchAll)
+			Main.displayQrCodeUI(false);
 		else
 		{
-			Main.setQrCode(null);
-			Main.testUriOnChange(null);
+			if (data.type == "1:1")
+				Main.setQrCode(data.mapping_path);
+			else
+			{
+				Main.setQrCode(null);
+				Main.testUriOnChange(null);
+			}
+			$J("#QRCodeHits").text(data.qr_hits);
+			Main.displayQrCodeUI(true);
 		}
-		$J("#QRCodeHits").text(data.qr_hits);
-		Main.displayQrCodeUI(true);
 
 		// Default action.
 		$J("#DefaultAction")
