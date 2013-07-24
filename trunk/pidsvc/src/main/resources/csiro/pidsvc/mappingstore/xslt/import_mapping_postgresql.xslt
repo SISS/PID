@@ -37,7 +37,7 @@
 				</xsl:choose>
 				COMMIT;
 			</xsl:when>
-			<xsl:when test="backup[@scope = 'db']">
+			<xsl:when test="backup[@scope = 'db' or (not(@type) and not(@scope))]">
 				<!-- Full/Partial db restore -->
 				<xsl:value-of select="concat('--OK: Successfully imported ', count(distinct-values(/backup/mapping/path/text())), ' record(s).')"/>
 				BEGIN;

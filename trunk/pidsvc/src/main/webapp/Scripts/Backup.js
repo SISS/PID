@@ -129,7 +129,7 @@ var Main = Class.construct({
 				file_size_limit:		"1GB",
 //				file_types:				"*.*",
 //				file_types_description:	"All Files",
-				file_types:				"*.psb",
+				file_types:				"*.psb;*.xml",
 				file_types_description:	"PID Service Backup Files",
 				file_upload_limit:		"0",
 				flash_url:				"Scripts/jQuery/swfupload/vendor/swfupload.swf",

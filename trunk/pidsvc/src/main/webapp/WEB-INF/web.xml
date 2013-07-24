@@ -39,4 +39,14 @@
 		<servlet-name>info</servlet-name>
 		<url-pattern>/info</url-pattern>
 	</servlet-mapping>
+	<servlet>
+		<description>PID Service XML Schemas</description>
+		<display-name>schemas</display-name>
+		<servlet-name>schemas</servlet-name>
+		<servlet-class>csiro.pidsvc.servlet.schemas</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>schemas</servlet-name>
+		<url-pattern>/schemas/*</url-pattern>
+	</servlet-mapping>
 </web-app>

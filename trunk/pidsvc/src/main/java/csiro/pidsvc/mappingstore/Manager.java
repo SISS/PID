@@ -258,6 +258,7 @@ public class Manager
 	{
 		java.util.List<FileItem>	fileList = null;
 		GZIPInputStream				gis = null;
+		String						ret = null;
 
 		try
 		{
@@ -278,10 +279,24 @@ public class Manager
 				if (item.isFormField())
 					continue;
 
-				gis = new GZIPInputStream(item.getInputStream());
-//				String fileContent = Stream.readInputStream(gis);
-				String ret = callback.process(gis);
-				gis.close();
+				try
+				{
+					// Try to restore the backup file as it was in binary format.
+					gis = new GZIPInputStream(item.getInputStream());
+					ret = callback.process(gis);
+					gis.close();
+				}
+				catch (IOException ex)
+				{
+					String msg = ex.getMessage();
+					if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
+					{
+						// Try to restore the backup file as it was unzipped.
+						ret = callback.process(item.getInputStream());
+					}
+					else
+						throw ex; 
+				}
 
 				// Process the first uploaded file only.
 				return ret;
