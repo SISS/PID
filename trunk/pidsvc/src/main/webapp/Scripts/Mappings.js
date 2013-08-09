@@ -1712,7 +1712,7 @@ var Main = Class.construct({
 
 		var oldpath		= Main._config ? Main._config.mapping_path : null;
 		var path		= $J("#MappingPath").val();
-		var isCatchAll	= oldpath == null;
+		var isCatchAll	= Main._config ? Main._config.mapping_path == null : false;
 
 		if (!path && !isCatchAll)
 			return;
