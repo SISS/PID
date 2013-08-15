@@ -1230,6 +1230,8 @@ var Main = Class.construct({
 
 	isPathParentPatternConformant: function(path, pattern)
 	{
+		if (pattern == null)
+			return true; // Any path is matching Catch-all patern.
 		try
 		{
 			return (new RegExp(pattern, "i")).match(path);
@@ -1746,7 +1748,7 @@ var Main = Class.construct({
 			cmdxml += "<path" + (oldpath && oldpath != path ? " rename=\"" + oldpath.htmlEscape() + "\"" : "") + ">" + path.htmlEscape().trim() + "</path>";
 			if (Main._newParent === 0)
 			{
-				// Do nothing. Catch-all mapping.
+				// Do nothing. Mapping rule inherits from Catch-all mapping.
 			}
 			else if (Main._newParent)
 				cmdxml += "<parent>" + Main._newParent + "</parent>";
