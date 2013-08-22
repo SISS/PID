@@ -19,7 +19,6 @@
  * Vendor:      exljbris Font Foundry
  * License URL: http://www.fontspring.com/fflicense/exljbris
  *
- *
  */
 @font-face
 {
@@ -33,179 +32,209 @@
     font-style: normal;
 }
 
+/*
+*	Quick styles.
+*/
+.csiro_blue		{ color: #09c; }
+.csiro_gray		{ color: #999; }
+.csiro_green	{ color: #bed600; }
+
+.b				{ font-weight: bold; }
+.u				{ text-decoration: underline; }
+.i				{ font-style: italic; }
+.red			{ color: #d42626; }
+.gray			{ color: #b3b3b3; }
+.white			{ color: #fff; }
+.black			{ color: #000; }
+.tip			{ font-size: 10px; color: #646464; }
+.floating_tip	{ position: absolute; padding: 0 7px 0 7px; background: #d42626; color: #fff; line-height: 14px; white-space: nowrap; }
+.ellipsis		{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caps			{ font-variant: small-caps; }
+.justify		{ text-align: justify; }
+
+/*
+*	Controls styles.
+*/
 ul.ui-autocomplete.ui-menu
 {
-	font-family: Century Gothic;
-	font-size: 12px;
-	color: #000;
+	font-family:		Century Gothic;
+	font-size:			12px;
+	color:				#000;
 }
 .ui-autocomplete-loading
 {
-	background: white url('../../Images/loading6-0.gif') right center no-repeat;
+	background:			white url('../../Images/loading6-0.gif') right center no-repeat;
 }
 
+/*
+*	Elements styles.
+*/
 BODY
 {
-	margin: 0;
-	font-family: Century Gothic;
-	font-size: 12px;
-	color: #000;
+	margin:				0;
+	font-family:		Century Gothic;
+	font-size:			12px;
+	color:				#000;
 }
 
 P
 {
-	margin: 0 0 7px 0;
+	margin:				0 0 7px 0;
 }
 
 UL, OL
 {
-	margin-top: 5px;
-	margin-bottom: 0px;
+	margin-top:			5px;
+	margin-bottom:		0px;
 }
 
 BLOCKQUOTE
 {
-	margin: 5px 0 5px 25px;
+	margin:				5px 0 5px 25px;
 }
 
 A
 {
-	color: #09c;
+	color:				#09c;
 }
 A:visited
 {
-	color: #09c;
+	color:				#09c;
 }
 
 H1
 {
-	font-family: Century Gothic, Trebuchet MS;
-	font-size: 20px;
-	padding-top: 12px;
-	color: #555555;
-	font-variant: small-caps;
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial;
+	font-size:			26px;
+	font-weight:		normal;
+	padding-top:		12px;
+	color:				#555555;
 }
 H1.nopadding
 {
-	padding: 0;
-	margin: 0;
+	padding:			0;
+	margin:				0;
 }
 H2
 {
-	font-family: AniversRegular, "Helvetica Neue", Helvetica, Arial, sans-serif;
-	font-size: 24px;
-	font-weight: normal;
-	padding-top: 1px;
-	margin-bottom: 5px;
-	color: #333333;
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size:			24px;
+	font-weight:		normal;
+	padding-top:		1px;
+	margin-bottom:		5px;
+	color:				#333333;
 }
 H3
 {
-	font-family: Georgia, Trebuchet MS, Arial;
-	font-size: 12px;
-	font-weight: normal;
-	margin-top: 3px;
-	margin-bottom: 7px;
-	color: #555555;
-	font-variant: small-caps;
+	font-family:		Georgia, Trebuchet MS, Arial;
+	font-size:			12px;
+	font-weight:		normal;
+	margin-top:			3px;
+	margin-bottom:		7px;
+	color:				#555555;
+	font-variant:		small-caps;
 }
 
 A.white
 {
-	color: #fff;
-	text-decoration: none;
+	color:				#fff;
+	text-decoration:	none;
 }
 A.white:visited
 {
-	color: #fff;
-	text-decoration: none;
+	color:				#fff;
+	text-decoration:	none;
 }
-
 
 INPUT[type=text], SELECT.input, TEXTAREA.input, DIV.inputlike
 {
-	background-color: #fff;
-	border-left: solid 1px #b3b3b3;
-	border-top: solid 1px #b3b3b3;
-	border-right: solid 1px #e3e3e3;
-	border-bottom: solid 1px #e3e3e3;
-	font-family: Century Gothic, Trebuchet MS;
-	font-size: 12px;
-	color: #333;
+	background-color:	#fff;
+	border-left:		solid 1px #b3b3b3;
+	border-top:			solid 1px #b3b3b3;
+	border-right:		solid 1px #e3e3e3;
+	border-bottom:		solid 1px #e3e3e3;
+	font-family:		Century Gothic, Trebuchet MS;
+	font-size:			12px;
+	color:				#333;
 }
 
 INPUT[type=button], INPUT[type=submit]
 {
-	background: #09c;
-	border: 0;
-	border-right: solid 2px #bed600;
-	font-family: Century Gothic, Trebuchet MS, Georgia;
-	font-size: 12px;
-	font-variant: small-caps;
-	color: #fff;
+	background:			#09c;
+	border:				0;
+	border-right:		solid 2px #bed600;
+	font-family:		Century Gothic, Trebuchet MS, Georgia;
+	font-size:			12px;
+	font-variant:		small-caps;
+	color:				#fff;
 }
 INPUT.cmd_warning
 {
-	color: #d42626;
-	font-weight: bold;
+	color:				#d42626;
+	font-weight:		bold;
 }
 INPUT[type=file], TEXTAREA
 {
-	background: #ffffff;
-	height: 21px;
-	border: 0;
-	border-left: solid 1px #b3b3b3;
-	border-top: solid 1px #b3b3b3;
-	border-bottom: solid 1px #e3e3e3;
-	font-family: Century Gothic, Trebuchet MS, Georgia;
-	font-size: 12px;
-	color: #333;
+	background:			#ffffff;
+	height:				21px;
+	border:				0;
+	border-left:		solid 1px #b3b3b3;
+	border-top:			solid 1px #b3b3b3;
+	border-bottom:		solid 1px #e3e3e3;
+	font-family:		Century Gothic, Trebuchet MS, Georgia;
+	font-size:			12px;
+	color:				#333;
 }
 TEXTAREA
 {
-	height: auto;
+	height:				auto;
 }
 
 HR
 {
-	color: #09c;
-	height: 2px;
+	color:				#09c;
+	height:				2px;
 }
 
 LABEL
 {
-	cursor: pointer;
+	cursor:				pointer;
 }
 
+DIV.ProgressBar
+{
+	border:				solid 1px #bed600;
+}
+DIV.ProgressBar > DIV
+{
+	background-color:	#bed600;
+}
+
+UL.LeftMenu
+{
+	margin-left:		-22px;
+	list-style-image:	url('../../Images/arrow_137.gif');
+}
+UL.LeftMenu LI
+{
+	margin-bottom:		10px;
+}
+
+/*
+*	Other styles.
+*/
 .numlist
 {
-	background-color: #d42626;
-	padding-top: 3px;
-	padding-bottom: 3px;
-	padding-left: 10px;
-	padding-right: 10px;
-	font-family: Georgia, Trebuchet MS;
-	font-size: 12px;
-	font-weight: bold;
-	color: #ffffff;
+	background-color:	#d42626;
+	padding-top:		3px;
+	padding-bottom:		3px;
+	padding-left:		10px;
+	padding-right:		10px;
+	font-family:		Georgia, Trebuchet MS;
+	font-size:			12px;
+	font-weight:		bold;
+	color:				#ffffff;
 }
-
-.csiro_blue { color: #09c; }
-.csiro_gray { color: #999; }
-.csiro_green { color: #bed600; }
-
-.b { font-weight: bold; }
-.u { text-decoration: underline; }
-.i { font-style: italic; }
-.red { color: #d42626; }
-.gray { color: #b3b3b3; }
-.white { color: #fff; }
-.black { color: #000; }
-.tip { font-size: 10px; color: #646464; }
-.floating_tip { position: absolute; padding: 0 7px 0 7px; background: #d42626; color: #fff; line-height: 14px; white-space: nowrap; }
-.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.caps { font-variant: small-caps; }
-.justify { text-align: justify; }
 
 .monotype
 {
@@ -237,26 +266,7 @@ LABEL
 	cursor:				auto;
 }
 
-DIV.ProgressBar
-{
-	border:				solid 1px #bed600;
-}
-DIV.ProgressBar > DIV
-{
-	background-color:	#bed600;
-}
-
 .ResultRowHighlight
 {
 	background:			#fff;
-}
-
-UL.LeftMenu
-{
-	margin-left:		-22px;
-	list-style-image:	url('../../Images/arrow_137.gif');
-}
-UL.LeftMenu LI
-{
-	margin-bottom:		10px;
 }

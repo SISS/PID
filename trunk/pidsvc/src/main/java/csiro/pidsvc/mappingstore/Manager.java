@@ -159,8 +159,8 @@ public class Manager
 
 	public Manager() throws NamingException, SQLException, IOException
 	{
-		InitialContext initCtx = new InitialContext(); 
-		Context envCtx = (Context)initCtx.lookup("java:comp/env"); 
+		InitialContext initCtx = new InitialContext();
+		Context envCtx = (Context)initCtx.lookup("java:comp/env");
 		DataSource ds = (DataSource)envCtx.lookup(Settings.getInstance().getProperty("jndiReferenceName"));
 		_connection = ds.getConnection();
 	}

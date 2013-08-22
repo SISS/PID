@@ -34,12 +34,12 @@ import org.json.simple.JSONObject;
 public class ManagerJson extends Manager
 {
 	private static Logger _logger = LogManager.getLogger(ManagerJson.class.getName());
-	
+
 	private String _authorizationName = null;
 
 //	protected final SimpleDateFormat _sdfdb = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 //	protected final SimpleDateFormat _sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-	
+
 	public ManagerJson() throws NamingException, SQLException, IOException
 	{
 		super();

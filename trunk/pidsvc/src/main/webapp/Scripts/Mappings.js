@@ -1071,7 +1071,7 @@ var Main = Class.construct({
 		$J(data.history).each(function() {
 			$J("#ChangeHistory ul")
 				.append(
-					"<li><a href='#' mapping_id='" + this.mapping_id + "' title='" + (this.commit_note ? this.commit_note : "") + "'" + (this.mapping_id == data.mapping_id ? " style='font-weight: bold;'" : "") + ">" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a>" +
+					"<li><a href='#' mapping_id='" + this.mapping_id + "' title='" + (this.commit_note ? this.commit_note.replace("'", "&apos;") : "") + "'" + (this.mapping_id == data.mapping_id ? " style='font-weight: bold;'" : "") + ">" + this.date_start + " - " + (this.date_end == null ? "present" : this.date_end) + "</a>" +
 						(this.creator ? "<br/><span class=\"tip\">by " + this.creator + "</span>" : "") +
 					"</li>"
 				);

@@ -39,33 +39,27 @@ public class Settings
 	protected Manifest				_manifest = new Manifest();
 	protected Map<String, String>	_serverProperties = new HashMap<String, String>(6);
 
-	private Settings()
+	private Settings() throws NullPointerException, IOException
 	{
-		try
-		{
-			ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-			_properties.load(classLoader.getResourceAsStream("../pidsvc.properties"));
-			_manifest.read(classLoader.getResourceAsStream("../../META-INF/MANIFEST.MF"));
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		_properties.load(classLoader.getResourceAsStream("pidsvc.properties"));
+		_manifest.read(classLoader.getResourceAsStream("../../META-INF/MANIFEST.MF"));
 
-			_serverProperties.put("serverJavaVersion", System.getProperty("java.version"));
-			_serverProperties.put("serverJavaVendor", System.getProperty("java.vendor"));
-            _serverProperties.put("javaHome", System.getProperty("java.home"));
-            _serverProperties.put("serverOsArch", System.getProperty("os.arch"));
-            _serverProperties.put("serverOsName", System.getProperty("os.name"));
-            _serverProperties.put("serverOsVersion", System.getProperty("os.version"));
-		}
-		catch (IOException e)
-		{
-			_logger.warn("Exception occurred while retrieving application settings.", e);
-		}
-	}
+		// Get additional system properties.
+		_serverProperties.put("serverJavaVersion", System.getProperty("java.version"));
+		_serverProperties.put("serverJavaVendor", System.getProperty("java.vendor"));
+        _serverProperties.put("javaHome", System.getProperty("java.home"));
+        _serverProperties.put("serverOsArch", System.getProperty("os.arch"));
+        _serverProperties.put("serverOsName", System.getProperty("os.name"));
+        _serverProperties.put("serverOsVersion", System.getProperty("os.version"));
+}
 
 	protected Object clone() throws CloneNotSupportedException
 	{
 		throw new CloneNotSupportedException();
 	}
 
-	public static Settings getInstance()
+	public static Settings getInstance() throws NullPointerException, IOException
 	{
 		if (_instance == null)
 		{

@@ -1,20 +1,20 @@
 Manifest-Version: 1.0
-Implementation-Title: PID Service Maven Webapp
-Implementation-Version: 1.0-SNAPSHOT
+Implementation-Title: Persistent Identifiers PID Service (PID Service)
+Implementation-Version: 1.1-SNAPSHOT
 javaVendor: Sun Microsystems Inc.
 javaVmVersion: 20.6-b01
 javaVersion: 1.6.0_31
 Built-By: gol123
-projectName: PID Service Maven Webapp
-Created-By: Apache Maven
-buildDate: 27-02-2013 15:08
+projectName: Persistent Identifiers PID Service (PID Service)
+Created-By: Apache Maven 3.1.0
+buildDate: 22-08-2013 12:12
 osVersion: 6.1
-version: 1.0-SNAPSHOT
+version: 1.1-SNAPSHOT
 osName: Windows 7
 Implementation-Vendor-Id: csiro.pidsvc
 Build-Jdk: 1.6.0_31
-Specification-Title: PID Service Maven Webapp
+Specification-Title: Persistent Identifiers PID Service (PID Service)
 javaVmVendor: Sun Microsystems Inc.
-Specification-Version: 1.0-SNAPSHOT
-Implementation-Build: 102
+Specification-Version: 1.1-SNAPSHOT
+Implementation-Build: 105
 
