@@ -21,7 +21,7 @@
 				<!-- Full mapping import -->
 				<xsl:variable name="_path" select="backup/mapping[1]/path/text()"/>
 				<xsl:variable name="path" select='replace(replace($_path, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", $path, "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [[[", $_path, "]]].")'/>
 				BEGIN;
 				<xsl:choose>
 					<xsl:when test="$path = ''">

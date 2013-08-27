@@ -906,7 +906,7 @@ public class Manager
 				for (rs = pst.getResultSet(); rs.next();)
 				{
 					path = rs.getString(mappingIdentifier instanceof Integer || !fullBackup ? "original_path" : "mapping_path");
-					
+
 					ret += "<mapping";
 
 					// Time stamps are only applicable for full backups and deprecated records.

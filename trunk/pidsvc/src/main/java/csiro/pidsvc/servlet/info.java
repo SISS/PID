@@ -61,7 +61,6 @@ public class info extends HttpServlet
 		ManagerJson mgr = null;
 		try
 		{
-//			Thread.sleep(1500);
 			mgr = new ManagerJson(request);
 
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
