@@ -37,6 +37,11 @@ var Main = Class.construct({
 	setInstanceBaseURI: function(baseURI)
 	{
 		GlobalSettings.BaseURI = baseURI;
+		if (baseURI.trim() == "")
+		{
+			// If base / authoritative URI is not set then display current hostname.
+			baseURI = location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1");
+		}
 		this._svcInstanceLabelWidth = parseInt($J("#BaseURI").text(baseURI).width());
 	},
 

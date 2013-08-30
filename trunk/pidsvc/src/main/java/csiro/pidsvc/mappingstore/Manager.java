@@ -1059,12 +1059,14 @@ public class Manager
 			value = ((String[])settings.get(key))[0];
 			if (key.equals("BaseURI"))
 			{
-				java.net.URI uri;
 				try
 				{
 					// Leave base URI only.
-					uri = new java.net.URI(value);
-					value = uri.getScheme() + "://" + uri.getHost() + (uri.getPort() == 80 || uri.getPort() == -1 ? "" : ":" + uri.getPort());
+					java.net.URI uri = new java.net.URI(value);
+					if (uri.getScheme() == null || uri.getHost() == null)
+						value = "";
+					else
+						value = uri.getScheme() + "://" + uri.getHost() + (uri.getPort() == 80 || uri.getPort() == -1 ? "" : ":" + uri.getPort());
 				}
 				catch (URISyntaxException e)
 				{
