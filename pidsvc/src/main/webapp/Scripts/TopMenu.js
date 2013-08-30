@@ -9,20 +9,40 @@
  */
 
 var Main = Class.construct({
+	_svcInstanceLabelWidth:		null,
+	_isNewVersionAvailable:		false,
+
 	init: function()
 	{
-		$J.getJSON("info?cmd=is_new_version_available", Main.isNewVersionAvailableOnLoad);
+		$J.getJSON("info?cmd=is_new_version_available", Main.isNewVersionAvailableOnLoad.bind(this));
+
+		$J(window).resize(this.onWindowResize.bind(this)).resize();
+
+		this.setInstanceBaseURI(GlobalSettings.BaseURI);
 	},
 
 	isNewVersionAvailableOnLoad: function(data)
 	{
-		if (data.isAvailable)
+		if (this._isNewVersionAvailable = data.isAvailable)
 		{
 			$J("#NewVersionAvailable")
 				.find("a")
 					.attr("href", data.repository)
 				.end()
 				.show();
+			this.onWindowResize();
 		}
+	},
+
+	setInstanceBaseURI: function(baseURI)
+	{
+		GlobalSettings.BaseURI = baseURI;
+		this._svcInstanceLabelWidth = parseInt($J("#BaseURI").text(baseURI).width());
+	},
+
+	onWindowResize: function(ev)
+	{
+		if (this._isNewVersionAvailable)
+			$J("#NewVersionAvailable")[this._svcInstanceLabelWidth && $J(window).width() - 500 > this._svcInstanceLabelWidth ? "show" : "hide"]();
 	}
 });

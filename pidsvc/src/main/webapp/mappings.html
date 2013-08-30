@@ -17,7 +17,7 @@
 		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/slimScroll/jquery.slimscroll.min.js"></script>
-		<script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ui/1.10.3/jquery-ui.js"></script>
 		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
 
 		<!--[if IE]><script language="javascript" type="text/javascript" src="Scripts/Jit/Extras/excanvas.js"></script><![endif]-->
@@ -34,7 +34,7 @@
 		<link rel="stylesheet" type="text/css" href="App_Themes/Default/StyleSheet.css" />
 		<link rel="stylesheet" type="text/css" href="App_Themes/Default/InheritanceChart.css" />
 		<link rel="stylesheet" type="text/css" href="Scripts/jQuery/contextMenu/jquery.contextMenu.css"  />
-		<link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" type="text/css" href="Scripts/jQuery/ui/1.10.3/themes/smoothness/jquery-ui.css" />
 	</head>
 	<body style="margin: 10px;">
 		<div id="TopMenu" style="position: relative; height: 50px;">
@@ -123,11 +123,11 @@
 					<table border="0" cellpadding="1" cellspacing="5" width="100%">
 						<tr valign="top">
 							<td width="70%">
-								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px;">
+								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px; display: none;">
 									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
 									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
 								</div>
-								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px;">
+								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px; display: none;">
 									<b>Note:</b> This mapping has been reinstated and has not been saved yet.
 								</div>
 								<div id="UriStemPattern" class="__catchAllHide">

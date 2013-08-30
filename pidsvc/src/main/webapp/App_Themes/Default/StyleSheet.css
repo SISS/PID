@@ -122,7 +122,7 @@ H2
 	font-weight:		normal;
 	padding-top:		1px;
 	margin-bottom:		5px;
-	color:				#333333;
+	color:				#333;
 }
 H3
 {
@@ -269,4 +269,21 @@ UL.LeftMenu LI
 .ResultRowHighlight
 {
 	background:			#fff;
+}
+
+.FigureName
+{
+	font-family:		Century Gothic;
+	font-size:			12px;
+	font-weight:		bold;
+	font-variant:		small-caps;
+	color:				#999;
+}
+
+.FigureValue
+{
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial;
+	font-size:			20px;
+	font-weight:		normal;
+	color:				#333;
 }

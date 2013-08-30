@@ -15,8 +15,10 @@
 		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
 		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
 
+		<!-- Local scripts -->
 		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
 		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="info?cmd=global_js"></script> 
 		<script type="text/javascript" src="Scripts/Settings.js"></script>
 
 		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
@@ -36,10 +38,29 @@
 				<h2>General Settings</h2>
 				<div id="GeneralSection" style="width: 730px;">
 					<br/>
-					<input type="checkbox" id="DispatcherTracingMode" class="__persistent_option"/> <label for="DispatcherTracingMode" style="position: relative; top: -1px;">Dispatcher tracing mode</label><br/>
-					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
-						Set dispatcher in a mode that allows to trace execution of the rules instead of actually running mappings actions.
-					</div>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%">
+						<tr valign="top">
+							<td><img src="Images/arrow_137.gif" width="9" height="9" style="margin-top: 2px;"/></td>
+							<td>
+								Base / authoritative URI<br/>
+								<input type="text" id="BaseURI" class="__persistent_option" maxlength="255" style="width: 706px; margin-top: 5px;" />
+								<div class="tip" style="margin-top: 5px; margin-bottom: 15px;">
+									Sets the base / authoritative URI for the PID Service instance. Please note it will only have effect on the UI
+									component of the service and not the dispatcher. Dispatcher hooks still need to be correctly set in the web server
+									configuration. For more details refer to the documentation.
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="checkbox" id="DispatcherTracingMode" class="__persistent_option"/></td>
+							<td>
+								<label for="DispatcherTracingMode" style="position: relative; top: 3px;">Dispatcher tracing mode</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 7px;">
+									Set dispatcher in a mode that allows to trace execution of the rules instead of actually running mappings actions.
+								</div>
+							</td>
+						</tr>
+					</table>
 					<br/>
    					<input type="button" id="cmdSave" value="Save" onclick="javascript:Main.save();" style="width:100px;" />
 				</div>

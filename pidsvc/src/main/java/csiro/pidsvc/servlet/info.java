@@ -110,7 +110,7 @@ public class info extends HttpServlet
 			else if (cmd.equalsIgnoreCase("global_js"))
 			{
 				response.setContentType("text/javascript");
-				response.getWriter().write(mgr.getGlobalSettings());
+				response.getWriter().write(mgr.getGlobalSettings(request));
 			}
 			else if (cmd.equalsIgnoreCase("chart"))
 			{

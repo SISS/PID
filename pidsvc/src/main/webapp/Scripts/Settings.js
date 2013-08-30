@@ -113,6 +113,7 @@ var Main = Class.construct({
 							break;
 					}
 				}
+				parent.frames.fraMenu.Main.setInstanceBaseURI($J("#BaseURI").val());
 				Main.unblockUI();
 			})
 			.fail(this.renderResultsError);
@@ -143,8 +144,14 @@ var Main = Class.construct({
 				type: "POST",
 				data: postData
 			})
-			.done(this.unblockUI)
+			.done(this.postSave.bind(this))
 			.fail(ExceptionHandler.displayGenericException);
+	},
+
+	postSave: function()
+	{
+		this.unblockUI();
+		this.getSettings();
 	},
 
 	///////////////////////////////////////////////////////////////////////////

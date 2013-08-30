@@ -9,11 +9,18 @@
 		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
 		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+
+		<!-- Local scripts -->
+		<script type="text/javascript" src="info?cmd=global_js"></script> 
 		<script type="text/javascript" src="Scripts/TopMenu.js"></script>
 
 		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
 	</head>
 	<body>
+		<div style="margin-left: 10px; margin-top: 16px;">
+			<span class="FigureName" style="white-space: nowrap;">Service instance</span><br/>
+			<span id="BaseURI" class="FigureValue" style="white-space: nowrap;"></span>
+		</div>
 		<div id="NewVersionAvailable" style="position: absolute; top: 5px; right: 170px; display: none;">
 			<img src="Images/exclamation-diamond.png" width="16" height="16" align="middle" style="margin-right: 5px; vertical-align: middle;" />
 			New version of the PID Service is available <a href="#" target="_blank">here</a>.

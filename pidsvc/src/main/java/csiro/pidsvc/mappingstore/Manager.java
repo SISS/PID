@@ -17,6 +17,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -1049,13 +1050,28 @@ public class Manager
 
 	public boolean saveSettings(Map<?, ?> settings) throws SQLException
 	{
-		String sqlQuery = "BEGIN;\n";
+		String sqlQuery = "BEGIN;\n", value;
 		HashMap<String, String> params = new HashMap<String, String>(); 
 		for (Object key : settings.keySet())
 		{
 			if (key.equals("cmd"))
 				continue;
-			params.put((String)key, ((String[])settings.get(key))[0]);
+			value = ((String[])settings.get(key))[0];
+			if (key.equals("BaseURI"))
+			{
+				java.net.URI uri;
+				try
+				{
+					// Leave base URI only.
+					uri = new java.net.URI(value);
+					value = uri.getScheme() + "://" + uri.getHost() + (uri.getPort() == 80 || uri.getPort() == -1 ? "" : ":" + uri.getPort());
+				}
+				catch (URISyntaxException e)
+				{
+					continue;
+				}
+			}
+			params.put((String)key, value);
 			sqlQuery += "UPDATE configuration SET value = ? WHERE name = ?;\n";
 		}
 		sqlQuery += "COMMIT;";
@@ -1119,6 +1135,40 @@ public class Manager
 			}
 		}
 		return null;
+	}
+
+	public String getBaseURI()
+	{
+		String baseURI = getSetting("BaseURI");
+		if (baseURI == null)
+		{
+			try
+			{
+				// Execute SQL query.
+				PreparedStatement pst = null;
+				try
+				{
+					pst = _connection.prepareStatement(
+							"BEGIN;\n" +
+							"DELETE FROM configuration WHERE name = 'BaseURI';\n" +
+							"INSERT INTO configuration (name, value) VALUES ('BaseURI', '');\n" +
+							"COMMIT;"
+						);
+					pst.execute();
+					return "";
+				}
+				finally
+				{
+					if (pst != null)
+						pst.close();
+				}
+			}
+			catch (SQLException e)
+			{
+				_logger.error("Saving BaseURI setting failed.", e);
+			}
+		}
+		return baseURI;
 	}
 
 	/**************************************************************************
