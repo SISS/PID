@@ -57,9 +57,10 @@ public class ManagerJson extends Manager
 		return _authorizationName;
 	}
 
-	public String getGlobalSettings()
+	public String getGlobalSettings(HttpServletRequest request)
 	{
 		return "var GlobalSettings = {" +
+				JSONObject.toString("BaseURI", getBaseURI()) + "," +
 				JSONObject.toString("AuthorizationName", _authorizationName) +
 			"};";
 	}

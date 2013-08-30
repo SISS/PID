@@ -660,6 +660,7 @@ var Main = Class.construct({
 						.append(
 							"<tr valign='top'>" +
 							"	<td>" +
+							"		<div class='ellipsis' style='width: 400px;'>" +
 								(
 									this.date_end == null ? (
 										this.type == "Regex" ? (
@@ -667,14 +668,15 @@ var Main = Class.construct({
 											"<img src='Images/earth-icon.png' width='16' height='16' style='position: relative; top: 4px; margin-right: 2px;'/>"
 										) : (
 											// Navigable link for 1:1-based mappings.
-											"<a href='" + this.mapping_path + "' target='_blank'><img src='Images/earth-icon.png' title='Open in a new window' width='16' height='16' border='0' style='position: relative; top: 4px; margin-right: 2px;'/></a>"
+											"<a href='" + GlobalSettings.BaseURI + this.mapping_path + "' target='_blank'><img src='Images/earth-icon.png' title='Open in a new window' width='16' height='16' border='0' style='position: relative; top: 4px; margin-right: 2px;'/></a>"
 										)
 									) : (
 										// Disabled link for deprecated mappings.
 										"<img src='Images/earth-icon-gray.png' title='Deprecated mapping' width='16' height='16' border='0' style='position: relative; top: 4px; margin-right: 2px;'/>"
 									)
 								) +
-							"		<a href='#' mapping_id='" + this.mapping_id + "' class='__link' style='font-weight: bold;' title='" + this.mapping_path.replace("'", "&apos;") + "'>" + (this.title ? this.title : this.mapping_path) + "</a>" +
+							"			<a href='#' mapping_id='" + this.mapping_id + "' class='__link' style='font-weight: bold;' title='" + this.mapping_path.replace("'", "&apos;") + "'>" + (this.title ? this.title : this.mapping_path) + "</a>" +
+							"		</div>" +
 							"		" + (this.description ? "<div class='tip' style='margin-left: 21px;'>" + this.description + "</div>" : "") +
 							"	</td>" +
 							"	<td><div title='" + this.mapping_path.replace("'", "&apos;") + "' class='monotype ellipsis' style='width: 200px;'>" + this.mapping_path + "</div></td>" +
@@ -1878,7 +1880,7 @@ var Main = Class.construct({
 		// return "http://localhost:8080/pidsvc/dispatcher?" + uri.replace("?", "&");
 
 		// PRODUCTION.
-		return uri;
+		return GlobalSettings.BaseURI + uri;
 	},
 
 	setQrCode: function(mapping_path)
@@ -1889,9 +1891,9 @@ var Main = Class.construct({
 			$J("#QRCode")
 				.data("uri", qruri)
 				.attr("src", Main.formatQrCodeUri(qruri + "=120"))
-				.attr("title", "Open in a new window\n" + location.href.replace(/^(https?:\/\/.+?)\/.*$/gi, "$1" + mapping_path))
+				.attr("title", "Open in a new window\n" + GlobalSettings.BaseURI + mapping_path)
 				.parent()
-					.attr("href", mapping_path);
+					.attr("href", GlobalSettings.BaseURI + mapping_path);
 		}
 		else
 		{
