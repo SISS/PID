@@ -114,7 +114,8 @@
 				<div style="position: relative; top: -25px; width: 732px; height: 5px; text-align: right;">
 					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="javascript:Main.clone();" id="cmdClone" class="__supersededLock __catchAllHide"><img src="Images/clone.png" title="Clone mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
-					<a href="javascript:Main.delete();" id="cmdDelete" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Delete/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.merge();" id="cmdMerge" class="__supersededLock"><img src="Images/page_white_link.png" title="Merge mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();" id="cmdDelete" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Suppress/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="javascript:Main.openChart();" id="cmdOpenChart" class="__supersededLock"><img src="Images/bremen_org_chart.png" title="Show mapping on Mapping Chart" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
 					<a href="#" id="cmdQrCode" class="__catchAllHide"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
@@ -209,9 +210,9 @@
 									<div id="infovis"></div>
 								</div>
 								<b>Default action:</b>
-								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff; margin-bottom: 7px;"></table>
+								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff; margin-bottom: 7px; margin-top: 3px;"></table>
 								<b>Conditions:</b>
-								<div id="ConditionSection" style="margin-bottom: 5px;">
+								<div id="ConditionSection" style="margin-bottom: 5px; margin-top: 3px;">
 								</div>
 								<div style="margin-bottom: 10px;">
 									<a href="javascript:Main.addCondition();" class="tip __supersededLock __supersededReinstate"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
@@ -279,6 +280,20 @@
 			To add QR Code to a web page use the following syntax:
 			<br/><br/>
 			<span style="font-family: Courier New; font-weight: bold;">&lt;img src="http://www.pidservice.org/my/uri?_pidsvcqr=120" width="120" height="120"/&gt;</span>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<div id="MergeMapping" style="display: none;">
+			<h2>Merge mappings</h2>
+			<br/><br/>
+			Merging mapping configurations applies conditions from another mapping file to the current URI mapping. Merge is an
+			atomic operation and may cause rules to behave differently once modification has occured. However, it will create a
+			new record in the change history making it possible to rollback the changes.
+			<br/><br/>
+			The configuration file that you want to merge with must be in the standard binary or XML-based PID Service backup format and must
+			contain a single mapping rule. The following options allow to control the merge behaviour.
+			<br/><br/><br/>
+			<iframe id="MergeWnd" scrolling="no" style="width: 700px; height: 180px; border: 0; overflow: hidden;"></iframe>
 			<br/><br/>
 			<a href="javascript:$J.unblockUI();">Close</a>
 		</div>

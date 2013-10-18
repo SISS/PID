@@ -11,6 +11,7 @@
 package csiro.pidsvc.servlet;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.zip.GZIPOutputStream;
@@ -83,7 +84,8 @@ public class controller extends HttpServlet
 				String serializedConfig = mgr.backupDataStore(
 					cmd.startsWith("full"),
 					includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"),
-					includeLookupMaps != null && includeLookupMaps.equalsIgnoreCase("true"));
+					includeLookupMaps == null || includeLookupMaps.equalsIgnoreCase("true")
+				);
 				returnAttachment(response, "backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
 			}
 			else if (cmd.matches("(?i)export_lookup$"))
@@ -111,7 +113,7 @@ public class controller extends HttpServlet
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		String cmd = request.getParameter("cmd");
+		final String cmd = request.getParameter("cmd");
 		if (cmd == null || cmd.isEmpty())
 			return;
 		
@@ -128,6 +130,20 @@ public class controller extends HttpServlet
 				mgr.deleteMapping(request.getParameter("mapping_path"));
 			else if (cmd.equalsIgnoreCase("import"))
 				response.getWriter().write(mgr.importMappings(request)); 
+			else if (cmd.equalsIgnoreCase("merge_upload"))
+			{
+				String jsonRet = mgr.mergeMappingUpload(request);
+				response.setStatus(302);
+				response.addHeader("Location", "merge.html?json=" + URLEncoder.encode(jsonRet, "UTF-8").replace("+", "%20"));
+			}
+			else if (cmd.equalsIgnoreCase("merge"))
+			{
+				final String mappingPath	= request.getParameter("mapping_path");
+				final String inputData		= request.getParameter("data");
+				final String replace		= request.getParameter("replace");
+
+				response.getWriter().write(mgr.mergeMappingImpl(mappingPath, inputData, "1".equals(replace)));
+			}
 			else if (cmd.equalsIgnoreCase("purge_data_store"))
 				mgr.purgeDataStore();
 			else if (cmd.equalsIgnoreCase("save_settings"))

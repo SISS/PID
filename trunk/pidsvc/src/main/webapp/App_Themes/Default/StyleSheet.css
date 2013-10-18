@@ -146,7 +146,7 @@ A.white:visited
 	text-decoration:	none;
 }
 
-INPUT[type=text], SELECT.input, TEXTAREA.input, DIV.inputlike
+INPUT[type=text], INPUT[type=file], SELECT.input, TEXTAREA.input, DIV.inputlike
 {
 	background-color:	#fff;
 	border-left:		solid 1px #b3b3b3;
@@ -156,6 +156,19 @@ INPUT[type=text], SELECT.input, TEXTAREA.input, DIV.inputlike
 	font-family:		Century Gothic, Trebuchet MS;
 	font-size:			12px;
 	color:				#333;
+}
+
+INPUT[type=file]::-ms-value
+{
+	background-color:	#fff;
+	border-left:		0;
+	border-top:			0;
+	border-right:		solid 1px #e3e3e3;
+	border-bottom:		solid 1px #f0f;
+	font-family:		Century Gothic, Trebuchet MS;
+	font-size:			12px;
+	color:				#333;
+	padding-top:		4px;
 }
 
 INPUT[type=button], INPUT[type=submit]
@@ -168,12 +181,13 @@ INPUT[type=button], INPUT[type=submit]
 	font-variant:		small-caps;
 	color:				#fff;
 }
+
 INPUT.cmd_warning
 {
 	color:				#d42626;
 	font-weight:		bold;
 }
-INPUT[type=file], TEXTAREA
+TEXTAREA
 {
 	background:			#ffffff;
 	height:				21px;

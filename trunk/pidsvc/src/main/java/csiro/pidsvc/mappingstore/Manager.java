@@ -44,10 +44,15 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 import net.sf.saxon.s9api.Processor;
+import net.sf.saxon.s9api.QName;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.Serializer;
 import net.sf.saxon.s9api.XPathCompiler;
+import net.sf.saxon.s9api.XdmAtomicValue;
 import net.sf.saxon.s9api.XdmItem;
+import net.sf.saxon.s9api.XdmNode;
+import net.sf.saxon.s9api.XdmSequenceIterator;
+import net.sf.saxon.s9api.XdmValue;
 import net.sf.saxon.s9api.XsltCompiler;
 import net.sf.saxon.s9api.XsltExecutable;
 import net.sf.saxon.s9api.XsltTransformer;
@@ -59,6 +64,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXException;
@@ -186,6 +192,31 @@ public class Manager
 	 *  Generic processing methods.
 	 */
 
+	protected void validateRequest(String inputData, String xmlSchemaResourcePath) throws IOException, ValidationException
+	{
+		try
+		{
+			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+			schemaFactory.setResourceResolver(new LSResourceResolver() {
+				@Override
+				public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI)
+				{
+					return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
+				}
+			});
+
+			Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
+			Validator validator = schema.newValidator();
+			_logger.trace("Validating XML Schema.");
+			validator.validate(new StreamSource(new StringReader(inputData))); 
+		}
+		catch (SAXException ex)
+		{
+			_logger.debug("Unknown format.", ex);
+			throw new ValidationException("Unknown format.", ex);
+		}
+	}
+
 	protected String processGenericXmlCommand(InputStream inputStream, String xmlSchemaResourcePath, String xsltResourcePath) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
 		return processGenericXmlCommand(Stream.readInputStream(inputStream), xmlSchemaResourcePath, xsltResourcePath);
@@ -195,29 +226,7 @@ public class Manager
 	{
 		// Validate request.
 		if (xmlSchemaResourcePath != null)
-		{
-			try
-			{
-				SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-				schemaFactory.setResourceResolver(new LSResourceResolver() {
-					@Override
-					public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI)
-					{
-						return new XsdSchemaResolver(type, namespaceURI, publicId, systemId, baseURI);
-					}
-				});
-
-				Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
-				Validator validator = schema.newValidator();
-				_logger.trace("Validating XML Schema.");
-				validator.validate(new StreamSource(new StringReader(inputData))); 
-			}
-			catch (SAXException ex)
-			{
-				_logger.debug("Unknown format.", ex);
-				throw new ValidationException("Unknown format.", ex);
-			}
-		}
+			validateRequest(inputData, xmlSchemaResourcePath);
 
 		// Generate SQL query.
 		Processor			processor = new Processor(false);
@@ -342,7 +351,11 @@ public class Manager
 
 	public String createMapping(InputStream inputStream, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
-		String inputData = Stream.readInputStream(inputStream);
+		return createMapping(Stream.readInputStream(inputStream), isBackup);
+	}
+
+	public String createMapping(String inputData, boolean isBackup) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
 		String ret = processGenericXmlCommand(inputData, "xsd/" + (isBackup ? "backup" : "mapping") + ".xsd", "xslt/import_mapping_postgresql.xslt");
 		if (isBackup)
 		{
@@ -353,7 +366,73 @@ public class Manager
 		}
 		return ret;
 	}
+
+	public String mergeMappingImpl(String mappingPath, String inputData, boolean replace)
+	{
+		try
+		{
+			// Validate request.
+			validateRequest(inputData, "xsd/backup.xsd");
 	
+			String 				targetMapping = exportMapping(mappingPath, false);
+			String 				xsltInput = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><merge><target>" + targetMapping.replaceAll("<\\?xml.*?\\?>", "") + "</target><source>" + inputData.replaceAll("<\\?xml.*?\\?>", "") + "</source></merge>";
+	
+			// Generate merged mapping.
+			Processor			processor = new Processor(false);
+			XsltCompiler		xsltCompiler = processor.newXsltCompiler();
+			InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/merge.xslt");
+			XsltExecutable		xsltExec = xsltCompiler.compile(new StreamSource(inputSqlGen));
+			XsltTransformer		transformer = xsltExec.load();
+	
+			StringWriter swMergedMapping = new StringWriter();
+			transformer.setInitialContextNode(processor.newDocumentBuilder().build(new StreamSource(new StringReader(xsltInput))));
+			transformer.setDestination(new Serializer(swMergedMapping));
+			transformer.setParameter(new QName("", "replace"), new XdmAtomicValue(replace ? 1 : 0));
+			_logger.trace("Generating merged mapping.");
+			transformer.transform();
+	
+			// Process merged mapping.
+			String				mergedMapping = swMergedMapping.toString();
+			XPathCompiler		xpathCompiler = processor.newXPathCompiler();
+			XdmNode				mergedXml = processor.newDocumentBuilder().build(new StreamSource(new StringReader(mergedMapping)));
+			XdmItem 			node = xpathCompiler.evaluateSingle("/response/merged/*[1]", mergedXml);
+	
+			if (node != null)
+			{
+				String retCreateMapping = createMapping(node.toString(), true);
+				_logger.trace(retCreateMapping);
+				if (retCreateMapping.startsWith("OK:"))
+				{
+					XdmValue log = xpathCompiler.evaluate("/response/log/condition", mergedXml);
+					String conditionFlags = "";
+	
+					// Get the list of conditions that have changed.
+					for (XdmSequenceIterator iter = log.iterator(); iter.hasNext(); conditionFlags += iter.next().getStringValue());
+	
+					// Return JSON object.
+					return "{" +
+							JSONObject.toString("status", retCreateMapping) + "," +
+							JSONObject.toString("conditionChangeFlags", conditionFlags) +
+						"}";
+				}
+				else
+				{
+					// Error has occurred.
+					return "{" + JSONObject.toString("error", retCreateMapping) + "}";
+				}
+			}
+	
+			node = xpathCompiler.evaluateSingle("/error", mergedXml);
+			if (node != null)
+				return "{" + JSONObject.toString("error", node.getStringValue()) + "}";
+			return "{" + JSONObject.toString("error", "ERROR: Unexpected exception has occurred. No data has been changed.") + "}";
+		}
+		catch (Exception e)
+		{
+			return "{" + JSONObject.toString("error", "ERROR: " + e.getMessage()) + "}";
+		}
+	}
+
 	public boolean deleteMapping(String mappingPath) throws SQLException
 	{
 		PreparedStatement pst = null;
@@ -861,6 +940,8 @@ public class Manager
 
 	public String exportMapping(String mappingPath, boolean fullBackup) throws SQLException
 	{
+		if (mappingPath == null || mappingPath.isEmpty())
+			return exportCatchAllMapping(fullBackup);
 		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
 	}
 
@@ -1025,6 +1106,21 @@ public class Manager
 			public String process(InputStream inputStream) throws Exception
 			{
 				return createMapping(inputStream, true);
+			}
+		});
+	}
+
+	public String mergeMappingUpload(HttpServletRequest request)
+	{
+		final String mappingPath	= request.getParameter("mapping_path");
+		final String replace		= request.getParameter("replace");
+
+		return unwrapCompressedBackupFile(request, new ICallback() {
+			@Override
+			public String process(InputStream inputStream) throws Exception
+			{
+				String inputData = Stream.readInputStream(inputStream);
+				return mergeMappingImpl(mappingPath, inputData, "1".equals(replace));
 			}
 		});
 	}
