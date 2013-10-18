@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
+import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.mappingstore.Manager;
 import csiro.pidsvc.mappingstore.ManagerJson;
 
@@ -139,9 +140,10 @@ public class controller extends HttpServlet
 			else if (cmd.equalsIgnoreCase("merge"))
 			{
 				final String mappingPath	= request.getParameter("mapping_path");
-				final String inputData		= request.getParameter("data");
+				final String inputData		= Stream.readInputStream(request.getInputStream());
 				final String replace		= request.getParameter("replace");
 
+				response.setContentType("text/json");
 				response.getWriter().write(mgr.mergeMappingImpl(mappingPath, inputData, "1".equals(replace)));
 			}
 			else if (cmd.equalsIgnoreCase("purge_data_store"))

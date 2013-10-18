@@ -399,7 +399,7 @@ public class Manager
 	
 			if (node != null)
 			{
-				String retCreateMapping = createMapping(node.toString(), true);
+				String retCreateMapping = createMapping(node.toString(), false);
 				_logger.trace(retCreateMapping);
 				if (retCreateMapping.startsWith("OK:"))
 				{
