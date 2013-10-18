@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Merge</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+
+		<!-- Local scripts -->
+		<script type="text/javascript" src="Scripts/Merge.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="App_Themes/Default/StyleSheet.css" />
+	</head>
+	<body style="margin: 0;">
+		<form id="frmMerge" method="post" action="controller?cmd=merge_upload" enctype="multipart/form-data">
+			<div id="Error" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px; display: none;"></div>
+			<div style="margin-bottom: 5px;">
+				<b>Upload a configuration file:</b>
+			</div>
+			<input type="file" id="ConfigFile" name="ConfigFile" style="width: 698px; border: solid 1px #b3b3b3;" />
+			<br/><br/>
+			<input type="checkbox" id="ReplaceConditions"/> <label for="ReplaceConditions" style="position: relative; top: -1px;">Replace conditions wherever possible</label><br/>
+			<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
+				Replace fully matching conditions instead of appending new ones. This option will also eliminate fully matching conditions.
+				By default, new conditions from uploaded configuration file will be appended to the bottom of the list of conditions.
+			</div>
+			<br/>
+			<input type="submit" value="Merge" style="width:100px;" />
+		</form>
+	</body>
+</html>

@@ -405,6 +405,24 @@ var Main = Class.construct({
 		return obj;
 	},
 
+	getMappingPath: function(prechecked)
+	{
+		//
+		// Returns NULL when mapping has been changed and not saved yet.
+		//
+
+		var oldpath		= Main._config ? Main._config.mapping_path : null;
+		var path		= $J("#MappingPath").val();
+		var isCatchAll	= Main._config ? Main._config.mapping_path == null : false;
+
+		if (!path && !isCatchAll)
+			return null;
+
+		if (oldpath && oldpath != path)
+			return null;
+		return path;
+	},
+
 	isOneToOneMapping: function()
 	{
 		return $J("#MappingType").val() == "1:1";
@@ -829,6 +847,40 @@ var Main = Class.construct({
 		}
 	},
 
+	merge: function()
+	{
+		if (!Main.isSavingBlocked() || !Main._config)
+		{
+			alert("You must save the mapping before merging!");
+			return;
+		}
+		$J("#MergeWnd").attr("src", "merge.html");
+		$J.blockUI(this.getOverlaySettings($J("#MergeMapping")));
+	},
+
+	mergeOnComplete: function(conditionChangeFlags)
+	{
+		// Reload config and highlight affected conditions.
+		this.getConfig(-1, this.mergeOnReload.bind(this, conditionChangeFlags));
+	},
+
+	mergeOnReload: function(conditionChangeFlags)
+	{
+		var jqConditions = $J("#ConditionSection > table");
+		if (jqConditions.size() > 0)
+		{
+			for (var i = 0; i < conditionChangeFlags.length; ++i)
+			{
+				if (conditionChangeFlags[i] == "1")
+					jqConditions.eq(i).find("DIV.__marker").show();
+			}
+
+			// If any conditions have changed during merge.
+			if (conditionChangeFlags.indexOf("1") != -1)
+				setTimeout(function() { alert("Affected conditions are marked with a red marker. Please review the changes to ensure correct operation and behaviour."); }, 500);
+		}
+	},
+
 	openChart: function()
 	{
 		if (!Main.isSavingBlocked() || !Main._config)
@@ -839,7 +891,7 @@ var Main = Class.construct({
 		location.href = "chart.html" + (Main._config.mapping_path == null ? "" : "?mapping_path=" + encodeURIComponent(Main._config.mapping_path.trim()));
 	},
 
-	getConfig: function(id)
+	getConfig: function(id, pfnPostAction)
 	{
 		var internalCall	= Object.isNumber(id);
 		var mappingId		= internalCall ? id : $J(this).attr("mapping_id");
@@ -851,6 +903,9 @@ var Main = Class.construct({
 		if (!internalCall)
 			Main.blockUI($J("#ConfigSection"));
 
+		// Callback function.
+		var pfnCallback = pfnPostAction ? function() { Main.renderConfig.apply(Main, arguments); pfnPostAction.apply(Main, arguments); } : Main.renderConfig;
+
 		// If mappingId === -1 then get the latest configuration for the current mapping.
 		if (mappingId === -1)
 		{
@@ -859,13 +914,13 @@ var Main = Class.construct({
 			if (path == "")
 			{
 				// Catch-all mapping.
-				$J.getJSON("info?cmd=get_pid_config&mapping_id=0", Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+				$J.getJSON("info?cmd=get_pid_config&mapping_id=0", pfnCallback).fail(ExceptionHandler.displayGenericException);
 			}
 			else
-				$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(path), Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+				$J.getJSON("info?cmd=get_pid_config&mapping_path=" + encodeURIComponent(path), pfnCallback).fail(ExceptionHandler.displayGenericException);
 		}
 		else
-			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, Main.renderConfig).fail(ExceptionHandler.displayGenericException);
+			$J.getJSON("info?cmd=get_pid_config&mapping_id=" + mappingId, pfnCallback).fail(ExceptionHandler.displayGenericException);
 	},
 
 	getConfigByMappingId: function(mappingId, passive)
@@ -1399,7 +1454,8 @@ var Main = Class.construct({
 		return jq
 			.append("<table border='0' cellpadding='5' cellspacing='0' width='100%' style='border: 1px solid #fff;'>" +
 				"	<tr valign='top'>" +
-				"		<td>" +
+				"		<td style=\"position: relative;\">" +
+				"<div class=\"__marker\" style=\"background: #d42626; position: absolute; top: 0; left: -5px; width: 5px; height: 33px; display: none;\"></div>" +
 				"<a href='#' class='__conditionMoveUp'><img src='Images/arrow_up_small.gif' title='Move Up' width='12' height='6' border='0' style='position: relative; top: 2px;'/></a><br/>" +
 				"<a href='#' class='__conditionMoveDown'><img src='Images/arrow_down_small.gif' title='Move Down' width='12' height='6' border='0' style='position: relative; top: 9px;'/></a>" +
 				"</td>" +
@@ -1469,7 +1525,7 @@ var Main = Class.construct({
 
 	conditionHoverOn: function()
 	{
-		$J(this).css({ "border": "1px solid #e2e2e2", "background": "#fafafa" });
+		$J(this).css({ "border": "1px solid #CCE6FF", "background": "#F2FBFF" });
 	},
 
 	conditionHoverOff: function()
