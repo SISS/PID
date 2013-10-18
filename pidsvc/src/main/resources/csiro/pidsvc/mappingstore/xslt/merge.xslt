@@ -21,6 +21,10 @@
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
+	<xsl:template match="pidsvc:backup" priority="1">
+		<!-- Drop pidsvc:backup element. -->
+		<xsl:apply-templates select="pidsvc:mapping[1]"/>
+	</xsl:template>
 	<xsl:template match="pidsvc:conditions" priority="1">
 		<xsl:copy>
 			<xsl:apply-templates select="@* | node()"/>

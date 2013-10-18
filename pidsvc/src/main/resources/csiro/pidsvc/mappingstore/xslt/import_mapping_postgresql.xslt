@@ -6,6 +6,7 @@
 		<xsl:choose>
 			<xsl:when test="mapping">
 				<!-- Single mapping import -->
+				<xsl:value-of select='concat("--OK: Successfully imported [[[", mapping/path, "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="mapping"/>
 				COMMIT;
