@@ -87,8 +87,22 @@ var Main = Class.construct({
 			trigger: "left",
 			callback: Main.export,
 			items: {
-				"partial_export": { name: "Partial export (current only)", icon: "export", accesskey: "p" },
-				"full_export": { name: "<nobr>Full export (preserves history) &nbsp;</nobr>", icon: "export", accesskey: "f" },
+				"partial_export": {
+					name: "Partial export",
+					icon: "export",
+					items: {
+						"partial_export_psb": { name: "Binary", icon: "doc-bin" },
+						"partial_export_xml": { name: "XML", icon: "doc-xml" }
+					}
+				},
+				"full_export": {
+					name: "Full export",
+					icon: "export",
+					items: {
+						"full_export_psb": { name: "Binary", icon: "doc-bin" },
+						"full_export_xml": { name: "XML", icon: "doc-xml" }
+					}
+				}
 			}
 		});
 		$J.contextMenu({
@@ -1914,12 +1928,16 @@ var Main = Class.construct({
 			alert("You must save the mapping before exporting!");
 			return;
 		}
-		if (key == "full_export" && Main._config.mapping_path == null)
-			location.href = "controller?cmd=full_export&mapping_id=0";
-		else if (key == "full_export")
-			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent(Main._config.mapping_path.trim());
+
+		var outputFormat = key.replace(/^.*_([^_]+)$/, "$1");
+		var isFullExport = !!key.match(/^full_export/);
+
+		if (isFullExport && Main._config.mapping_path == null)
+			location.href = "controller?cmd=full_export&mapping_id=0&format=" + outputFormat;
+		else if (isFullExport)
+			location.href = "controller?cmd=full_export&mapping_path=" + encodeURIComponent(Main._config.mapping_path.trim()) + "&format=" + outputFormat;
 		else
-			location.href = "controller?cmd=partial_export&mapping_id=" + Main._config.mapping_id;
+			location.href = "controller?cmd=partial_export&mapping_id=" + Main._config.mapping_id + "&format=" + outputFormat;
 	},
 
 	///////////////////////////////////////////////////////////////////////////

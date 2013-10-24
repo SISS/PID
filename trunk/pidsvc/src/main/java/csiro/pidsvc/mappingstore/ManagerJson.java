@@ -484,7 +484,7 @@ public class ManagerJson extends Manager
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
 		String				ret = null;
-		final int			pageSize = 10;
+		final int			pageSize = 20;
 
 		try
 		{

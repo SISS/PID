@@ -41,25 +41,58 @@
 						Note: Backup may take a bit of time depending on the size of the database. So be patient...
 					</p>
 					<br/>
-					<input type="radio" id="BackupTypePartial" name="BackupType" value="partial" checked="checked"/> <label for="BackupTypePartial" style="position: relative; top: -1px;">Partial backup</label><br/>
-					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
-						Partial backup saves only the latest state of each mapping allowing to replicate the current active state of the PID Service.
-						The change history will be lost.  
-					</div>
-					<input type="radio" id="BackupTypeFull" name="BackupType" value="full"/> <label for="BackupTypeFull" style="position: relative; top: -1px;">Full backup (preserves history)</label><br/>
-					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
-						Full backup saves all the mapping information including change history for each mapping.   
-					</div>
-					<br/>
-					<input type="checkbox" id="IncludeDeprecated"/> <label for="IncludeDeprecated" style="position: relative; top: -1px;">Include deprecated mappings</label><br/>
-					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
-						Includes deprecated (tomb-stoned) mappings into backup.
-					</div>
-					<br/>
-					<input type="checkbox" id="IncludeLookupMaps" checked="checked"/> <label for="IncludeLookupMaps" style="position: relative; top: -1px;">Include lookup maps</label><br/>
-					<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
-						Includes lookup map configurations into backup.
-					</div>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%">
+						<tr valign="top">
+							<td><input type="radio" id="BackupTypePartial" name="BackupType" value="partial" checked="checked"/>&nbsp;</td>
+							<td>
+								<label for="BackupTypePartial" style="position: relative; top: 2px;">Partial backup</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Partial backup saves only the latest state of each mapping allowing to replicate the current active state of the PID Service.
+									The change history will be lost.  
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="radio" id="BackupTypeFull" name="BackupType" value="full"/></td>
+							<td>
+								<label for="BackupTypeFull" style="position: relative; top: 2px;">Full backup (preserves history)</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Full backup saves all the mapping information including change history for each mapping.   
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="checkbox" id="IncludeDeprecated"/></td>
+							<td>
+								<label for="IncludeDeprecated" style="position: relative; top: 2px;">Include deprecated mappings</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Includes deprecated (tomb-stoned) mappings into backup.
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="checkbox" id="IncludeLookupMaps" checked="checked"/></td>
+							<td>
+								<label for="IncludeLookupMaps" style="position: relative; top: 2px;">Include lookup maps</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Includes lookup map configurations into backup.
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><img src="Images/arrow_137.gif" width="9" height="9" style="margin-top: 2px;"/></td>
+							<td>
+								Output format<br/>
+								<select id="OutputFormat" class="input" style="width: 150px; margin-top: 5px;">
+									<option value="psb">Binary (.psb)</option>
+									<option value="xml">XML (.xml)</option>
+								</select>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 15x;">
+									Choose output format for the backup.
+								</div>
+							</td>
+						</tr>
+					</table>
 					<br/>
 					<input type="button" id="cmdBackup" value="Backup" onclick="javascript:Main.backup();" style="width:100px;" />
 					<iframe id="BackupLoader" src="about:blank" style="display: none;"></iframe>
