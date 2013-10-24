@@ -9,7 +9,10 @@
  */
 
 var Main = Class.construct({
-	_focusPager: false,
+	// Holds the last loaded configuration.
+	_config:						null,
+
+	_focusPager:					false,
 
 	init: function()
 	{
@@ -33,6 +36,26 @@ var Main = Class.construct({
 
 		// Set ExceptionHandler properties.
 		ExceptionHandler.setPostHandler(Main.unblockUI);
+
+		// Initialise context menus.
+		$J.contextMenu({
+			selector: "#cmdExport",
+			trigger: "left",
+			callback: Main.export,
+			items: {
+				"export_psb": { name: "Binary", icon: "doc-bin" },
+				"export_xml": { name: "XML", icon: "doc-xml" }
+			}
+		});
+		$J.contextMenu({
+			selector: "#cmdExportAll",
+			trigger: "left",
+			callback: Main.exportAll,
+			items: {
+				"export_all_psb": { name: "Binary", icon: "doc-bin" },
+				"export_all_xml": { name: "XML", icon: "doc-xml" }
+			}
+		});
 
 		// Set default parameters.
 		this.search();
@@ -101,6 +124,11 @@ var Main = Class.construct({
 			$J("#Containers > DIV:not(" + tabIndex + ")").fadeOut();
 			$J("#Containers > DIV:eq(" + tabIndex + ")").fadeIn();
 		}
+	},
+
+	getCurrentTabIndex: function()
+	{
+		return $J("#TopMenu > DIV.MenuButtonActive").index();
 	},
 
 	blockUI: function(jq)
@@ -292,22 +320,25 @@ var Main = Class.construct({
 	create: function(initialize)
 	{
 		if (initialize !== true)
+		{
 			$J("#Tip").hide();
+			if (this.getCurrentTabIndex() != 1)
+				this.openTab(1);
+		}
 		this.renderConfig(null);
 	},
 
 	delete: function()
 	{
-		var config = $J("#ConfigSection").data("config");
-		if (!config || !config.ns)
+		if (!Main._config || !Main._config.ns)
 			return this.create();
 
-		if (!confirm("Are you sure wish to delete \"" + config.ns + "\" lookup map?"))
+		if (!confirm("Are you sure wish to delete \"" + Main._config.ns + "\" lookup map?"))
 			return;
 
 		// Delete existing record.
 		this.blockUI();
-		$J.ajax("controller?cmd=delete_lookup&ns=" + encodeURIComponent(config.ns), {
+		$J.ajax("controller?cmd=delete_lookup&ns=" + encodeURIComponent(Main._config.ns), {
 				type: "POST",
 				cache: false
 			})
@@ -328,7 +359,6 @@ var Main = Class.construct({
 
 		if (!internalCall)
 			Main.blockUI($J("#ConfigSection"));
-
 		$J.getJSON("info?cmd=get_lookup_config&ns=" + encodeURIComponent(ns), Main.renderConfig).fail(ExceptionHandler.renderGenericException);
 	},
 
@@ -348,7 +378,7 @@ var Main = Class.construct({
 	renderConfig: function(data)
 	{
 		// Save last loaded configuration in memory.
-		$J("#ConfigSection").data("config", data);
+		Main._config = data;
 
 		// Reset configuration.
 		if (!data || $J.isEmptyObject(data))
@@ -410,8 +440,7 @@ var Main = Class.construct({
 	namespaceOnChange: function()
 	{
 		var jq			= $J("#Namespace");
-		var config		= $J("#ConfigSection").data("config");
-		var originalNs	= config ? config.ns : null;
+		var originalNs	= Main._config ? Main._config.ns : null;
 		var newNs		= jq.val().trim();
 
 		if (originalNs == null)
@@ -428,10 +457,9 @@ var Main = Class.construct({
 		var lookupType = jqType.val();
 
 		// Check is selection is reverted to original.
-		var config = $J("#ConfigSection").data("config");
-		if (config && config.type == lookupType)
+		if (Main._config && Main._config.type == lookupType)
 		{
-			Main.renderConfig(config);
+			Main.renderConfig(Main._config);
 			return;
 		}
 
@@ -662,8 +690,7 @@ var Main = Class.construct({
 		if (!ns || Main.isSavingBlocked())
 			return;
 
-		var config		= $J("#ConfigSection").data("config");
-		var oldns		= config ? config.ns : null;
+		var oldns		= Main._config ? Main._config.ns : null;
 		var type		= $J("#LookupType").val();
 		var defaultType	= $J("INPUT:radio[name = 'DefaultBehaviour']:checked").val();
 
@@ -743,17 +770,22 @@ var Main = Class.construct({
 			.fail(ExceptionHandler.displayGenericException);
 	},
 
-	export: function()
+	export: function(key, options)
 	{
-		if (Main.isSavingBlocked() && $J("#ConfigSection").data("config"))
-			location.href = "controller?cmd=export_lookup&ns=" + encodeURIComponent($J("#Namespace").val());
-		else
-			alert("You must save the mapping before exporting!");
+		if (!Main.isSavingBlocked() || !Main._config)
+		{
+			alert("You must save lookup map before exporting!");
+			return;
+		}
+
+		var outputFormat = key.replace(/^.*_([^_]+)$/, "$1");
+		location.href = "controller?cmd=export_lookup&ns=" + encodeURIComponent($J("#Namespace").val()) + "&format=" + outputFormat;
 	},
 
-	exportAll: function()
+	exportAll: function(key, options)
 	{
-		location.href = "controller?cmd=export_lookup";
+		var outputFormat = key.replace(/^.*_([^_]+)$/, "$1");
+		location.href = "controller?cmd=export_lookup&format=" + outputFormat;
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -766,7 +798,7 @@ var Main = Class.construct({
 				file_size_limit:		"1GB",
 //				file_types:				"*.*",
 //				file_types_description:	"All Files",
-				file_types:				"*.psl",
+				file_types:				"*.psl;*.xml",
 				file_types_description:	"PID Service Lookup Map Files",
 				file_upload_limit:		"0",
 				flash_url:				"Scripts/jQuery/swfupload/vendor/swfupload.swf",

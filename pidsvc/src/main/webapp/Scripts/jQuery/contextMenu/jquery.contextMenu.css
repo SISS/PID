@@ -74,10 +74,10 @@
 }
 
 .context-menu-submenu:after {
-    content: ">";
+    content: url(../../../Images/arrow3_se.gif);
     color: #666;
     position: absolute;
-    top: 0;
+    top: 10px;
     right: 3px;
     z-index: 1;
 }
@@ -99,6 +99,8 @@
 
 .context-menu-item.icon-export { background-image: url(../../../Images/card-export.png); }
 .context-menu-item.icon-barcode { background-image: url(../../../Images/barcode-2d.png); }
+.context-menu-item.icon-doc-bin { background-image: url(../../../Images/document-binary.png); }
+.context-menu-item.icon-doc-xml { background-image: url(../../../Images/document-xml.png); }
 
 /* vertically align inside labels */
 .context-menu-input > label > * { vertical-align: top; }

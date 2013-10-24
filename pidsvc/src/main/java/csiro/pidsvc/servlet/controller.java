@@ -74,26 +74,40 @@ public class controller extends HttpServlet
 			{
 				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
 				String		mappingPath = request.getParameter("mapping_path");
+				String		outputFormat = request.getParameter("format");
 				String		serializedConfig = mappingId > 0 ? mgr.exportMapping(mappingId) : (mappingId == 0 ? mgr.exportCatchAllMapping(cmd.startsWith("full")) : mgr.exportMapping(mappingPath, cmd.startsWith("full")));
 
-				returnAttachment(response, "mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
+				// Check output format.
+				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psb";
+
+				returnAttachment(response, "mapping." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
 			}
 			else if (cmd.matches("(?i)^(?:full|partial)_backup$"))
 			{
 				String includeDeprecated = request.getParameter("deprecated");
 				String includeLookupMaps = request.getParameter("lookup");
+				String outputFormat = request.getParameter("format");
 				String serializedConfig = mgr.backupDataStore(
 					cmd.startsWith("full"),
 					includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"),
 					includeLookupMaps == null || includeLookupMaps.equalsIgnoreCase("true")
 				);
-				returnAttachment(response, "backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + ".psb", serializedConfig);
+
+				// Check output format.
+				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psb";
+
+				returnAttachment(response, "backup." + (cmd.startsWith("full") ? "full" : "partial") + "." + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
 			}
 			else if (cmd.matches("(?i)export_lookup$"))
 			{
 				String ns = request.getParameter("ns");
+				String outputFormat = request.getParameter("format");
 				String serializedConfig = mgr.exportLookup(ns);
-				returnAttachment(response, "lookup." + (ns == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + ".psl", serializedConfig);
+
+				// Check output format.
+				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psl";
+
+				returnAttachment(response, "lookup." + (ns == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
 			}
 		}
 		catch (Exception e)
@@ -171,14 +185,22 @@ public class controller extends HttpServlet
 		}
 	}
 
-	protected void returnAttachment(HttpServletResponse response, String filename, String content) throws IOException
+	protected void returnAttachment(HttpServletResponse response, String filename, String outputFormat, String content) throws IOException
 	{
-//		response.setContentType("application/xml"); response.getWriter().write(content);
-
-		response.setContentType("application/zip");
-		response.setHeader("Content-Disposition", "attachment; filename=" + filename);
-		GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());
-		gos.write(content.getBytes());
-		gos.close();
+//		response.setContentType("application/xml"); response.getWriter().write(content); return;
+		if (outputFormat.equalsIgnoreCase("xml"))
+		{
+			response.setContentType("application/xml");
+			response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+			response.getOutputStream().write(content.getBytes());
+		}
+		else
+		{
+			response.setContentType("application/zip");
+			response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+			GZIPOutputStream gos = new GZIPOutputStream(response.getOutputStream());
+			gos.write(content.getBytes());
+			gos.close();
+		}
 	}
 }
