@@ -222,31 +222,24 @@ public class FormalGrammar
 				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI"))
 				{
 					// E.g. http://example.org:8080/id/test
-					String val = _request.getScheme() + "://" + _request.getServerName();
-					if (_request.getServerPort() != 80)
-						val += ":" + _request.getServerPort();
-					return val + _uri.getPathNoExtension();
+					return getFullRequestUri();
 				}
 				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_BASE"))
 				{
 					// E.g. Returns http://example.org:8080/id/ for http://example.org:8080/id/test
-					String val = _request.getScheme() + "://" + _request.getServerName();
-					if (_request.getServerPort() != 80)
-						val += ":" + _request.getServerPort();
-					val += _uri.getPathNoExtension();
-					return val.replaceAll("[^/]*$", "");
+					return getFullRequestUri().replaceAll("[^/]*$", "");
+				}
+				else if (args.get(0).equalsIgnoreCase("URI_REGISTER"))
+				{
+					// E.g. Returns http://example.org:8080/id for http://example.org:8080/id/test
+					// Same as FULL_REQUEST_URI_BASE without trailing slash.
+					return getFullRequestUri().replaceAll("/[^/]*$", "");
 				}
 				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_EXT"))
 				{
 					// E.g. http://example.org:8080/id/test.ext
-					String val = _request.getScheme() + "://" + _request.getServerName();
-					if (_request.getServerPort() != 80)
-						val += ":" + _request.getServerPort();
-					val += _uri.getPathNoExtension();
-
-					// Check extension.
 					String ext = _uri.getExtension();
-					return (ext == null || ext.equals("")) ? val : val + "." + ext;
+					return (ext == null || ext.equals("")) ? getFullRequestUri() : getFullRequestUri() + "." + ext;
 				}
 				else if (args.get(0).equalsIgnoreCase("FULL_REQUEST_URI_QS"))
 				{
@@ -359,5 +352,14 @@ public class FormalGrammar
 				mgr.close();
 		}
 		return null;
+	}
+
+	private String getFullRequestUri()
+	{
+		// E.g. http://example.org:8080/id/test
+		String val = _request.getScheme() + "://" + _request.getServerName();
+		if (_request.getServerPort() != 80)
+			val += ":" + _request.getServerPort();
+		return val + _uri.getPathNoExtension();
 	}
 }
