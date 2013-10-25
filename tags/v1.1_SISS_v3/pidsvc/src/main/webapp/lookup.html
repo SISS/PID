@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Lookup Maps</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.include.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/vendor/swfupload.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/src/jquery.swfupload.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
+
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/Lookup.js"></script>
+
+		<link href="Scripts/jQuery/contextMenu/jquery.contextMenu.css" type="text/css" rel="stylesheet" />
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Search <span id="MenuResultsCount"></span>
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
+				Lookup Map
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 320px; width: 150px; white-space: nowrap; overflow: hidden;">
+				Import
+			</div>
+		</div>
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>Search</h2>
+				<div style="position: relative; top: -25px; width: 715px; height: 5px; text-align: right;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New lookup map" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExportAll"><img src="Images/document-export.png" title="Export all lookup maps" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="SearchSection" style="background: #fafafa; width: 730px;">
+					<div style="background: #fff; margin-bottom: 5px;">
+						<table border="0" cellpadding="5" cellspacing="1">
+							<tr>
+								<td><input type="text" id="SearchNsText" maxlength="255" style="width: 610px;"/></td>
+								<td>
+									<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.search();" style="width: 100px;" />
+								</td>
+							</tr>
+						</table>
+					</div>
+					<div id="SearchResults" style="display: none;">
+						<table id="SearchResultsTable" border="0" cellpadding="5" cellspacing="1" width="730">
+							<tr bgcolor="#e2e2e2">
+								<td width="70%">
+									<b>Namespace</b>
+								</td>
+								<td width="30%">
+									<b>Type</b>
+								</td>
+							</tr>
+						</table>
+						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
+							<div style="position: relative; top: -2px;">
+								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -20px; top: 5px;"/></a>
+								Page <input type="text" id="PagerInput" style="width: 40px; font-size: 10px; text-align: center; padding: 0;" maxlength="5"/> / <span></span>
+								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -20px; top: 5px;"/></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Lookup Map Configuration</h2>
+				<div style="position: relative; top: -25px; width: 715px; height: 5px; text-align: right;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New lookup map" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();"><img src="Images/delete.png" title="Delete lookup map" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export lookup map" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="ConfigSection" style="width: 730px;">
+					<table border="0" cellpadding="1" cellspacing="5" width="100%">
+						<tr valign="top">
+							<td width="70%">
+								<b>Namespace:</b>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%" style="margin-bottom: 10px;">
+									<tr valign="top">
+										<td width="80%" style="position: relative;">
+											<input id="Namespace" type="text" style="width: 545px;" />
+										</td>
+										<td width="20%">
+											<select id="LookupType" class="input" style="width: 140px;">
+												<option value="Static">Static</option>
+												<option value="HttpResolver">HttpResolver</option>
+											</select>
+										</td>
+									</tr>
+								</table>
+								<b>Default behaviour:</b>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr>
+										<td nowrap="nowrap"><label for="DefaultBehaviourConstant">Constant:</label></td>
+										<td nowrap="nowrap">
+											<input type="radio" id="DefaultBehaviourConstant" name="DefaultBehaviour" value="Constant"/>
+											<input id="DefaultBehaviourConstantValue" type="text" style="width: 588px;"/>
+										</td>
+									</tr>
+									<tr>
+										<td nowrap="nowrap"><label for="DefaultBehaviourPassThrough">Pass-through:</label></td>
+										<td>
+											<input type="radio" id="DefaultBehaviourPassThrough" name="DefaultBehaviour" value="PassThrough"/>
+										</td>
+									</tr>
+									<tr>
+										<td></td>
+										<td class="tip">
+											The default behaviour setting defines the action to be taken when lookup value is not found.
+											In "constant" mode the lookup call will return a static string and in pass-through it will
+											return the original lookup key that has been looked up.
+											<br/><br/>
+										</td>
+									</tr>
+								</table>
+								<b>Lookup map:</b>
+								<table id="LookupMap" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 5px;">
+									<tr>
+										<td>
+											<a href="javascript:Main.addLookupRecord();" id="AddLookupRecordCmd" class="tip"><img src="Images/plus_16.png" title="Add record" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add record</a>
+										</td>
+										<td align="right">
+											<input type="button" id="cmdSave" value="Save" onclick="javascript:Main.save();" style="width:100px;" />
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td style="width: 10px"></td>
+							<td width="30%">
+								<div id="Tip" style="padding: 3px; background: #bed600; display: none;">
+									<b class="caps">Tips:</b>
+									<div style="background: #fff; padding: 5px 3px 5px 3px;"></div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Import</h2>
+				<div id="ImportSection" style="width: 730px;">
+					<br/>
+					<p>
+						This page allows you to import existing lookup map configuration from a PID Service Lookup Map (*.psl or *.xml) file.
+					</p>
+					<p>
+						Note: Restoring a lookup map configuration from a backup file will overwrite existing configuration if
+						lookup map for that namespace already exists.
+					</p>
+					<div id="swfuploadControl" style="margin: 25px 0 15px 0;">
+						<input type="button" id="UploadButton" />
+					</div>
+					<div style="background: #fafafa; width: 600px; padding-top: 5px; display: none;">
+						<table id="UploadQueue" border="0" cellpadding="5" cellspacing="1" width="600">
+							<tr bgcolor="#e2e2e2">
+								<td width="70%">
+									<b>File</b>
+								</td>
+								<td width="20%">
+									<b>Progress</b>
+								</td>
+								<td width="10%" align="center">
+									<b>Status</b>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Mappings</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.include.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/slimScroll/jquery.slimscroll.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ui/1.10.3/jquery-ui.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
+
+		<!--[if IE]><script language="javascript" type="text/javascript" src="Scripts/Jit/Extras/excanvas.js"></script><![endif]-->
+
+		<!-- JIT Library File -->
+		<script language="javascript" type="text/javascript" src="Scripts/Jit/jit-yc.js"></script>
+
+		<!-- Local scripts -->
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/Mappings.js"></script>
+		<script type="text/javascript" src="info?cmd=global_js"></script> 
+
+		<link rel="stylesheet" type="text/css" href="App_Themes/Default/StyleSheet.css" />
+		<link rel="stylesheet" type="text/css" href="App_Themes/Default/InheritanceChart.css" />
+		<link rel="stylesheet" type="text/css" href="Scripts/jQuery/contextMenu/jquery.contextMenu.css"  />
+		<link rel="stylesheet" type="text/css" href="Scripts/jQuery/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Search <span id="MenuResultsCount"></span>
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 200px; white-space: nowrap; overflow: hidden;">
+				Mapping Configuration
+			</div>
+		</div>
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>URI Mapping Search</h2>
+				<div id="UriSearchSection" style="background: #fafafa;">
+					<div style="background: #fff; margin-bottom: 5px;">
+						<table border="0" cellpadding="5" cellspacing="1" width="1000">
+							<tr>
+								<td nowrap="nowrap">Title / pattern:</td>
+								<td width="50%"><input type="text" id="SearchUriPattern" maxlength="255" style="width: 400px;"/></td>
+								<td align="right" nowrap="nowrap">Mapping type:</td>
+								<td width="50%">
+									<select id="SearchMappingType" class="input" style="width: 100px;">
+										<option value="">Any</option>
+										<option value="1:1">1:1</option>
+										<option value="Regex">Regex</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td nowrap="nowrap">Author:</td>
+								<td width="50%"><input type="text" id="SearchCreator" maxlength="50" style="width: 400px;"/></td>
+								<td align="right" nowrap="nowrap"></td>
+								<td width="50%">
+									<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.search();" style="width:100px;" />
+								</td>
+							</tr>
+							<tr valign="top">
+								<td></td>
+								<td>
+									<input type="checkbox" id="MappingDeprecatedInclude"/> <label for="MappingDeprecatedInclude" style="position: relative; top: -1px;">Include deprecated mappings</label><br/>
+									<input type="checkbox" id="MappingDeprecatedOnly"/> <label for="MappingDeprecatedOnly" style="position: relative; top: -1px;">Deprecated mappings only</label>
+								</td>
+								<td></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+					<div id="SearchResults" style="display: none; margin-bottom: 10px;">
+						<table id="SearchResultsTable" border="0" cellpadding="5" cellspacing="1" width="1000">
+							<tr bgcolor="#e2e2e2">
+								<td width="420">
+									<b>Mapping</b>
+								</td>
+								<td width="200">
+									<b>Path / Pattern</b>
+								</td>
+								<td width="165">
+									<b>Author</b>
+								</td>
+								<td width="215">
+									<b>Date</b>
+								</td>
+							</tr>
+						</table>
+						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
+							<div style="position: relative; top: -2px;">
+								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -20px; top: 5px;"/></a>
+								Page <input type="text" id="PagerInput" style="width: 40px; font-size: 10px; text-align: center; padding: 0;" maxlength="5"/> / <span></span>
+								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -20px; top: 5px;"/></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Mapping Configuration</h2>
+				<div style="position: relative; top: -25px; width: 732px; height: 5px; text-align: right;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.clone();" id="cmdClone" class="__supersededLock __catchAllHide"><img src="Images/clone.png" title="Clone mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.merge();" id="cmdMerge" class="__supersededLock"><img src="Images/page_white_link.png" title="Merge mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();" id="cmdDelete" class="__supersededLock __catchAllHide"><img src="Images/delete.png" title="Suppress/reset mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.openChart();" id="cmdOpenChart" class="__supersededLock"><img src="Images/bremen_org_chart.png" title="Show mapping on Mapping Chart" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export mapping" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdQrCode" class="__catchAllHide"><img src="Images/barcode.png" title="Publish QR Code" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="ConfigSection" style="width: 1050px;">
+					<table border="0" cellpadding="1" cellspacing="5" width="100%">
+						<tr valign="top">
+							<td width="70%">
+								<div id="ConfigSupersededWarning" class="tip __configWarning" style="position: relative; background: #d42626; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px; display: none;">
+									<b>Note:</b> This mapping is deprecated or superseded and cannot be changed.
+									<a href="javascript:Main.reinstateMapping();" style="color: #fff; position: absolute; right: 5px;">Reinstate</a>
+								</div>
+								<div id="ConfigSaveWarning" class="tip __configWarning" style="position: relative; background: green; color: #fff; font-size: 11px; padding: 0 3px 0 3px; margin-bottom: 8px; display: none;">
+									<b>Note:</b> This mapping has been reinstated and has not been saved yet.
+								</div>
+								<div id="UriStemPattern" class="__catchAllHide">
+									<b>URI stem pattern:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%">
+										<tr valign="top">
+											<td width="80%" style="position: relative;">
+												<input id="MappingPath" type="text" style="width: 565px;" />
+											</td>
+											<td width="20%">
+												<select id="MappingType" class="input" style="width: 140px;">
+													<option value="1:1">1:1</option>
+													<option value="Regex">Regex</option>
+												</select>
+											</td>
+										</tr>
+									</table>
+								</div>
+								<table border="0" cellpadding="5" cellspacing="1" width="100%">
+									<tr valign="top">
+										<td width="20%" align="right">
+											Title:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingTitle" title="Provides a sensible title for the mapping rule" maxlength="50" style="width: 570px;" />
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="20%" align="right">
+											Description:
+										</td>
+										<td width="80%">
+											<textarea id="MappingDescription" rows="3" style="width: 569px;"></textarea>
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="20%" align="right">
+											Author:
+										</td>
+										<td width="80%">
+											<input type="text" id="MappingCreator" maxlength="50" style="width: 570px;" />
+										</td>
+									</tr>
+								</table>
+								<div id="RegexTester" class="__catchAllHide">
+									<b>URI/Regex testing:</b> <a href="javascript:Main.showRegexTester();"><i>(toggle view)</i></a>
+									<table id="URITesting" border="0" cellpadding="5" cellspacing="1" width="100%" style="display: none;">
+										<tr>
+											<td><input type="text" id="txtUriTesting" maxlength="500" style="width: 695px; font-family: Arial; font-size: 18px; height: 20px;" /><img id="imgUriTestingStatus" src="Images/help-faq.png" width="16" height="16" style="margin-left: 5px;"/></td>
+										</tr>
+										<tr>
+											<td id="phMatchingGroupInfo"></td>
+										</tr>
+									</table>
+									<div style="height: 7px;"></div>
+								</div>
+								<div class="__catchAllHide">
+									<b>Inheritance:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%">
+										<tr valign="top">
+											<td width="20%" align="right">
+												Next level mapping:
+											</td>
+											<td width="80%" style="height: 40px;">
+												<div id="ParentView" style="position: relative; width: 100%;">
+													<div class="ellipsis" style="width: 550px;"><a href="#" id="MappingParentName" class="b"></a></div>
+													<img id="ParentWarningIcon" width="16" height="16" style="position: absolute; top: 0px; right: 0px;"/>
+												</div>
+												<div id="ParentEdit" style="display: none;">
+													<input type="text" id="MappingParent" title="Set the next level mapping here." maxlength="50" style="width: 570px;" />
+													<div style="text-align: right;">
+														<a href="javascript:Main.resetParentToCatchAll();" class="tip"><img src="Images/arrow_137.gif" width="9" height="9" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Reset to Catch-all</a> &nbsp;
+														<a href="javascript:Main.cancelParentMappingEditing();" class="tip"><img src="Images/cross10.png" width="10" height="10" border="0" style="margin-right: 5px; position: relative; top: 2px;"/>Cancel</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+									</table>
+									<div id="infovis"></div>
+								</div>
+								<b>Default action:</b>
+								<table id="DefaultAction" border="0" cellpadding="5" cellspacing="1" width="100%" style="border: 1px solid #fff; margin-bottom: 7px; margin-top: 3px;"></table>
+								<b>Conditions:</b>
+								<div id="ConditionSection" style="margin-bottom: 5px; margin-top: 3px;">
+								</div>
+								<div style="margin-bottom: 10px;">
+									<a href="javascript:Main.addCondition();" class="tip __supersededLock __supersededReinstate"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+								</div>
+								<div id="CommitNoteSection">
+									<b>Commit note:</b>
+									<table border="0" cellpadding="5" cellspacing="1" width="100%" style="margin-bottom: 5px;">
+										<tr	valign="top">
+											<td>
+												<a href="javascript:Main.addCommitNote();" class="tip __supersededLock __supersededReinstate"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Add commit note</a><br/>
+												<a href="javascript:Main.preserveCommitNote();" class="tip __preserveCommitNote"><img src='Images/arrow_137.gif' width='9' height='9' border='0' style='margin-right: 5px; position: relative; top: 2px;'/>Copy last commit note</a>
+											</td>
+											<td align="right">
+												<div id="CommitNoteRO" class="inputlike" style="overflow: auto; width: 484px; height: 60px; text-align: left; color: #777; display: none;"></div>
+												<textarea id="CommitNote" style="width: 483px; height: 58px; display: none;"></textarea>
+											</td>
+										</tr>
+									</table>
+								</div>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%">
+									<tr>
+										<td align="right">
+											<input type="button" id="cmdSave" value="Save" class="__supersededLock __supersededReinstate" onclick="javascript:Main.save();" style="width:100px;" />
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td style="width: 10px"></td>
+							<td width="30%">
+								<table id="QRCodeSection" border="0" cellspacing="0" cellpadding="0" style="display: none;">
+									<tr valign="top">
+										<td>
+											<a target="_blank"><img id="QRCode" width="120" height="120" border="0"/></a>
+										</td>
+										<td>
+											<br/>
+											QR Code hits: <span id="QRCodeHits"></span><br/>
+											<a href="javascript:Main.publishQrCodeInstructions();" class="tip">How to publish QR Code?</a>
+										</td>
+									</tr>
+								</table>
+								<div id="ChangeHistory" style="display: none;">
+									<b class="caps">Change history:</b>
+									<div style="overflow: hidden; height: 195px; margin-top: 5px;"><ul></ul></div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div id="QRCodeInstructions" style="display: none;">
+			<h2>How to publish QR Code?</h2>
+			<br/><br/>
+			Publishing of QR Codes for any PID Service recognised URIs is a simple and straighforward process. To get QR Code
+			add <span style="font-family: Courier New; font-weight: bold;">_pidsvcqr=&lt;size&gt;</span> querystring parameter at the end of your
+			URI, where <span style="font-family: Courier New;">&lt;size&gt;</span> is the size of generated image in pixels. If
+			size parameter is missing then the default size of 100px will be used.
+			<br/><br/>
+			Even though QR Codes are not automatically generated for Regex-based URI mappings they can still be published for concrete
+			URIs that are matched by a regular expression. To generate a QR Code for concrete URI follow the same procedure as described above.
+			<br/><br/>
+			Note that QR Codes may only be generated for URIs registered and recognised by the PID Service.
+			<br/><br/>
+			To add QR Code to a web page use the following syntax:
+			<br/><br/>
+			<span style="font-family: Courier New; font-weight: bold;">&lt;img src="http://www.pidservice.org/my/uri?_pidsvcqr=120" width="120" height="120"/&gt;</span>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<div id="MergeMapping" style="display: none;">
+			<h2>Merge mappings</h2>
+			<br/><br/>
+			Merging mapping configurations applies conditions from another mapping file to the current URI mapping. Merge is an
+			atomic operation and may cause rules to behave differently once modification has occurred. However, it will create a
+			new record in the change history making it possible to rollback the changes.
+			<br/><br/>
+			The configuration file that you want to merge with must be in the standard binary or XML-based PID Service backup format and must
+			contain a single mapping rule. The following options allow to control the merge behaviour.
+			<br/><br/><br/>
+			<iframe id="MergeWnd" scrolling="no" style="width: 700px; height: 180px; border: 0; overflow: hidden;"></iframe>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<div id="Tip" style="display: none;">
+			<h2>Tips</h2>
+			<br/><br/>
+			<div></div>
+			<br/><br/>
+			<a href="javascript:$J.unblockUI();">Close</a>
+		</div>
+		<img id="RegexTesterImg" style="display: none;"/>
+	</body>
+</html>

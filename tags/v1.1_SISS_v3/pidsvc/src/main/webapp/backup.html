@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Backup/restore</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/vendor/swfupload.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/src/jquery.swfupload.js"></script>
+		<!--script type="text/javascript" src="Scripts/jQuery/jquery.dump.js"></script-->
+
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/Backup.js"></script>
+
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Backup
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
+				Restore
+			</div>
+		</div>
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>Backup</h2>
+				<div id="BackupSection" style="width: 730px;">
+					<br/>
+					<p>
+						Note: Backup may take a bit of time depending on the size of the database. So be patient...
+					</p>
+					<br/>
+					<table border="0" cellspacing="0" cellpadding="0" width="100%">
+						<tr valign="top">
+							<td><input type="radio" id="BackupTypePartial" name="BackupType" value="partial" checked="checked"/>&nbsp;</td>
+							<td>
+								<label for="BackupTypePartial" style="position: relative; top: 2px;">Partial backup</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Partial backup saves only the latest state of each mapping allowing to replicate the current active state of the PID Service.
+									The change history will be lost.  
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="radio" id="BackupTypeFull" name="BackupType" value="full"/></td>
+							<td>
+								<label for="BackupTypeFull" style="position: relative; top: 2px;">Full backup (preserves history)</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Full backup saves all the mapping information including change history for each mapping.   
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="checkbox" id="IncludeDeprecated"/></td>
+							<td>
+								<label for="IncludeDeprecated" style="position: relative; top: 2px;">Include deprecated mappings</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Includes deprecated (tomb-stoned) mappings into backup.
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><input type="checkbox" id="IncludeLookupMaps" checked="checked"/></td>
+							<td>
+								<label for="IncludeLookupMaps" style="position: relative; top: 2px;">Include lookup maps</label>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 10px;">
+									Includes lookup map configurations into backup.
+								</div>
+							</td>
+						</tr>
+						<tr valign="top">
+							<td><img src="Images/arrow_137.gif" width="9" height="9" style="margin-top: 2px;"/></td>
+							<td>
+								Output format<br/>
+								<select id="OutputFormat" class="input" style="width: 150px; margin-top: 5px;">
+									<option value="psb">Binary (.psb)</option>
+									<option value="xml">XML (.xml)</option>
+								</select>
+								<div class="tip" style="margin-top: 5px; margin-bottom: 15x;">
+									Choose output format for the backup.
+								</div>
+							</td>
+						</tr>
+					</table>
+					<br/>
+					<input type="button" id="cmdBackup" value="Backup" onclick="javascript:Main.backup();" style="width:100px;" />
+					<iframe id="BackupLoader" src="about:blank" style="display: none;"></iframe>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Restore</h2>
+				<div id="RestoreSection" style="width: 730px;">
+					<br/>
+					<p>
+						It is recommended to backup the database first as restore operation is irreversible and may potentially rewrite existing
+						mappings. When restoring full backups the change history for each restored mapping is replaced with the one from the
+						backup file. Partial backups override the current configuration of each mapping preserving the change history. By checking
+						&quot;Purge data store&quot; it will delete all existing mappings before restoring the database.
+					</p>
+					<p>
+						Note: Full database restore may take a bit of time depending on the size of the database. So be patient...
+					</p>
+					<div id="RestoreOptions">
+						<br/>
+						<b>Options:</b><br/>
+						<br/>
+						<input type="checkbox" id="PurgeDataStore"/> <label for="PurgeDataStore" style="position: relative; top: -1px;">Purge data store</label><br/>
+						<div class="tip" style="margin-left: 22px; margin-bottom: 7px;">
+							You may purge the data store before restoring any records. Be very careful with this option as it will not just<br/>
+							deactivate/tomb-stone existing records, it will physically delete them from the data store. This operation is<br/>
+							irreversible and will cause complete loss of mapping configuration.
+						</div>
+					</div>
+					<div id="swfuploadControl" style="margin: 25px 0 15px 0;">
+						<input type="button" id="UploadButton" />
+					</div>
+					<div style="background: #fafafa; width: 600px; padding-top: 5px; display: none;">
+						<table id="UploadQueue" border="0" cellpadding="5" cellspacing="1" width="600">
+							<tr bgcolor="#e2e2e2">
+								<td width="70%">
+									<b>File</b>
+								</td>
+								<td width="20%">
+									<b>Progress</b>
+								</td>
+								<td width="10%" align="center">
+									<b>Status</b>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

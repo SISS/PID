@@ -1,0 +1,303 @@
+/*
+ * Web Fonts from fontspring.com
+ *
+ * All OpenType features and all extended glyphs have been removed.
+ * Fully installable fonts can be purchased at http://www.fontspring.com
+ *
+ * The fonts included in this stylesheet are subject to the End User License you purchased
+ * from Fontspring. The fonts are protected under domestic and international trademark and 
+ * copyright law. You are prohibited from modifying, reverse engineering, duplicating, or
+ * distributing this font software.
+ *
+ * (c) 2010-2012 Fontspring
+ *
+ *
+ *
+ *
+ * The fonts included are copyrighted by the vendor listed below.
+ *
+ * Vendor:      exljbris Font Foundry
+ * License URL: http://www.fontspring.com/fflicense/exljbris
+ *
+ */
+@font-face
+{
+    font-family: 'AniversRegular';
+    src: url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.eot');
+    src: url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.woff') format('woff'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.ttf') format('truetype'),
+         url('../fonts/anivers_regular_macroman/Anivers_Regular-webfont.svg#AniversRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/*
+*	Quick styles.
+*/
+.csiro_blue		{ color: #09c; }
+.csiro_gray		{ color: #999; }
+.csiro_green	{ color: #bed600; }
+
+.b				{ font-weight: bold; }
+.u				{ text-decoration: underline; }
+.i				{ font-style: italic; }
+.red			{ color: #d42626; }
+.gray			{ color: #b3b3b3; }
+.white			{ color: #fff; }
+.black			{ color: #000; }
+.tip			{ font-size: 10px; color: #646464; }
+.floating_tip	{ position: absolute; padding: 0 7px 0 7px; background: #d42626; color: #fff; line-height: 14px; white-space: nowrap; }
+.ellipsis		{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caps			{ font-variant: small-caps; }
+.justify		{ text-align: justify; }
+
+/*
+*	Controls styles.
+*/
+ul.ui-autocomplete.ui-menu
+{
+	font-family:		Century Gothic;
+	font-size:			12px;
+	color:				#000;
+}
+.ui-autocomplete-loading
+{
+	background:			white url('../../Images/loading6-0.gif') right center no-repeat;
+}
+
+/*
+*	Elements styles.
+*/
+BODY
+{
+	margin:				0;
+	font-family:		Century Gothic;
+	font-size:			12px;
+	color:				#000;
+}
+
+P
+{
+	margin:				0 0 7px 0;
+}
+
+UL, OL
+{
+	margin-top:			5px;
+	margin-bottom:		0px;
+}
+
+BLOCKQUOTE
+{
+	margin:				5px 0 5px 25px;
+}
+
+A
+{
+	color:				#09c;
+}
+A:visited
+{
+	color:				#09c;
+}
+
+H1
+{
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial;
+	font-size:			26px;
+	font-weight:		normal;
+	padding-top:		12px;
+	color:				#555555;
+}
+H1.nopadding
+{
+	padding:			0;
+	margin:				0;
+}
+H2
+{
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size:			24px;
+	font-weight:		normal;
+	padding-top:		1px;
+	margin-bottom:		5px;
+	color:				#333;
+}
+H3
+{
+	font-family:		Georgia, Trebuchet MS, Arial;
+	font-size:			12px;
+	font-weight:		normal;
+	margin-top:			3px;
+	margin-bottom:		7px;
+	color:				#555555;
+	font-variant:		small-caps;
+}
+
+A.white
+{
+	color:				#fff;
+	text-decoration:	none;
+}
+A.white:visited
+{
+	color:				#fff;
+	text-decoration:	none;
+}
+
+INPUT[type=text], INPUT[type=file], SELECT.input, TEXTAREA.input, DIV.inputlike
+{
+	background-color:	#fff;
+	border-left:		solid 1px #b3b3b3;
+	border-top:			solid 1px #b3b3b3;
+	border-right:		solid 1px #e3e3e3;
+	border-bottom:		solid 1px #e3e3e3;
+	font-family:		Century Gothic, Trebuchet MS;
+	font-size:			12px;
+	color:				#333;
+}
+
+INPUT[type=file]::-ms-value
+{
+	background-color:	#fff;
+	border-left:		0;
+	border-top:			0;
+	border-right:		solid 1px #e3e3e3;
+	border-bottom:		solid 1px #f0f;
+	font-family:		Century Gothic, Trebuchet MS;
+	font-size:			12px;
+	color:				#333;
+	padding-top:		4px;
+}
+
+INPUT[type=button], INPUT[type=submit]
+{
+	background:			#09c;
+	border:				0;
+	border-right:		solid 2px #bed600;
+	font-family:		Century Gothic, Trebuchet MS, Georgia;
+	font-size:			12px;
+	font-variant:		small-caps;
+	color:				#fff;
+}
+
+INPUT.cmd_warning
+{
+	color:				#d42626;
+	font-weight:		bold;
+}
+TEXTAREA
+{
+	background:			#ffffff;
+	height:				21px;
+	border:				0;
+	border-left:		solid 1px #b3b3b3;
+	border-top:			solid 1px #b3b3b3;
+	border-bottom:		solid 1px #e3e3e3;
+	font-family:		Century Gothic, Trebuchet MS, Georgia;
+	font-size:			12px;
+	color:				#333;
+}
+TEXTAREA
+{
+	height:				auto;
+}
+
+HR
+{
+	color:				#09c;
+	height:				2px;
+}
+
+LABEL
+{
+	cursor:				pointer;
+}
+
+DIV.ProgressBar
+{
+	border:				solid 1px #bed600;
+}
+DIV.ProgressBar > DIV
+{
+	background-color:	#bed600;
+}
+
+UL.LeftMenu
+{
+	margin-left:		-22px;
+	list-style-image:	url('../../Images/arrow_137.gif');
+}
+UL.LeftMenu LI
+{
+	margin-bottom:		10px;
+}
+
+/*
+*	Other styles.
+*/
+.numlist
+{
+	background-color:	#d42626;
+	padding-top:		3px;
+	padding-bottom:		3px;
+	padding-left:		10px;
+	padding-right:		10px;
+	font-family:		Georgia, Trebuchet MS;
+	font-size:			12px;
+	font-weight:		bold;
+	color:				#ffffff;
+}
+
+.monotype
+{
+	font-family:		Courier New;
+	font-size:			11px;
+}
+
+.MenuButton
+{
+	text-align:			center;
+	border:				solid 1px #bed600;
+	cursor:				pointer;
+}
+.MenuButtonActive
+{
+	background-color:	#bed600;
+}
+.MenuButton:hover
+{
+	background-color:	#bed600;
+}
+
+.MenuButtonDisabled
+{
+	text-align:			center;
+	border:				solid 1px #b3b3b3;
+	color:				#b3b3b3;
+	background-color:	#fff;
+	cursor:				auto;
+}
+
+.ResultRowHighlight
+{
+	background:			#fff;
+}
+
+.FigureName
+{
+	font-family:		Century Gothic;
+	font-size:			12px;
+	font-weight:		bold;
+	font-variant:		small-caps;
+	color:				#999;
+}
+
+.FigureValue
+{
+	font-family:		AniversRegular, "Helvetica Neue", Helvetica, Arial;
+	font-size:			20px;
+	font-weight:		normal;
+	color:				#333;
+}
