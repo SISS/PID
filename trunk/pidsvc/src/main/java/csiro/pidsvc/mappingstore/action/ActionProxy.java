@@ -119,9 +119,12 @@ public class ActionProxy extends AbstractAction
 		}
 		catch (Exception e)
 		{
-			_logger.error("Exception occurred while proxying HTTP request.", e);
+			_logger.trace("Exception occurred while proxying HTTP request.", e);
 			if (isTraceMode())
-				trace("Set response status: 500; exception: " + e.getCause().getMessage());
+			{
+				Throwable cause = e.getCause();
+				trace("Set response status: 500; exception: " + (cause == null ? e.getMessage() : cause.getMessage()));
+			}
 			else
 				Http.returnErrorCode(_controller.getResponse(), 500, e);
 		}
