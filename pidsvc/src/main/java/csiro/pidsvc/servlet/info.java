@@ -11,6 +11,8 @@
 package csiro.pidsvc.servlet;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Enumeration;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -130,6 +132,10 @@ public class info extends HttpServlet
 				response.setContentType("text/json");
 				response.getWriter().write(mappingId == -1 && jsonThis == null ? "{}" : mgr.getMappingDependencies((Object)(jsonThis == null ? mappingId : jsonThis), mappingPath));
 			}
+			else if (cmd.equalsIgnoreCase("echo"))
+			{
+				echo(request, response);
+			}
 		}
 		catch (Exception e)
 		{
@@ -150,5 +156,29 @@ public class info extends HttpServlet
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
 		response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+	}
+
+	/**
+	 * Echoes HTTP headers.
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws IOException 
+	 * @throws URISyntaxException 
+	 */
+	protected void echo(HttpServletRequest request, HttpServletResponse response) throws IOException, URISyntaxException
+	{
+		String ret = "HTTP " + request.getMethod() + " " + request.getRequestURL() + "?" + request.getQueryString() + "\n\n";
+
+		// Retrieve HTTP headers.
+		for (@SuppressWarnings("unchecked")
+		Enumeration<String> header = request.getHeaderNames(); header.hasMoreElements();)
+		{
+		    String headerName = (String)header.nextElement();
+		    ret += headerName + ": " + request.getHeader(headerName) + "\n";
+		}
+
+		response.setContentType("text/plain");
+		response.getWriter().write(ret);
 	}
 }
