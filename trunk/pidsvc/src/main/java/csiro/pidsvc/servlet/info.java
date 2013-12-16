@@ -1,9 +1,9 @@
 /*
  * CSIRO Open Source Software License Agreement (variation of the BSD / MIT License)
- * 
+ *
  * Copyright (c) 2013, Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
- * 
+ *
  * All rights reserved. This code is licensed under CSIRO Open Source Software
  * License Agreement license, available at the root application directory.
  */
@@ -30,7 +30,7 @@ import csiro.pidsvc.mappingstore.ManagerJson;
 /**
  * Info servlet is a read-only service API that provides informative data
  * for client applications (e.g. web-based user interface).
- * 
+ *
  * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
  */
 public class info extends HttpServlet
@@ -53,7 +53,7 @@ public class info extends HttpServlet
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		response.setDateHeader("Expires", 0); 
+		response.setDateHeader("Expires", 0);
 		response.addHeader("Cache-Control", "no-cache,no-store,private,must-revalidate,max-stale=0,post-check=0,pre-check=0");
 
 		String cmd = request.getParameter("cmd");
@@ -64,6 +64,7 @@ public class info extends HttpServlet
 		try
 		{
 			mgr = new ManagerJson(request);
+			response.setContentType("application/json");
 
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.equalsIgnoreCase("search"))
@@ -116,7 +117,6 @@ public class info extends HttpServlet
 			}
 			else if (cmd.equalsIgnoreCase("chart"))
 			{
-				response.setContentType("text/json");
 				response.getWriter().write(mgr.getChart());
 			}
 			else if (cmd.equalsIgnoreCase("get_mapping_dependencies"))
@@ -129,7 +129,6 @@ public class info extends HttpServlet
 					mappingPath = null;
 				if (jsonThis != null && jsonThis.isEmpty())
 					jsonThis = null;
-				response.setContentType("text/json");
 				response.getWriter().write(mappingId == -1 && jsonThis == null ? "{}" : mgr.getMappingDependencies((Object)(jsonThis == null ? mappingId : jsonThis), mappingPath));
 			}
 			else if (cmd.equalsIgnoreCase("echo"))
