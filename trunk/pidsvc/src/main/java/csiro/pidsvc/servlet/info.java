@@ -64,7 +64,10 @@ public class info extends HttpServlet
 		try
 		{
 			mgr = new ManagerJson(request);
+
+			//TODO: Set some resonable defaults -
 			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
 
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.equalsIgnoreCase("search"))
@@ -159,11 +162,11 @@ public class info extends HttpServlet
 
 	/**
 	 * Echoes HTTP headers.
-	 * 
+	 *
 	 * @param request
 	 * @param response
-	 * @throws IOException 
-	 * @throws URISyntaxException 
+	 * @throws IOException
+	 * @throws URISyntaxException
 	 */
 	protected void echo(HttpServletRequest request, HttpServletResponse response) throws IOException, URISyntaxException
 	{
