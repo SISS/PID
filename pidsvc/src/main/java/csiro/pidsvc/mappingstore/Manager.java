@@ -164,12 +164,41 @@ public class Manager
 		public String process(InputStream inputStream) throws Exception;
 	}
 
+	/**************************************************************************
+	 *  Case-sensitivity 'structure' class and properties.
+	 */
+
+	protected class CaseSensitivity
+	{
+		public boolean IsCaseSensitive = true;
+		public int RegularExpressionFlags = 0;
+	}
+
+	protected CaseSensitivity _caseSensitivity = new CaseSensitivity();
+
+	protected CaseSensitivity getCaseSensitivity()
+	{
+		return _caseSensitivity;
+	}
+
+	protected void refreshCaseSensitivity()
+	{
+		String caseSensitive = getSetting("CaseSensitiveURI");
+		_caseSensitivity.IsCaseSensitive = caseSensitive != null && caseSensitive.equalsIgnoreCase("1");
+		_caseSensitivity.RegularExpressionFlags = _caseSensitivity.IsCaseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
+	}
+
+	/**************************************************************************
+	 *  Construction/destruction.
+	 */
+
 	public Manager() throws NamingException, SQLException, IOException
 	{
 		InitialContext initCtx = new InitialContext();
 		Context envCtx = (Context)initCtx.lookup("java:comp/env");
 		DataSource ds = (DataSource)envCtx.lookup(Settings.getInstance().getProperty("jndiReferenceName"));
 		_connection = ds.getConnection();
+		refreshCaseSensitivity();
 	}
 
 	public void close()
@@ -509,7 +538,7 @@ public class Manager
 					if (rs.wasNull())
 						defaultActionId = MappingMatchResults.NULL;
 
-					aux = mappingType.equalsIgnoreCase("1:1") ? true : Pattern.compile(mappingPath, Pattern.CASE_INSENSITIVE);
+					aux = mappingType.equalsIgnoreCase("1:1") ? true : Pattern.compile(mappingPath, getCaseSensitivity().RegularExpressionFlags);
 					ret.add(new MappingParentDescriptor(mappingId, mappingPath, defaultActionId, aux));
 				}
 			}
@@ -541,7 +570,7 @@ public class Manager
 							break;
 
 						// Check that parent pattern matches URI.
-						Pattern re = Pattern.compile(mappingPath, Pattern.CASE_INSENSITIVE);
+						Pattern re = Pattern.compile(mappingPath, getCaseSensitivity().RegularExpressionFlags);
 						Matcher m = re.matcher(uri.getPathNoExtension());
 						if (!m.find())
 							break;
@@ -633,8 +662,16 @@ public class Manager
 		PreparedStatement pst = null;
 		try
 		{
-			pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, type FROM vw_active_mapping WHERE mapping_path = ? AND type = '1:1'");
-			pst.setString(1, uri.getPathNoExtension());
+			if (isCaseSensitive())
+			{
+				pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, type FROM vw_active_mapping WHERE mapping_path = ? AND type = '1:1'");
+				pst.setString(1, uri.getPathNoExtension());
+			}
+			else
+			{
+				pst = _connection.prepareStatement("SELECT mapping_id, mapping_path, type FROM vw_active_mapping WHERE LOWER(mapping_path) = ? AND type = '1:1'");
+				pst.setString(1, uri.getPathNoExtension().toLowerCase());
+			}
 			return findMatchImpl(pst, uri, request, false);
 		}
 		finally
@@ -699,7 +736,7 @@ public class Manager
 					// Check pattern match for pattern based mappings.
 					if (!(isOneToOne = rs.getString("type").equalsIgnoreCase("1:1")))
 					{
-						re = Pattern.compile(rs.getString("mapping_path"), Pattern.CASE_INSENSITIVE);
+						re = Pattern.compile(rs.getString("mapping_path"), getCaseSensitivity().RegularExpressionFlags);
 						m = re.matcher(uri.getPathNoExtension());
 						if (!m.find())
 							continue;
@@ -1269,6 +1306,11 @@ public class Manager
 		return baseURI;
 	}
 
+	public boolean isCaseSensitive()
+	{
+		return _caseSensitivity.IsCaseSensitive;
+	}
+	
 	/**************************************************************************
 	 *  Lookup maps.
 	 */

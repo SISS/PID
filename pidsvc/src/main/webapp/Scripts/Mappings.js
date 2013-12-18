@@ -535,7 +535,8 @@ var Main = Class.construct({
 				Main._timerResetDependencyChart == null &&		// No parent reset timer is set.
 				Main._newParent !== 0)							// New parent is not already set to Catch-all.
 			{
-				if (!Main.isPathParentPatternConformant($J("#MappingPath").val().trim(), Main.getParent().mappingPath))
+				if (!Main.isPathParentPatternConformant($J("#MappingPath").val().trim(), Main.getParent().mappingPath) &&
+					!$J("#ParentWarningIcon").is(":visible"))	// No warning is shown (i.e. when mapping has just been loaded and has a non-matching parent set).
 				{
 					// Forcefully reset parent to Catch-all.
 					Main._timerResetDependencyChart = setTimeout(Main.resetParentToCatchAll, 150);
@@ -571,7 +572,7 @@ var Main = Class.construct({
 		var re;
 		try
 		{
-			re = new RegExp(mappingPath, "i");
+			re = new RegExp(mappingPath, GlobalSettings.CaseSensitiveURI ? "" : "i");
 		}
 		catch (ex)
 		{
@@ -617,7 +618,7 @@ var Main = Class.construct({
 		}
 		else
 		{
-			// Count non capturing groups.
+			// Count non-capturing groups.
 			var count = mappingPath.match(/\((?!\?\:)/g);
 			for (var i = 0; i <= (count ? count.length : 0); ++i)
 				html += "<div class=\"ellipsis\" style=\"width: 717px; font-family: Courier New; font-size: 12px;\">$" + i + " = </div>";
@@ -1035,10 +1036,11 @@ var Main = Class.construct({
 			return;
 		}
 
-		var isCatchAll = data.mapping_path == null;
+		var isCatchAll		= data.mapping_path == null;
+		var mappingPath		= data.ended ? data.original_path : data.mapping_path;
 		
 		// Show configuration.
-		$J("#MappingPath").val(data.ended ? data.original_path : data.mapping_path);
+		$J("#MappingPath").val(mappingPath);
 		$J("#MappingType").val(data.type).change();
 		$J("#MappingTitle").val(data.title);
 		$J("#MappingDescription").val(data.description);
@@ -1063,6 +1065,13 @@ var Main = Class.construct({
 					$J("#ParentWarningIcon")
 						.attr("src", "Images/messagebox_warning.png")
 						.attr("title", "The parent mapping \"" + data.parent.mapping_path + "\" doesn't exist or has been deprecated. The resolution will fall back to Catch-All mapping.")
+						.show();
+				}
+				else if (data.type == "1:1" && !Main.isPathParentPatternConformant(mappingPath, data.parent.mapping_path))
+				{
+					$J("#ParentWarningIcon")
+						.attr("src", "Images/messagebox_warning.png")
+						.attr("title", "The parent mapping \"" + data.parent.mapping_path + "\" doesn't match the URI. This might be due to the URI case sensitivity settings. The resolution will fall back to Catch-All mapping.")
 						.show();
 				}
 			}
@@ -1213,6 +1222,8 @@ var Main = Class.construct({
 				enable: true,
 				onShow: function(tip, node)
 				{
+					if (!node)
+						return;
 					$J(tip).removeClass("tip").addClass("inheritance_graph_tip");
 					if (node.id == -1)
 						tip.innerHTML = "Some parents were collapsed for readability.<br/>Inspect the whole dependency tree in the Mapping Chart.";
@@ -1305,7 +1316,7 @@ var Main = Class.construct({
 			return true; // Any path is matching Catch-all patern.
 		try
 		{
-			return (new RegExp(pattern, "i")).match(path);
+			return (new RegExp(pattern, GlobalSettings.CaseSensitiveURI ? "" : "i")).match(path);
 		}
 		catch (ex)
 		{
@@ -1326,7 +1337,7 @@ var Main = Class.construct({
 			// Check that mapping URI matches pattern of the parent mapping.
 			if (!Main.isPathParentPatternConformant($J("#MappingPath").val(), mappingPath))
 			{
-				alert("Selected parent mapping doesn't match the mapping URI.");
+				alert("Selected parent mapping doesn't match the mapping URI.\nCheck URI case sensitivity settings...");
 				Main.cancelParentMappingEditing();
 				return;
 			}
