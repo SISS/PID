@@ -362,6 +362,7 @@ ALTER TABLE vw_full_mapping_activeonly
 
 -- Populate with data
 INSERT INTO "configuration" ("name", "value") VALUES ('DispatcherTracingMode', '0');
+INSERT INTO "configuration" ("name", "value") VALUES ('CaseSensitiveURI', '1');
 
 INSERT INTO "mapping_type" ("type") VALUES ('1:1');
 INSERT INTO "mapping_type" ("type") VALUES ('Regex');

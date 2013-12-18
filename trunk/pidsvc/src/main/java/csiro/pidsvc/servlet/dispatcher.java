@@ -97,16 +97,19 @@ public class dispatcher extends HttpServlet
 		///////////////////////////////////////////////////////////////////////
 		//	Get tracer settings.
 
-		if (!uri.isQrCodeRequest() && mgr.getSetting("DispatcherTracingMode").equalsIgnoreCase("1"))
+		String tracingMode = mgr.getSetting("DispatcherTracingMode");
+		if (!uri.isQrCodeRequest() && tracingMode != null && tracingMode.equalsIgnoreCase("1"))
 		{
 			tracer = new OutputStreamTracer(response.getOutputStream());
 			tracer.trace("Dispatch " + uri.getOriginalUriAsString());
+			tracer.trace("Case-" + (mgr.isCaseSensitive() ? "sensitive" : "insensitive") + " search");
 		}
 
 		///////////////////////////////////////////////////////////////////////
 		//	Find a matching mapping and run action items.
 
 		_logger.info("Resolving {}", uri.getOriginalUriAsString());
+		_logger.info("Case-" + (mgr.isCaseSensitive() ? "sensitive" : "insensitive") + " search");
 		try
 		{
 			MappingMatchResults matchResult;

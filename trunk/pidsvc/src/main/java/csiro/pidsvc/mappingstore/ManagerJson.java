@@ -61,6 +61,7 @@ public class ManagerJson extends Manager
 	{
 		return "var GlobalSettings = {" +
 				JSONObject.toString("BaseURI", getBaseURI()) + "," +
+				JSONObject.toString("CaseSensitiveURI", isCaseSensitive()) + "," +
 				JSONObject.toString("AuthorizationName", _authorizationName) +
 			"};";
 	}
