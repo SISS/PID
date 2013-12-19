@@ -28,6 +28,7 @@ public class URI
 	protected static final Pattern		RE_URI_COMPONENTS = Pattern.compile("^(.+?)(?:\\.([^\\.]*?))?(?:\\?(.*))?$", Pattern.CASE_INSENSITIVE); // matches path, file extension, querystring.
 	protected static final Pattern		RE_URI_QRCODE_REQUEST = Pattern.compile("^(.+?)(?:\\?_pidsvcqr(?:=([^&]*))?$|_pidsvcqr(?:=([^&]*))?&|&_pidsvcqr(?:=([^&]*))?$)(.*)$", Pattern.CASE_INSENSITIVE);
 	protected static final Pattern		RE_URI_QRCODE_HIT = Pattern.compile("^(.+?)(?:\\?_pidsvcqrhit(?:=[^&]*)?$|_pidsvcqrhit(?:=[^&]*)?&|&_pidsvcqrhit(?:=[^&]*)?$)(.*)$", Pattern.CASE_INSENSITIVE);
+	protected static final Pattern		RE_URI_TRACE = Pattern.compile("^(.+?)(?:\\?_pidsvctrace(?:=[^&]*)?$|_pidsvctrace(?:=[^&]*)?&|&_pidsvctrace(?:=[^&]*)?$)(.*)$", Pattern.CASE_INSENSITIVE);
 
 	protected String					_originalUri;
 	protected java.net.URI				_uri;
@@ -35,8 +36,9 @@ public class URI
 	protected HashMap<String, String>	_uriQueryStringMap = new HashMap<String, String>();
 	protected String					_pathNoExtension = null;
 	protected String					_extension = null;
-	protected boolean					_qrCodeRequest = false, _qrCodeHit = false;
-	protected int						_qrCodeSize = 100;
+	protected boolean					_cmdQrCodeRequest = false, _cmdQrCodeHit = false;
+	protected int						_cmdQrCodeSize = 100;
+	protected boolean					_cmdTrace = false;
 
 	public URI(java.net.URI uri) throws URISyntaxException
 	{
@@ -74,9 +76,10 @@ public class URI
 		this._pathNoExtension = src._pathNoExtension;
 		this._extension = src._extension;
 
-		this._qrCodeRequest = src._qrCodeRequest;
-		this._qrCodeHit = src._qrCodeHit;
-		this._qrCodeSize = src._qrCodeSize;
+		this._cmdQrCodeRequest = src._cmdQrCodeRequest;
+		this._cmdQrCodeHit = src._cmdQrCodeHit;
+		this._cmdQrCodeSize = src._cmdQrCodeSize;
+		this._cmdTrace = src._cmdTrace;
 	}
 	
 	public String getOriginalUriAsString()
@@ -126,17 +129,22 @@ public class URI
 
 	public boolean isQrCodeRequest()
 	{
-		return _qrCodeRequest;
+		return _cmdQrCodeRequest;
 	}
 
 	public boolean isQrCodeHit()
 	{
-		return _qrCodeHit;
+		return _cmdQrCodeHit;
 	}
 
 	public int getQrCodeSize()
 	{
-		return _qrCodeSize;
+		return _cmdQrCodeSize;
+	}
+
+	public boolean isTraceMode()
+	{
+		return _cmdTrace;
 	}
 
 	private void parse() throws URISyntaxException
@@ -153,17 +161,24 @@ public class URI
 					continue;
 				if (size > 1200)
 					size = 1200;
-				_qrCodeSize = size;
+				_cmdQrCodeSize = size;
 				break;
 			}
-			_qrCodeRequest = true;
+			_cmdQrCodeRequest = true;
 			_uri = new java.net.URI(_originalUri = m.replaceAll("$1$5"));
 		}
 
 		// Detect QR Code hit flag.
 		for (m = RE_URI_QRCODE_HIT.matcher(_uri.toString()); m.matches(); m = RE_URI_QRCODE_HIT.matcher(_uri.toString())) 
 		{
-			_qrCodeHit = true;
+			_cmdQrCodeHit = true;
+			_uri = new java.net.URI(_originalUri = m.replaceAll("$1$2"));
+		}
+
+		// Detect trace mode activation flag.
+		for (m = RE_URI_TRACE.matcher(_uri.toString()); m.matches(); m = RE_URI_TRACE.matcher(_uri.toString())) 
+		{
+			_cmdTrace = true;
 			_uri = new java.net.URI(_originalUri = m.replaceAll("$1$2"));
 		}
 
@@ -173,7 +188,7 @@ public class URI
 		{
 			_pathNoExtension = m.group(1);
 			_extension = m.group(2);
-			
+
 			if (m.group(3) != null)
 			{
 				String queryStringArgs[];
