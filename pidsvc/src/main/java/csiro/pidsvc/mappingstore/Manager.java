@@ -544,6 +544,8 @@ public class Manager
 			}
 			rs.close();
 			pst.close();
+			rs = null;
+			pst = null;
 
 			// Get parents.
 			while (parentPath != null)
@@ -621,6 +623,8 @@ public class Manager
 			}
 			rs.close();
 			pst.close();
+			rs = null;
+			pst = null;
 
 			// Get parents.
 			while (parentPath != null)
