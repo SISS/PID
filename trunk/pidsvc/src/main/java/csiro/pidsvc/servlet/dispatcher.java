@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.Manager;
@@ -76,6 +77,7 @@ public class dispatcher extends HttpServlet
 
 		try
 		{
+			Settings.init(this);
 			uri = new URI(URI.prepareURI(request.getQueryString()));
 			mgr = new Manager();
 		}

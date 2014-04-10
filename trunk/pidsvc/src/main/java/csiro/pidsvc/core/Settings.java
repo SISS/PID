@@ -10,14 +10,21 @@
 
 package csiro.pidsvc.core;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
+import java.util.PropertyResourceBundle;
+import java.util.ResourceBundle;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServlet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,19 +40,45 @@ import csiro.pidsvc.helper.JSONObjectHelper;
  */
 public class Settings
 {
+	final static String SETTINGS_OPT = "pidsvc.settings";
+	
 	private static Logger _logger = LogManager.getLogger(Settings.class.getName());
 
 	private static Settings			_instance = null;
-	protected Properties			_properties = new Properties();
-	protected Manifest				_manifest = new Manifest();
+	protected HttpServlet			_servlet = null;
+	protected ResourceBundle		_properties = null;
+	protected Manifest				_manifest = null;
 	protected Map<String, String>	_serverProperties = new HashMap<String, String>(6);
 
-	private Settings() throws NullPointerException, IOException
+	private Settings(HttpServlet servlet) throws NullPointerException, IOException
 	{
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		_properties.load(classLoader.getResourceAsStream("pidsvc.properties"));
-		_manifest.read(classLoader.getResourceAsStream("../../META-INF/MANIFEST.MF"));
+		// Retrieve manifest.
+		if ((_servlet = servlet) != null)
+		{
+			ServletContext application = _servlet.getServletConfig().getServletContext();
+			_manifest = new Manifest(application.getResourceAsStream("/META-INF/MANIFEST.MF"));
+		}
 
+		// Retrieve settings.
+		FileInputStream fis = null;
+		try
+		{
+			InitialContext context = new InitialContext();
+			String settingsFile = (String)context.lookup("java:comp/env/" + SETTINGS_OPT);
+			fis = new FileInputStream(settingsFile);
+			_properties = new PropertyResourceBundle(fis);
+		}
+		catch (NamingException ex)
+		{
+			_logger.debug("Using default pidsvc.properties file.", ex);
+			_properties = ResourceBundle.getBundle("pidsvc");
+		}
+		finally
+		{
+			if (fis != null)
+				fis.close();
+		}
+		
 		// Get additional system properties.
 		_serverProperties.put("serverJavaVersion", System.getProperty("java.version"));
 		_serverProperties.put("serverJavaVendor", System.getProperty("java.vendor"));
@@ -53,21 +86,31 @@ public class Settings
         _serverProperties.put("serverOsArch", System.getProperty("os.arch"));
         _serverProperties.put("serverOsName", System.getProperty("os.name"));
         _serverProperties.put("serverOsVersion", System.getProperty("os.version"));
-}
+	}
 
 	protected Object clone() throws CloneNotSupportedException
 	{
 		throw new CloneNotSupportedException();
 	}
 
+	public static void init(HttpServlet servlet) throws NullPointerException, IOException
+	{
+		getInstance(servlet);
+	}
+
 	public static Settings getInstance() throws NullPointerException, IOException
+	{
+		return getInstance(null);
+	}
+
+	public static Settings getInstance(HttpServlet servlet) throws NullPointerException, IOException
 	{
 		if (_instance == null)
 		{
 			synchronized (Settings.class)
 			{
 				if (_instance == null)
-					_instance = new Settings();
+					_instance = new Settings(servlet);
 			}
 		}
 		return _instance;
@@ -75,7 +118,7 @@ public class Settings
 
 	public String getProperty(String name)
 	{
-		return _properties.getProperty(name);
+		return _properties == null ? null : _properties.getString(name);
 	}
 
 	public Manifest getManifest()
@@ -85,7 +128,7 @@ public class Settings
 
 	public String getManifestProperty(String name)
 	{
-		return _manifest.getMainAttributes().getValue(name);
+		return _manifest == null ? null : _manifest.getMainAttributes().getValue(name);
 	}
 
 	public Map<String, String> getServerProperties()
@@ -102,10 +145,13 @@ public class Settings
 		json.put("repository", getProperty("buildRepository"));
 
 		// Build manifest.
-		JSONObject manifest = new JSONObject();
-		for (Entry<Object, Object> entry : _manifest.getMainAttributes().entrySet())
-			manifest.put(entry.getKey(), entry.getValue());
-		json.put("manifest", manifest);
+		if (_manifest != null)
+		{
+			JSONObject manifest = new JSONObject();
+			for (Entry<Object, Object> entry : _manifest.getMainAttributes().entrySet())
+				manifest.put(entry.getKey(), entry.getValue());
+			json.put("manifest", manifest);
+		}
 
 		// Server environment.
 		JSONObject server = new JSONObject();
@@ -118,6 +164,9 @@ public class Settings
 
 	public boolean isNewVersionAvailable()
 	{
+		if (_manifest == null)
+			return false;
+		
 		String		content = Http.simpleGetRequest(getProperty("buildRepository"));
 		Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?.(\\d+).war\"", Pattern.CASE_INSENSITIVE);
 		Matcher		m = re.matcher(content);

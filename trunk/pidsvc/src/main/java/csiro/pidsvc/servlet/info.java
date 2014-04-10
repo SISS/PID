@@ -65,9 +65,9 @@ public class info extends HttpServlet
 		JSONObject ret;
 		try
 		{
+			Settings.init(this);
 			mgr = new ManagerJson(request);
 
-			//TODO: Set some resonable defaults -
 			response.setContentType("application/json");
 
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());

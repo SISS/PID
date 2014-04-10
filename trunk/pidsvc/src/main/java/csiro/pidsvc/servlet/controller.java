@@ -26,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 
+import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
 import csiro.pidsvc.helper.Stream;
@@ -137,7 +138,7 @@ public class controller extends HttpServlet
 		Manager mgr = null;
 		try
 		{
-			// Create mapping store manager object.
+			Settings.init(this);
 			mgr = new Manager();
 
 			_logger.info("Processing \"{}\" command.", cmd);
