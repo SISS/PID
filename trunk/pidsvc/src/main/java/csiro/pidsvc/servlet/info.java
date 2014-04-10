@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
 
 import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
@@ -61,13 +62,13 @@ public class info extends HttpServlet
 			return;
 
 		ManagerJson mgr = null;
+		JSONObject ret;
 		try
 		{
 			mgr = new ManagerJson(request);
 
 			//TODO: Set some resonable defaults -
 			response.setContentType("application/json");
-			response.setCharacterEncoding("UTF-8");
 
 			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.equalsIgnoreCase("search"))
@@ -77,7 +78,14 @@ public class info extends HttpServlet
 				if (sPage != null && sPage.matches("\\d+"))
 					page = Integer.parseInt(sPage);
 
-				response.getWriter().write(mgr.getMappings(page, request.getParameter("mapping"), request.getParameter("type"), request.getParameter("creator"), Literals.toInt(request.getParameter("deprecated"), 0)));
+				ret = mgr.getMappings(
+						page,
+						request.getParameter("mapping"),
+						request.getParameter("type"),
+						request.getParameter("creator"),
+						Literals.toInt(request.getParameter("deprecated"), 0)
+					);
+				response.getWriter().write(ret == null ? null : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("get_pid_config"))
 			{
@@ -87,14 +95,16 @@ public class info extends HttpServlet
 				response.getWriter().write(mappingId > 0 ? mgr.getPidConfig(mappingId) : (mappingId == 0 ? mgr.getPidConfig((String)null) : mgr.getPidConfig(mappingPath)));
 			}
 			else if (cmd.equalsIgnoreCase("check_mapping_path_exists"))
-				response.getWriter().write(mgr.checkMappingPathExists(request.getParameter("mapping_path")));
+			{
+				response.getWriter().write(mgr.checkMappingPathExists(request.getParameter("mapping_path")).toString());
+			}
 			else if (cmd.equalsIgnoreCase("search_parent"))
 			{
 				int mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
-				response.getWriter().write(mgr.searchParentMapping(mappingId, request.getParameter("q")));
+				response.getWriter().write(mgr.searchParentMapping(mappingId, request.getParameter("q")).toString());
 			}
 			else if (cmd.equalsIgnoreCase("get_settings"))
-				response.getWriter().write(mgr.getSettings());
+				response.getWriter().write(mgr.getSettings().toString());
 			else if (cmd.equalsIgnoreCase("search_lookup"))
 			{
 				int page = 1;
@@ -102,25 +112,32 @@ public class info extends HttpServlet
 				if (sPage != null && sPage.matches("\\d+"))
 					page = Integer.parseInt(sPage);
 
-				response.getWriter().write(mgr.getLookups(page, request.getParameter("ns")));
+				ret = mgr.getLookups(page, request.getParameter("ns"));
+				response.getWriter().write(ret == null ? null : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("get_lookup_config"))
 			{
 				String ns = request.getParameter("ns");
-				response.getWriter().write(mgr.getLookupConfig(ns));
+				ret = mgr.getLookupConfig(ns);
+				response.getWriter().write(ret == null ? null : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("get_manifest"))
-				response.getWriter().write(Settings.getInstance().getManifestJson());
+			{
+				response.getWriter().write(Settings.getInstance().getManifestJson().toString());
+			}
 			else if (cmd.equalsIgnoreCase("is_new_version_available"))
-				response.getWriter().write(Settings.getInstance().isNewVersionAvailableJson());
+			{
+				response.getWriter().write(Settings.getInstance().isNewVersionAvailableJson().toString());
+			}
 			else if (cmd.equalsIgnoreCase("global_js"))
 			{
 				response.setContentType("text/javascript");
-				response.getWriter().write(mgr.getGlobalSettings(request));
+				response.getWriter().write("var GlobalSettings = " + mgr.getGlobalSettings(request).toString() + ";");
 			}
 			else if (cmd.equalsIgnoreCase("chart"))
 			{
-				response.getWriter().write(mgr.getChart());
+				ret = mgr.getChart();
+				response.getWriter().write(ret == null ? null : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("get_mapping_dependencies"))
 			{

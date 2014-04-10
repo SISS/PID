@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 
 import csiro.pidsvc.helper.Http;
+import csiro.pidsvc.helper.JSONObjectHelper;
 
 /**
  * Application settings handling.
@@ -92,33 +93,27 @@ public class Settings
 		return _serverProperties;
 	}
 
-	public String getManifestJson()
+	@SuppressWarnings("unchecked")
+	public JSONObject getManifestJson()
 	{
-		boolean isFirst = true;
-		String ret = "{";
+		JSONObject json = new JSONObject();
 
 		// Build repository.
-		ret += JSONObject.toString("repository", getProperty("buildRepository")) + ",";
+		json.put("repository", getProperty("buildRepository"));
 
 		// Build manifest.
-		ret += "\"manifest\":{";
+		JSONObject manifest = new JSONObject();
 		for (Entry<Object, Object> entry : _manifest.getMainAttributes().entrySet())
-		{
-			ret += (isFirst ? "" : ",") + JSONObject.toString(entry.getKey().toString(), entry.getValue());
-			isFirst = false;
-		}
-		ret += "},";
+			manifest.put(entry.getKey(), entry.getValue());
+		json.put("manifest", manifest);
 
 		// Server environment.
-		ret += "\"server\":{";
-		isFirst = true;
+		JSONObject server = new JSONObject();
 		for (Entry<String, String> entry : _serverProperties.entrySet())
-		{
-			ret += (isFirst ? "" : ",") + JSONObject.toString(entry.getKey(), entry.getValue());
-			isFirst = false;
-		}
-		ret += "}}";
-		return ret;
+			server.put(entry.getKey(), entry.getValue());
+		json.put("server", server);
+
+		return json;
 	}
 
 	public boolean isNewVersionAvailable()
@@ -145,12 +140,11 @@ public class Settings
 		return false;
 	}
 
-	public String isNewVersionAvailableJson()
+	public JSONObject isNewVersionAvailableJson()
 	{
-		return
-			"{" +
-				JSONObject.toString("isAvailable", isNewVersionAvailable()) + "," +
-				JSONObject.toString("repository", getProperty("buildRepository")) +
-			"}";
+		return JSONObjectHelper.create(
+				"isAvailable", isNewVersionAvailable(),
+				"repository", getProperty("buildRepository")
+			);
 	}
 }

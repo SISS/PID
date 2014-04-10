@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
 	<xs:element name="mapping" type="pidsvc:MappingType"/>
+	<xs:element name="conditions" type="pidsvc:ConditionsType"/>
 	<xs:complexType name="MappingType">
 		<xs:sequence>
 			<xs:element name="path">
@@ -30,8 +31,8 @@
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:pattern value="\S+"/>
 						<xs:maxLength value="50"/>
+						<xs:pattern value="\S+"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
@@ -85,8 +86,8 @@
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:pattern value="\S+"/>
 						<xs:maxLength value="50"/>
+						<xs:pattern value="\S+"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>
@@ -142,8 +143,8 @@
 				</xs:annotation>
 				<xs:simpleType>
 					<xs:restriction base="xs:string">
-						<xs:pattern value="\S+"/>
 						<xs:maxLength value="50"/>
+						<xs:pattern value="\S+"/>
 					</xs:restriction>
 				</xs:simpleType>
 			</xs:element>

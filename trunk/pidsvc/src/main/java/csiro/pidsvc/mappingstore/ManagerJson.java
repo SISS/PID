@@ -23,7 +23,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
+import csiro.pidsvc.helper.JSONObjectHelper;
 
 /**
  * ManagerJson class derived from the base Manager class encapsulates JSON
@@ -57,39 +60,29 @@ public class ManagerJson extends Manager
 		return _authorizationName;
 	}
 
-	public String getGlobalSettings(HttpServletRequest request)
+	public JSONObject getGlobalSettings(HttpServletRequest request)
 	{
-		return "var GlobalSettings = {" +
-				JSONObject.toString("BaseURI", getBaseURI()) + "," +
-				JSONObject.toString("CaseSensitiveURI", isCaseSensitive()) + "," +
-				JSONObject.toString("AuthorizationName", _authorizationName) +
-			"};";
+		return JSONObjectHelper.create(
+				"BaseURI",				getBaseURI(),
+				"CaseSensitiveURI",		isCaseSensitive(),
+				"AuthorizationName",	_authorizationName
+			);
 	}
 
-	public String getSettings() throws SQLException
+	@SuppressWarnings("unchecked")
+	public JSONArray getSettings() throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONArray			ret = new JSONArray();
 
 		try
 		{
 			pst = _connection.prepareStatement("SELECT * FROM configuration");
 			if (pst.execute())
 			{
-				ret = "[";
-				int i = 0;
-				for (rs = pst.getResultSet(); rs.next(); ++i)
-				{
-					if (i > 0)
-						ret += ",";
-
-					ret += "{" +
-							JSONObject.toString("name", rs.getString(1)) + ", " +
-							JSONObject.toString("value", rs.getString(2)) +
-						"}";
-				}
-				ret += "]";
+				for (rs = pst.getResultSet(); rs.next();)
+					ret.add(JSONObjectHelper.create("name", rs.getString(1), "value", rs.getString(2)));
 			}
 		}
 		finally
@@ -102,11 +95,12 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String getMappings(int page, String mappingPath, String type, String creator, int includeDeprecated) throws SQLException
+	@SuppressWarnings("unchecked")
+	public JSONObject getMappings(int page, String mappingPath, String type, String creator, int includeDeprecated) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONObject			ret = new JSONObject();
 		final int			pageSize = 10;
 		final String		sourceView = (includeDeprecated == 2 ? "vw_deprecated_mapping" : (includeDeprecated == 1 ? "vw_latest_mapping" : "vw_active_mapping"));
 
@@ -124,11 +118,10 @@ public class ManagerJson extends Manager
 				"SELECT COUNT(*) FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + ";\n" +
 				"SELECT mapping_id, mapping_path, title, description, creator, type, to_char(date_start, 'DD/MM/YYYY HH24:MI') AS date_start, to_char(date_end, 'DD/MM/YYYY HH24:MI') AS date_end FROM " + sourceView + (query.isEmpty() ? "" : " WHERE " + query) + " ORDER BY COALESCE(title, mapping_path) LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
 
-			int i = 1;
 			pst = _connection.prepareStatement(query);
 
 			// Bind parameters twice to two almost identical queries.
-			for (int j = 0; j < 2; ++j)
+			for (int i = 1, j = 0; j < 2; ++j)
 			{
 				if (!mappingPath.isEmpty())
 				{
@@ -140,39 +133,36 @@ public class ManagerJson extends Manager
 				if (!creator.isEmpty())
 					pst.setString(i++, creator);
 			}
-			
+
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
 				rs.next();
-				ret = "{ \"count\": " + rs.getInt(1) +
-					", \"page\": " + page +
-					", \"pages\": " + ((int)Math.ceil(rs.getFloat(1) / pageSize)) +
-					", \"results\": [";
-				
-				for (pst.getMoreResults(), rs = pst.getResultSet(), i = 0; rs.next(); ++i)
-				{
-					if (i > 0)
-						ret += ",";
+				ret.put("count", rs.getInt(1));
+				ret.put("page", page);
+				ret.put("pages", (int)Math.ceil(rs.getFloat(1) / pageSize));
 
+				JSONArray jsonArr = new JSONArray();
+				for (pst.getMoreResults(), rs = pst.getResultSet(); rs.next();)
+				{
 //					String dateStart = sdf.format(sdfdb.parse(rs.getString("date_start")));
 //					String dateEnd = rs.getString("date_end");
 //					if (dateEnd != null)
 //						dateEnd = sdf.format(sdfdb.parse(dateEnd));
 
-					ret += "{" +
-							JSONObject.toString("mapping_id", rs.getString("mapping_id")) + ", " +
-							JSONObject.toString("mapping_path", rs.getString("mapping_path")) + ", " +
-							JSONObject.toString("title", rs.getString("title")) + ", " +
-							JSONObject.toString("description", rs.getString("description")) + ", " +
-							JSONObject.toString("creator", rs.getString("creator")) + ", " +
-							JSONObject.toString("type", rs.getString("type")) + ", " +
-							JSONObject.toString("date_start", rs.getString("date_start")) + ", " +
-							JSONObject.toString("date_end", rs.getString("date_end")) + ", " +
-						"	\"date\": \"\"" +
-						"}";
+					jsonArr.add(JSONObjectHelper.create(
+							"mapping_id",	rs.getString("mapping_id"),
+							"mapping_path",	rs.getString("mapping_path"),
+							"title",		rs.getString("title"),
+							"description",	rs.getString("description"),
+							"creator",		rs.getString("creator"),
+							"type",			rs.getString("type"),
+							"date_start",	rs.getString("date_start"),
+							"date_end",		rs.getString("date_end"),
+							"date",			""
+						));
 				}
-				ret += "]}";
+				ret.put("results", jsonArr);
 			}
 		}
 		finally
@@ -185,11 +175,12 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String searchParentMapping(int mappingId, String searchTerm) throws SQLException
+	@SuppressWarnings("unchecked")
+	public JSONArray searchParentMapping(int mappingId, String searchTerm) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONArray			ret = new JSONArray();
 
 		try
 		{
@@ -207,19 +198,8 @@ public class ManagerJson extends Manager
 
 			if (pst.execute())
 			{
-				ret = "[";
-
-				int i = 0;
-				for (rs = pst.getResultSet(); rs.next(); ++i)
-				{
-					if (i > 0)
-						ret += ",";
-					ret += "{" +
-							JSONObject.toString("mapping_path", rs.getString("mapping_path")) + ", " +
-							JSONObject.toString("title", rs.getString("title")) +
-						"}";
-				}
-				ret += "]";
+				for (rs = pst.getResultSet(); rs.next();)
+					ret.add(JSONObjectHelper.create("mapping_path", rs.getString("mapping_path"), "title", rs.getString("title")));
 			}
 		}
 		finally
@@ -358,7 +338,7 @@ public class ManagerJson extends Manager
 						}
 					}
 					ret += "],"; // history					
-					
+
 					// Serialise conditions.
 					pst = _connection.prepareStatement("SELECT * FROM \"condition\" WHERE mapping_id = ? ORDER BY condition_id");
 					pst.setInt(1, rsMapping.getInt("mapping_id"));
@@ -446,7 +426,7 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String checkMappingPathExists(String mappingPath) throws SQLException
+	public JSONObject checkMappingPathExists(String mappingPath) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
@@ -474,17 +454,15 @@ public class ManagerJson extends Manager
 			if (pst != null)
 				pst.close();
 		}
-		return "{" +
-				JSONObject.toString("exists", exists) + ", " +
-				JSONObject.toString("mapping_path", mappingPath) +
-			"}";
+		return JSONObjectHelper.create("exists", exists, "mapping_path", mappingPath);
 	}
-	
-	public String getLookups(int page, String namespace) throws SQLException
+
+	@SuppressWarnings("unchecked")
+	public JSONObject getLookups(int page, String namespace) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONObject			ret = new JSONObject();
 		final int			pageSize = 20;
 
 		try
@@ -497,35 +475,31 @@ public class ManagerJson extends Manager
 				"SELECT COUNT(*) FROM lookup_ns" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + ";\n" +
 				"SELECT * FROM lookup_ns" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY ns LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
 
-			int i = 1;
 			pst = _connection.prepareStatement(query);
-			for (int j = 0; j < 2; ++j)
+			for (int i = 1, j = 0; j < 2; ++j)
 			{
 				// Bind parameters twice to two almost identical queries.
 				if (namespace != null && !namespace.isEmpty())
 					pst.setString(i++, "%" + namespace.replace("\\", "\\\\") + "%");
 			}
-			
+
 			if (pst.execute())
 			{
 				rs = pst.getResultSet();
 				rs.next();
-				ret = "{ \"count\": " + rs.getInt(1) +
-					", \"page\": " + page +
-					", \"pages\": " + ((int)Math.ceil(rs.getFloat(1) / pageSize)) +
-					", \"results\": [";
-				
-				for (pst.getMoreResults(), rs = pst.getResultSet(), i = 0; rs.next(); ++i)
-				{
-					if (i > 0)
-						ret += ",";
+				ret.put("count", rs.getInt(1));
+				ret.put("page", page);
+				ret.put("pages", (int)Math.ceil(rs.getFloat(1) / pageSize));
 
-					ret += "{" +
-							JSONObject.toString("ns", rs.getString("ns")) + ", " +
-							JSONObject.toString("type", rs.getString("type")) +
-						"}";
+				JSONArray jsonArr = new JSONArray();
+				for (pst.getMoreResults(), rs = pst.getResultSet(); rs.next();)
+				{
+					jsonArr.add(JSONObjectHelper.create(
+							"ns",		rs.getString("ns"),
+							"type",		rs.getString("type")
+						));
 				}
-				ret += "]}";
+				ret.put("results", jsonArr);
 			}
 		}
 		finally
@@ -538,11 +512,13 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String getLookupConfig(String ns) throws SQLException
+	@SuppressWarnings("unchecked")
+	public JSONObject getLookupConfig(String ns) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONObject			ret = new JSONObject();
+		JSONArray			jsonArr;
 		String				lookupType;
 
 		try
@@ -553,36 +529,27 @@ public class ManagerJson extends Manager
 
 			if (pst.execute())
 			{
-				ret = "{";
 				rs = pst.getResultSet();
 				if (rs.next())
 				{
 					lookupType = rs.getString("type");
-					ret +=
-						JSONObject.toString("ns", rs.getString("ns")) + ", " +
-						JSONObject.toString("type", lookupType) + ", " +
-						"\"default\":{" +
-							JSONObject.toString("type", rs.getString("behaviour_type")) + ", " + 
-							JSONObject.toString("value", rs.getString("behaviour_value")) + 
-						"}," +
-						"\"lookup\":";
+					ret.put("ns", rs.getString("ns"));
+					ret.put("type", lookupType);
+					ret.put("default", JSONObjectHelper.create("type", rs.getString("behaviour_type"), "value", rs.getString("behaviour_value")));
 
 					pst.getMoreResults();
 					rs = pst.getResultSet();
 					if (lookupType.equalsIgnoreCase("Static"))
 					{
-						ret += "[";
-						for (int i = 0; rs.next(); ++i)
+						jsonArr = new JSONArray();
+						while (rs.next())
 						{
-							if (i > 0)
-								ret += ",";
-							ret +=
-								"{" +
-									JSONObject.toString("key", rs.getString(1)) + ", " +
-									JSONObject.toString("value", rs.getString(2)) +
-								"}";
+							jsonArr.add(JSONObjectHelper.create(
+									"key",		rs.getString(1),
+									"value",	rs.getString(2)
+								));
 						}
-						ret += "]";
+						ret.put("lookup", jsonArr);
 					}
 					else if (lookupType.equalsIgnoreCase("HttpResolver"))
 					{
@@ -596,45 +563,41 @@ public class ManagerJson extends Manager
 
 							try
 							{
-								String jsonPart = "{" + JSONObject.toString("endpoint", rs.getString(1)) + ", ";
+								JSONObject jsonPart = new JSONObject();
+								jsonPart.put("endpoint", rs.getString(1));
 
 								// Type.
 								m = reType.matcher(buf);
 								m.find();
-								jsonPart += JSONObject.toString("type", m.group(1)) + ", ";
+								jsonPart.put("type", m.group(1));
 
 								// Extractor.
 								m = reExtract.matcher(buf);
 								m.find();
-								jsonPart += JSONObject.toString("extractor", m.group(1)) + ", ";
+								jsonPart.put("extractor", m.group(1));
 
 								// Namespaces.
 								m = reNamespace.matcher(buf);
-								jsonPart += "\"namespaces\":[";
-								for (int i = 0; m.find(); ++i)
+								jsonArr = new JSONArray();
+								while (m.find())
 								{
-									if (i > 0)
-										jsonPart += ",";
-									jsonPart +=
-										"{" +
-											JSONObject.toString("prefix", m.group(1)) + ", " +
-											JSONObject.toString("uri", m.group(2)) +
-										"}";
+									jsonArr.add(JSONObjectHelper.create(
+											"prefix",	m.group(1),
+											"uri",		m.group(2)
+										));
 								}
-								jsonPart += "]";
+								jsonPart.put("namespaces", jsonArr);
 
-								jsonPart += "}";
-								ret += jsonPart;
+								ret.put("lookup", jsonPart);
 							}
 							catch (Exception e)
 							{
 								_logger.debug(e);
-								ret += "{}";
+								return null;
 							}
 						}
 					}
 				}
-				ret += "}";
 			}
 		}
 		finally
@@ -647,7 +610,8 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String getChart() throws IOException, SQLException
+	@SuppressWarnings("unchecked")
+	public JSONObject getChart() throws IOException, SQLException
 	{
 //		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("../chart_data.js");
 //		byte[] bytes = new byte[inputStream.available()]; 
@@ -657,7 +621,7 @@ public class ManagerJson extends Manager
 
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null;
+		JSONObject			ret = null;
 
 		try
 		{
@@ -667,36 +631,32 @@ public class ManagerJson extends Manager
 				rs = pst.getResultSet();
 				if (rs.next())
 				{
-					ret = "{" +
-						JSONObject.toString("id", 0) + ", " +
-						JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
-						"\"data\":{" +
-							JSONObject.toString("$type", "star") + ", " + 
-							JSONObject.toString("$color", "#C72240") + ", " + 
-							JSONObject.toString("mapping_path", null) + ", " + 
-							JSONObject.toString("author", rs.getString("creator")) + ", " + 
-							JSONObject.toString("description", rs.getString("description")) +
-						"}," +
-						"\"children\":[" +
-							encodeChartChildren(null) +
-						"]}";
+					ret = new JSONObject();
+					ret.put("id", 0);
+					ret.put("name", "&lt;Catch-all&gt;");
+					ret.put("data", JSONObjectHelper.create(
+							"$type",		"star",
+							"$color",		"#C72240",
+							"mapping_path",	null,
+							"author",		rs.getString("creator"),
+							"description",	rs.getString("description")
+						));
+					ret.put("children", encodeChartChildren(null));
 				}
 			}
 
 			// Catch-all mapping is not defined yet.
 			if (ret == null)
 			{
-				ret = "{" +
-					JSONObject.toString("id", 0) + ", " +
-					JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
-					"\"data\":{" +
-						JSONObject.toString("$type", "star") + ", " + 
-						JSONObject.toString("$color", "#C72240") + ", " + 
-						JSONObject.toString("mapping_path", null) + 
-					"}," +
-					"\"children\":[" +
-						encodeChartChildren(null) +
-					"]}";
+				ret = new JSONObject();
+				ret.put("id", 0);
+				ret.put("name", "&lt;Catch-all&gt;");
+				ret.put("data", JSONObjectHelper.create(
+						"$type",		"star",
+						"$color",		"#C72240",
+						"mapping_path",	null
+					));
+				ret.put("children", encodeChartChildren(null));
 			}
 		}
 		finally
@@ -709,11 +669,13 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	private String encodeChartChildren(String parent) throws SQLException
+	@SuppressWarnings("unchecked")
+	private JSONArray encodeChartChildren(String parent) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = "";
+		JSONArray			ret = new JSONArray();
+		JSONObject			jsonData;
 		String				mappingPath, title;
 		boolean				isOneToOne;
 
@@ -732,22 +694,25 @@ public class ManagerJson extends Manager
 					title			= rs.getString("title");
 					isOneToOne		= rs.getString("type").equalsIgnoreCase("1:1");
 
-					if (!ret.equals(""))
-						ret += ","; 
-					ret += "{" +
-						JSONObject.toString("id", mappingPath) + ", " +
-						JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
-						"\"data\":{" +
-							(isOneToOne ? JSONObject.toString("$type", "square") + ", " : "") +
-							(isOneToOne ? JSONObject.toString("$color", "#bed600") + ", " : "") +
-							JSONObject.toString("mapping_path", mappingPath) + ", " + 
-							JSONObject.toString("title", title) + ", " + 
-							JSONObject.toString("author", rs.getString("creator")) + ", " + 
-							JSONObject.toString("description", rs.getString("description")) +
-						"}," +
-						"\"children\":[" +
-							encodeChartChildren(mappingPath) +
-						"]}";
+					// Construct data object.
+					jsonData = JSONObjectHelper.create(
+							"mapping_path",	mappingPath,
+							"title",		title,
+							"author",		rs.getString("creator"),
+							"description",	rs.getString("description")
+						);
+					if (isOneToOne)
+					{
+						jsonData.put("$type", "square");
+						jsonData.put("$color", "#bed600");
+					}
+
+					JSONObject json = new JSONObject();
+					json.put("id", mappingPath);
+					json.put("name", title == null ? mappingPath : title);
+					json.put("data", jsonData);
+					json.put("children", encodeChartChildren(mappingPath));
+					ret.add(json);
 				}
 			}
 		}
@@ -797,7 +762,7 @@ public class ManagerJson extends Manager
 						mappingPath		= rs.getString("mapping_path");
 						title			= rs.getString("title");
 						inheritors		= rs.getInt("inheritors");
-	
+
 						// Initial mapping ID is required for detection of cyclic inheritance.
 						parentsList.add(mappingPath);
 
