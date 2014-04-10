@@ -65,7 +65,7 @@ public class FormalGrammar
 	protected final Object				_matchAuxiliaryData;
 	protected final Object				_conditionAuxiliaryData;
 	private ArrayList<String>			_log = new ArrayList<String>();
-	
+
 	public FormalGrammar(URI uri, HttpServletRequest request, Object matchAuxiliaryData, Object conditionAuxiliaryData)
 	{
 		_uri = uri;
@@ -137,12 +137,12 @@ public class FormalGrammar
 	{
 		return str.replaceAll("[:\\\\\\$\\{\\}=&]", "\\\\$0");
 	}
-	
+
 	public static String unescape(String str)
 	{
 		return str.replaceAll("\\\\([:\\\\\\$\\{\\}=&])", "$1");
 	}
-	
+
 	protected String invokeFunction(String name, String param)
 	{
 		_logger.trace("Invoking internal function ${{}:{}}", name, param);

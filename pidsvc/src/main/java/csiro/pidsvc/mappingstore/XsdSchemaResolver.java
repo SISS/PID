@@ -23,12 +23,12 @@ import org.w3c.dom.ls.LSInput;
 public class XsdSchemaResolver implements LSInput
 {
 	protected String _systemId;
-	
+
 	public XsdSchemaResolver(String type, String namespaceURI, String publicId, String systemId, String baseURI)
 	{
 		_systemId = systemId;
 	}
-	
+
 	@Override
 	public Reader getCharacterStream()
 	{

@@ -5,14 +5,14 @@
 
 	<xsl:template match="/">
 		<xsl:choose>
-			<xsl:when test="count(merge/source//pidsvc:mapping) != 1">
+			<xsl:when test="not(count(merge/source//pidsvc:mapping) = 1 or (count(merge/source//pidsvc:mapping) = 0 and count(merge/source//pidsvc:conditions) = 1))">
 				<error>ERROR: The source configuration must contain one mapping only.</error>
 			</xsl:when>
 			<xsl:otherwise>
 				<response>
 					<log>
 						<xsl:apply-templates select="/merge/target/pidsvc:backup/pidsvc:mapping/pidsvc:conditions/pidsvc:condition" mode="Log"/>
-						<xsl:apply-templates select="/merge/source//pidsvc:mapping/pidsvc:conditions/pidsvc:condition" mode="LogSourceCopy"/>
+						<xsl:apply-templates select="/merge/source//pidsvc:conditions/pidsvc:condition" mode="LogSourceCopy"/>
 					</log>
 					<merged>
 						<xsl:apply-templates select="merge/target/*"/>
@@ -25,17 +25,27 @@
 		<!-- Drop pidsvc:backup element. -->
 		<xsl:apply-templates select="pidsvc:mapping[1]"/>
 	</xsl:template>
+	<xsl:template match="pidsvc:mapping" priority="1">
+		<xsl:copy>
+			<xsl:apply-templates select="@* | node()"/>
+			<xsl:if test="not(pidsvc:conditions) and /merge/source//pidsvc:conditions/pidsvc:condition">
+				<conditions xmlns="urn:csiro:xmlns:pidsvc:backup:1.0">
+					<xsl:apply-templates select="/merge/source//pidsvc:conditions/pidsvc:condition" mode="SourceCopy"/>
+				</conditions>
+			</xsl:if>
+		</xsl:copy>
+	</xsl:template>
 	<xsl:template match="pidsvc:conditions" priority="1">
 		<xsl:copy>
 			<xsl:apply-templates select="@* | node()"/>
-			<xsl:apply-templates select="/merge/source//pidsvc:mapping/pidsvc:conditions/pidsvc:condition" mode="SourceCopy"/>
+			<xsl:apply-templates select="/merge/source//pidsvc:conditions/pidsvc:condition" mode="SourceCopy"/>
 		</xsl:copy>
 	</xsl:template>
 	<xsl:template match="pidsvc:condition" priority="1">
 		<xsl:choose>
 			<xsl:when test="$replace = 1 and preceding-sibling::pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
 			<xsl:when test="$replace = 1">
-				<xsl:variable name="source" select="/merge/source//pidsvc:mapping/pidsvc:conditions/pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
+				<xsl:variable name="source" select="/merge/source//pidsvc:conditions/pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
 				<xsl:choose>
 					<xsl:when test="count($source) > 0">
 						<xsl:copy-of select="$source[1]"/>
@@ -72,7 +82,7 @@
 		<xsl:choose>
 			<xsl:when test="$replace = 1 and preceding-sibling::pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
 			<xsl:when test="$replace = 1">
-				<xsl:variable name="source" select="/merge/source//pidsvc:mapping/pidsvc:conditions/pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
+				<xsl:variable name="source" select="/merge/source//pidsvc:conditions/pidsvc:condition[pidsvc:type/text() = current()/pidsvc:type/text() and pidsvc:match/text() = current()/pidsvc:match/text()]"/>
 				<xsl:choose>
 					<xsl:when test="count($source) > 0">
 						<condition>1</condition>

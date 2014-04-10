@@ -21,8 +21,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
 
 import csiro.pidsvc.helper.Http;
 import csiro.pidsvc.helper.Literals;
@@ -154,11 +156,32 @@ public class controller extends HttpServlet
 			else if (cmd.equalsIgnoreCase("merge"))
 			{
 				final String mappingPath	= request.getParameter("mapping_path");
+				final String targetXml		= request.getParameter("target_xml");
 				final String inputData		= Stream.readInputStream(request.getInputStream());
-				final String replace		= request.getParameter("replace");
+				final boolean replace		= "1".equals(request.getParameter("replace"));
+
+				JSONObject json = (mappingPath != null && !mappingPath.isEmpty()) ? mgr.mergeMappingByPath(mappingPath, inputData, replace) : mgr.mergeMappingImpl(targetXml, inputData, replace);
 
 				response.setContentType("text/json");
-				response.getWriter().write(mgr.mergeMappingImpl(mappingPath, inputData, "1".equals(replace)));
+				response.getWriter().write(json.toString());
+			}
+			else if (cmd.equalsIgnoreCase("bundle_restore"))
+			{
+				// Applies a set of mapping conditions to a mapping path.
+				final String mappingPath	= request.getParameter("mapping_path");
+				final String parent			= request.getParameter("parent");
+				final String type			= request.getParameter("type");
+				final String inputData		= Stream.readInputStream(request.getInputStream());
+
+				String targetXml = 
+						"<mapping xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">" +
+						"	<path>" + StringEscapeUtils.escapeXml(mappingPath) + "</path>" +
+						(parent != null && !parent.isEmpty() ? "<parent>" + StringEscapeUtils.escapeXml(parent) + "</parent>" : "") +
+						"	<type>" + StringEscapeUtils.escapeXml(type) + "</type>" +
+						"</mapping>";
+
+				response.setContentType("text/json");
+				response.getWriter().write(mgr.mergeMappingImpl(targetXml, inputData, true).toString());
 			}
 			else if (cmd.equalsIgnoreCase("purge_data_store"))
 				mgr.purgeDataStore();

@@ -71,6 +71,7 @@ import org.xml.sax.SAXException;
 
 import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
+import csiro.pidsvc.helper.JSONObjectHelper;
 import csiro.pidsvc.helper.Stream;
 import csiro.pidsvc.helper.URI;
 import csiro.pidsvc.mappingstore.action.List;
@@ -87,9 +88,9 @@ import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
 public class Manager
 {
 	private static Logger _logger = LogManager.getLogger(Manager.class.getName());
-	
+
 	protected Connection _connection = null;
-	
+
 	public class MappingMatchResults
 	{
 		public static final int NULL = -1;
@@ -98,7 +99,7 @@ public class Manager
 		public final int DefaultActionId;
 		public final AbstractCondition Condition;
 		public final Object AuxiliaryData;
-		
+
 		public MappingMatchResults(int mappingId, int defaultActionId, AbstractCondition condition, Object auxiliaryData)
 		{
 			MappingId = mappingId;
@@ -106,7 +107,7 @@ public class Manager
 			Condition = condition;
 			AuxiliaryData = auxiliaryData;
 		}
-		
+
 		public boolean success()
 		{
 			return MappingId != MappingMatchResults.NULL || DefaultActionId != MappingMatchResults.NULL || Condition != null || AuxiliaryData != null;
@@ -158,7 +159,7 @@ public class Manager
 			return null;
 		}
 	}
-	
+
 	protected interface ICallback
 	{
 		public String process(InputStream inputStream) throws Exception;
@@ -396,36 +397,48 @@ public class Manager
 		return ret;
 	}
 
-	public String mergeMappingImpl(String mappingPath, String inputData, boolean replace)
+	public JSONObject mergeMappingByPath(String mappingPath, String inputData, boolean replace)
+	{
+		try
+		{
+			String targetMapping = exportMapping(mappingPath, false).replaceAll("<\\?xml.*?\\?>", "");
+			return mergeMappingImpl(targetMapping, inputData, replace);
+		}
+		catch (Exception e)
+		{
+			return JSONObjectHelper.create("error", "ERROR: " + e.getMessage());
+		}
+	}
+
+	public JSONObject mergeMappingImpl(String targetMapping, String inputData, boolean replace)
 	{
 		try
 		{
 			// Validate request.
+			validateRequest(targetMapping, "xsd/backup.xsd");
 			validateRequest(inputData, "xsd/backup.xsd");
-	
-			String 				targetMapping = exportMapping(mappingPath, false);
-			String 				xsltInput = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><merge><target>" + targetMapping.replaceAll("<\\?xml.*?\\?>", "") + "</target><source>" + inputData.replaceAll("<\\?xml.*?\\?>", "") + "</source></merge>";
-	
+
 			// Generate merged mapping.
+			String 				xsltInput = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><merge><target>" + targetMapping + "</target><source>" + inputData.replaceAll("<\\?xml.*?\\?>", "") + "</source></merge>";
 			Processor			processor = new Processor(false);
 			XsltCompiler		xsltCompiler = processor.newXsltCompiler();
 			InputStream			inputSqlGen = getClass().getResourceAsStream("xslt/merge.xslt");
 			XsltExecutable		xsltExec = xsltCompiler.compile(new StreamSource(inputSqlGen));
 			XsltTransformer		transformer = xsltExec.load();
-	
+
 			StringWriter swMergedMapping = new StringWriter();
 			transformer.setInitialContextNode(processor.newDocumentBuilder().build(new StreamSource(new StringReader(xsltInput))));
 			transformer.setDestination(new Serializer(swMergedMapping));
 			transformer.setParameter(new QName("", "replace"), new XdmAtomicValue(replace ? 1 : 0));
 			_logger.trace("Generating merged mapping.");
 			transformer.transform();
-	
+
 			// Process merged mapping.
 			String				mergedMapping = swMergedMapping.toString();
 			XPathCompiler		xpathCompiler = processor.newXPathCompiler();
 			XdmNode				mergedXml = processor.newDocumentBuilder().build(new StreamSource(new StringReader(mergedMapping)));
 			XdmItem 			node = xpathCompiler.evaluateSingle("/response/merged/*[1]", mergedXml);
-	
+
 			if (node != null)
 			{
 				String retCreateMapping = createMapping(node.toString(), false);
@@ -434,31 +447,28 @@ public class Manager
 				{
 					XdmValue log = xpathCompiler.evaluate("/response/log/condition", mergedXml);
 					String conditionFlags = "";
-	
+
 					// Get the list of conditions that have changed.
 					for (XdmSequenceIterator iter = log.iterator(); iter.hasNext(); conditionFlags += iter.next().getStringValue());
-	
+
 					// Return JSON object.
-					return "{" +
-							JSONObject.toString("status", retCreateMapping) + "," +
-							JSONObject.toString("conditionChangeFlags", conditionFlags) +
-						"}";
+					return JSONObjectHelper.create("status", retCreateMapping, "conditionChangeFlags", conditionFlags);
 				}
 				else
 				{
 					// Error has occurred.
-					return "{" + JSONObject.toString("error", retCreateMapping) + "}";
+					return JSONObjectHelper.create("error", retCreateMapping);
 				}
 			}
-	
+
 			node = xpathCompiler.evaluateSingle("/error", mergedXml);
 			if (node != null)
-				return "{" + JSONObject.toString("error", node.getStringValue()) + "}";
-			return "{" + JSONObject.toString("error", "ERROR: Unexpected exception has occurred. No data has been changed.") + "}";
+				return JSONObjectHelper.create("error", node.getStringValue());
+			return JSONObjectHelper.create("error", "ERROR: Unexpected exception has occurred. No data has been changed.");
 		}
 		catch (Exception e)
 		{
-			return "{" + JSONObject.toString("error", "ERROR: " + e.getMessage()) + "}";
+			return JSONObjectHelper.create("error", "ERROR: " + e.getMessage());
 		}
 	}
 
@@ -814,7 +824,7 @@ public class Manager
 		{
 			pst = _connection.prepareStatement("SELECT * FROM condition WHERE mapping_id = ? ORDER BY condition_id");
 			pst.setInt(1, mappingId);
-			
+
 			if (!pst.execute())
 				return null;
 
@@ -836,7 +846,7 @@ public class Manager
 		}
 		return null;
 	}
-	
+
 	protected AbstractCondition getCondition(int mappingId, URI uri, HttpServletRequest request, Object matchAuxiliaryData) throws SQLException
 	{
 		// QR Code request.
@@ -857,13 +867,11 @@ public class Manager
 				/*
 				 * Once ContentType condition is encountered process all
 				 * ContentType conditions in one go as a group.
+				 * 
+				 * Skip if ContentType conditions have already been processed.
 				 */
-				if (descriptor.Type.equalsIgnoreCase("ContentType"))
+				if (prioritizedConditions == null && descriptor.Type.equalsIgnoreCase("ContentType"))
 				{
-					// Skip if ContentType conditions have already been processed.
-					if (prioritizedConditions != null)
-						continue;
-	
 					// Extract all ContentType conditions.
 					prioritizedConditions = new Vector<ConditionContentType>();
 					for (csiro.pidsvc.mappingstore.condition.Descriptor dctr : conditions)
@@ -875,7 +883,7 @@ public class Manager
 							prioritizedConditions.add((ConditionContentType)ctor.newInstance(uri, request, dctr.ID, dctr.Match, matchAuxiliaryData));
 						}
 					}
-	
+
 					// Find matching conditions.
 					AbstractCondition matchingCondition = ConditionContentType.getMatchingCondition(prioritizedConditions);
 					if (matchingCondition != null)
@@ -910,7 +918,7 @@ public class Manager
 		{
 			pst = _connection.prepareStatement("SELECT * FROM action WHERE action_id = ?");
 			pst.setInt(1, actionId);
-			
+
 			rs = pst.executeQuery();
 			rs.next();
 			return new csiro.pidsvc.mappingstore.action.Descriptor(rs.getString("type"), rs.getString("action_name"), rs.getString("action_value"));
@@ -923,7 +931,7 @@ public class Manager
 				pst.close();
 		}
 	}
-	
+
 	public List getActionsByConditionId(int conditionId) throws SQLException
 	{
 		PreparedStatement	pst = null;
@@ -1083,7 +1091,7 @@ public class Manager
 							ret += "<description>" + StringEscapeUtils.escapeXml(buf) + "</description>";
 						ret += "</action>";
 					}
-					
+
 					// Conditions.
 					Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(rs.getInt("mapping_id"));
 					if (conditions != null && conditions.size() > 0)
@@ -1139,7 +1147,7 @@ public class Manager
 		ret += "</backup>";
 		return ret;
 	}
-	
+
 	public String importMappings(HttpServletRequest request)
 	{
 		return unwrapCompressedBackupFile(request, new ICallback() {
@@ -1161,7 +1169,7 @@ public class Manager
 			public String process(InputStream inputStream) throws Exception
 			{
 				String inputData = Stream.readInputStream(inputStream);
-				return mergeMappingImpl(mappingPath, inputData, "1".equals(replace));
+				return mergeMappingByPath(mappingPath, inputData, "1".equals(replace)).toString();
 			}
 		});
 	}
@@ -1314,7 +1322,7 @@ public class Manager
 	{
 		return _caseSensitivity.IsCaseSensitive;
 	}
-	
+
 	/**************************************************************************
 	 *  Lookup maps.
 	 */
@@ -1323,7 +1331,7 @@ public class Manager
 	{
 		return createLookup(Stream.readInputStream(inputStream));
 	}
-	
+
 	public String createLookup(String inputData) throws SaxonApiException, SQLException, IOException, ValidationException
 	{
 		return processGenericXmlCommand(inputData, "xsd/backup.xsd", "xslt/import_lookup_postgresql.xslt");
@@ -1481,27 +1489,27 @@ public class Manager
 				Matcher				m;
 				String				endpoint, extractorType, extractor, content;
 				String[]			dynKeyValue = getLookupKeyValue(ns);
-	
+
 				if (dynKeyValue == null)
 					return null;
-	
+
 				// Endpoint.
 				endpoint = dynKeyValue[0];
 				if (endpoint.contains("$0"))
 					endpoint = endpoint.replace("$0", key);
 				else
 					endpoint += key;
-	
+
 				// Type.
 				m = reType.matcher(dynKeyValue[1]);
 				m.find();
 				extractorType = m.group(1);
-	
+
 				// Extractor.
 				m = reExtract.matcher(dynKeyValue[1]);
 				m.find();
 				extractor = m.group(1);
-	
+
 				// Execute HTTP GET request.
 				content = Http.simpleGetRequestStrict(endpoint);
 				if (content == null)
@@ -1514,7 +1522,7 @@ public class Manager
 				{
 					Pattern re = Pattern.compile(extractor);
 					m = re.matcher(content);
-	
+
 					if (m.find())
 						return m.groupCount() > 0 ? m.group(1) : m.group();
 				}
@@ -1586,13 +1594,13 @@ public class Manager
 					{
 						String lookupNamespace = rs.getString("ns");
 						String lookupType = rs.getString("type");
-	
+
 						ret += "<lookup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 						ret += "<ns>" + StringEscapeUtils.escapeXml(lookupNamespace) + "</ns>";
-		
+
 						String behaviourValue = rs.getString("behaviour_value");
 						ret += "<default type=\"" + StringEscapeUtils.escapeXml(rs.getString("behaviour_type")) + "\">" + (behaviourValue == null ? "" : StringEscapeUtils.escapeXml(behaviourValue)) + "</default>";
-		
+
 						pst = _connection.prepareStatement("SELECT key, value FROM lookup WHERE ns = ?;");
 						pst.setString(1, lookupNamespace);
 						if (!pst.execute())
@@ -1615,33 +1623,33 @@ public class Manager
 							ret += "<HttpResolver>";
 							if (!rsMap.next())
 								throw new SQLException("Lookup map configuration cannot be exported. Data is corrupted.");
-		
+
 							final Pattern		reType = Pattern.compile("^T:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 							final Pattern		reExtract = Pattern.compile("^E:(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 							final Pattern		reNamespace = Pattern.compile("^NS:(.+?):(.+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 							Matcher				m;
 							String				namespaces = "";
 							String				buf = rsMap.getString(2);
-		
+
 							ret += "<endpoint>" + StringEscapeUtils.escapeXml(rsMap.getString(1)) + "</endpoint>";
-		
+
 							// Type.
 							m = reType.matcher(buf);
 							m.find();
 							ret += "<type>" + m.group(1) + "</type>";
-		
+
 							// Extractor.
 							m = reExtract.matcher(buf);
 							m.find();
 							ret += "<extractor>" + StringEscapeUtils.escapeXml(m.group(1)) + "</extractor>";
-		
+
 							// Namespaces.
 							m = reNamespace.matcher(buf);
 							while (m.find())
 								namespaces += "<ns prefix=\"" + StringEscapeUtils.escapeXml(m.group(1)) + "\">" + StringEscapeUtils.escapeXml(m.group(2)) + "</ns>";
 							if (!namespaces.isEmpty())
 								ret += "<namespaces>" + namespaces + "</namespaces>";
-		
+
 							ret += "</HttpResolver>";
 						}
 						ret += "</lookup>";
