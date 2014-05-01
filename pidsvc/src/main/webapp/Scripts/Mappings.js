@@ -9,6 +9,14 @@
  */
 
 var Main = Class.construct({
+	_conditionTypesPlaceholders: {
+		"Comparator":	"Comparison equation, e.g. $1=string&$2=escaped\&characters",
+		"ComparatorI":	"Comparison equation, e.g. $1=string&$2=escaped\&characters",
+		"ContentType":	"A regular expression to match an Accept HTTP header, e.g. ^application/html?$",
+		"Extension":	"A regular expression to match an extension, e.g. ^html?$",
+		"HttpHeader":	"Regular expression condition, e.g. accept=^application/(xml|rdf)$",
+		"QueryString":	"Regular expression condition, e.g. param=(one)&number=(\d+)"
+	},
 	_actionTypesDescriptions: {
 		"301": "Moved permanently to a target URL.<br/>Value points to resource location.",
 		"302": "Simple redirection to a target URL.<br/>Value points to resource location.",
@@ -528,6 +536,7 @@ var Main = Class.construct({
 	{
 		if (Main.isOneToOneMapping())
 		{
+			$J("#MappingPath").attr("placeholder", "Regular expression to match URI");
 			$J("#RegexTester").hide();
 
 			// Reset parent if 1:1 mapping type is chosen.
@@ -549,9 +558,12 @@ var Main = Class.construct({
 		}
 		else
 		{
+			$J("#MappingPath").attr("placeholder", "URI stem to match (plain text)");
 			$J("#RegexTester").show();
 			Main.testUriOnChange();
 		}
+
+		Main.recreateConditionTypes();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1000,7 +1012,7 @@ var Main = Class.construct({
 				alert("Mapping is not found!");
 
 			$J("#MappingPath").val("");
-			$J("#MappingType").val("1:1").change();
+			$J("#MappingType").val(location.href.getQueryParam("type") == "1:1" ? "1:1" : "Regex").change();
 			$J("#MappingTitle").val("");
 			$J("#MappingDescription").val("");
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName ? GlobalSettings.AuthorizationName : "");
@@ -1430,7 +1442,8 @@ var Main = Class.construct({
 	addCondition: function()
 	{
 		var jq = Main.appendCondition($J("#ConditionSection"), null).find("table.__actions:last");
-		this.appendAction(jq, { type: "", name: "", value: "" });
+		if (jq != null)
+			this.appendAction(jq, { type: "", name: "", value: "" });
 		Main.blockSaving(false);
 	},
 
@@ -1471,13 +1484,58 @@ var Main = Class.construct({
 		}
 	},
 
+	conditionOnChange: function()
+	{
+		var placeholder = Main._conditionTypesPlaceholders[$J(this).val()];
+		$J(this).parents("table:first").find("INPUT.__conditionMatch").attr("placeholder", placeholder ? placeholder : "");
+	},
+
+	recreateConditionTypes: function()
+	{
+		$J("#ConditionSection TD.__conditionType SELECT")
+			.each(function() {
+				var jqThis = $J(this);
+				var value = jqThis.val();
+
+				if (!Main.isOneToOneMapping() && value == "Extension")
+				{
+					// Remove the condition as this condition type is not supported for pattern based rules.
+					$J(this).parents("table.__conditionTable:first").remove();
+				}
+				else
+				{
+					jqThis.empty();
+					Main.appendConditionTypes(jqThis).val(value);
+				}
+			});
+	},
+
+	getConditionTypesHtml: function()
+	{
+		return "<option value='Comparator'>Comparator</option>" +
+			"<option value='ComparatorI'>Comparator (case-insensitive)</option>" +
+			"<option value='ContentType'>ContentType</option>" +
+			(Main.isOneToOneMapping() ? "	<option value='Extension'>Extension</option>" : "") +
+			"<option value='HttpHeader'>HttpHeader</option>" +
+			"<option value='QueryString'>QueryString</option>";
+	},
+
+	appendConditionTypes: function(jq)
+	{
+		return jq.append(Main.getConditionTypesHtml());
+	},
+
 	appendCondition: function(jq, json)
 	{
 		if (json == null)
 			json = { type: null, match: "", description: "" };
 
+		// Regex-based rules do not support Extension condition type. 
+		if (!Main.isOneToOneMapping() && json.type == "Extension")
+			return null;
+
 		return jq
-			.append("<table border='0' cellpadding='5' cellspacing='0' width='100%' style='border: 1px solid #fff;'>" +
+			.append("<table class='__conditionTable' border='0' cellpadding='5' cellspacing='0' width='100%' style='border: 1px solid #fff;'>" +
 				"	<tr valign='top'>" +
 				"		<td style=\"position: relative;\">" +
 				"<div class=\"__marker\" style=\"background: #d42626; position: absolute; top: 0; left: -5px; width: 5px; height: 33px; display: none;\"></div>" +
@@ -1485,14 +1543,7 @@ var Main = Class.construct({
 				"<a href='#' class='__conditionMoveDown'><img src='Images/arrow_down_small.gif' title='Move Down' width='12' height='6' border='0' style='position: relative; top: 9px;'/></a>" +
 				"</td>" +
 				"		<td class='__conditionType'>" +
-				"			<select class='input' style='width: 200px;'>" +
-				"				<option value='Comparator'>Comparator</option>" +
-				"				<option value='ComparatorI'>Comparator (case-insensitive)</option>" +
-				"				<option value='ContentType'>ContentType</option>" +
-				"				<option value='Extension'>Extension</option>" +
-				"				<option value='HttpHeader'>HttpHeader</option>" +
-				"				<option value='QueryString'>QueryString</option>" +
-				"			</select>" +
+				"			<select class='input' style='width: 200px;'>" + Main.getConditionTypesHtml() + "</select>" +
 				"		</td>" +
 				"		<td>" +
 				"			<input type='text' value='" + json.match + "' class='__conditionMatch' maxlength='255' style='width: 483px;' />" +
@@ -1523,6 +1574,8 @@ var Main = Class.construct({
 				"</table>"
 			)
 			.find("td.__conditionType > select:last")
+				.change(Main.conditionOnChange)
+				.change()
 				.val(json.type)
 			.end()
 			.find("a.__conditionMoveUp:last")
