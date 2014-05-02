@@ -536,7 +536,7 @@ var Main = Class.construct({
 	{
 		if (Main.isOneToOneMapping())
 		{
-			$J("#MappingPath").attr("placeholder", "Regular expression to match URI");
+			$J("#MappingPath").attr("placeholder", "URI stem to match (plain text)");
 			$J("#RegexTester").hide();
 
 			// Reset parent if 1:1 mapping type is chosen.
@@ -558,7 +558,7 @@ var Main = Class.construct({
 		}
 		else
 		{
-			$J("#MappingPath").attr("placeholder", "URI stem to match (plain text)");
+			$J("#MappingPath").attr("placeholder", "Regular expression to match URI");
 			$J("#RegexTester").show();
 			Main.testUriOnChange();
 		}
