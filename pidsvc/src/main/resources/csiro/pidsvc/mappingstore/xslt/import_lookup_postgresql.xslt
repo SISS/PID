@@ -18,7 +18,7 @@
 			</xsl:when>
 			<xsl:when test="lookup/ns">
 				<!-- Single lookup import -->
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", lookup/ns/text(), "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [lookup[[", lookup/ns/text(), "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="lookup"/>
 				COMMIT;

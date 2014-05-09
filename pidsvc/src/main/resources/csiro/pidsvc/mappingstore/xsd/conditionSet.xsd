@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:include schemaLocation="mapping.xsd"/>
+	<xs:element name="conditionSet" type="pidsvc:ConditionSet"/>
+	<xs:complexType name="ConditionSet">
+		<xs:sequence>
+			<xs:element name="name">
+				<xs:annotation>
+					<xs:documentation>Provides a unique name for condition set.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="pidsvc:ConditionSetNameType">
+							<xs:attribute name="rename" type="pidsvc:NonEmptyString" use="optional">
+								<xs:annotation>
+									<xs:documentation>Old condition set name (if you need to rename an existing set).</xs:documentation>
+								</xs:annotation>
+							</xs:attribute>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Textual description of the condition set (optional).</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditions" type="pidsvc:ConditionsType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>A set of request specific URI mapping conditions.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="ConditionSetNameType">
+		<xs:restriction base="pidsvc:NonEmptyString">
+			<xs:maxLength value="50"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

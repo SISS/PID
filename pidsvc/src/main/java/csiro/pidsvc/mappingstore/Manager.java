@@ -345,11 +345,14 @@ public class Manager
 		catch (Exception ex)
 		{
 			String msg = ex.getMessage();
+			Throwable linkedException = ex.getCause();
 			_logger.warn(msg);
+			if (linkedException != null)
+				_logger.warn(linkedException.getMessage());
 			if (msg != null && msg.equalsIgnoreCase("Not in GZIP format"))
 				return "ERROR: Unknown file format.";
 			else
-				return "ERROR: " + (msg == null ? "Something went wrong." : msg);
+				return "ERROR: " + (msg == null ? "Something went wrong." : msg + (linkedException == null ? "" : " " + linkedException.getMessage()));
 		}
 		finally
 		{
@@ -389,10 +392,23 @@ public class Manager
 		String ret = processGenericXmlCommand(inputData, "xsd/" + (isBackup ? "backup" : "mapping") + ".xsd", "xslt/import_mapping_postgresql.xslt");
 		if (isBackup)
 		{
+			boolean noMappings = ret.equalsIgnoreCase("OK: No mapping rules found in the backup.");
+			String otherRestoreStatus = "";
+			
+			// Restore condition sets.
+			String retSubset = createConditionSet(inputData);
+			if (retSubset.startsWith("OK: Success"))
+				otherRestoreStatus += "\n" + retSubset;
+
 			// Restore lookup maps.
-			String retLookup = createLookup(inputData);
-			if (retLookup.startsWith("OK: Success"))
-				ret += "\n" + retLookup;
+			retSubset = createLookup(inputData);
+			if (retSubset.startsWith("OK: Success"))
+				otherRestoreStatus += "\n" + retSubset;
+
+			if (noMappings)
+				ret = otherRestoreStatus.substring(1);
+			else
+				ret += otherRestoreStatus;
 		}
 		return ret;
 	}
@@ -815,15 +831,30 @@ public class Manager
 		return new MappingMatchResults(mappingId, defaultActionId, retCondition, matchAuxiliaryData);
 	}
 
-	protected Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditions(int mappingId) throws SQLException
+	private Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditionsByMappingId(int mappingId) throws SQLException
+	{
+		return getConditionsImpl("mapping_id", mappingId);
+	}
+
+	private Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditionsBySetId(int conditionSetId) throws SQLException
+	{
+		return getConditionsImpl("condition_set_id", conditionSetId);
+	}
+
+	private Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditionsBySetName(String conditionSetName) throws SQLException
+	{
+		return getConditionsImpl("condition_set_id", getConditionSetId(conditionSetName));
+	}
+
+	private Vector<csiro.pidsvc.mappingstore.condition.Descriptor> getConditionsImpl(String searchField, int id) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet 			rs = null;
 
 		try
 		{
-			pst = _connection.prepareStatement("SELECT * FROM condition WHERE mapping_id = ? ORDER BY condition_id");
-			pst.setInt(1, mappingId);
+			pst = _connection.prepareStatement("SELECT * FROM condition WHERE " + searchField + " = ? ORDER BY condition_id");
+			pst.setInt(1, id);
 
 			if (!pst.execute())
 				return null;
@@ -853,12 +884,15 @@ public class Manager
 		if (uri.isQrCodeRequest())
 			return new ConditionQrCodeRequest(uri, request);
 
-		// Get list of conditions.
-		Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(mappingId);
+		// Get matching condition.
+		return getMatchingCondition(getConditionsByMappingId(mappingId), uri, request, matchAuxiliaryData);
+	}
+
+	protected AbstractCondition getMatchingCondition(Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions, URI uri, HttpServletRequest request, Object matchAuxiliaryData) throws SQLException
+	{
 		if (conditions == null)
 			return null;
 
-		// Test conditions.
 		try
 		{
 			Vector<ConditionContentType> prioritizedConditions = null;
@@ -890,6 +924,27 @@ public class Manager
 						return matchingCondition;
 
 					// Continue if no matching conditions were found.
+					continue;
+				}
+
+				/*
+				 * Special handling for ConditionSet type.
+				 */
+				if (descriptor.Type.equalsIgnoreCase("ConditionSet"))
+				{
+					// Block using a ConditionSet within another ConditionSet.
+					if (Thread.currentThread().getStackTrace()[2].getMethodName().equalsIgnoreCase("getMatchingCondition"))
+						continue;
+
+					// Get conditions from the set.
+					AbstractCondition matchingCondition = getMatchingCondition(getConditionsBySetName(descriptor.Match), uri, request, matchAuxiliaryData);
+					if (matchingCondition != null)
+					{
+						matchingCondition.Set = descriptor.Match;
+						return matchingCondition;
+					}
+
+					// Continue if no matching conditions in the subset were found.
 					continue;
 				}
 
@@ -1005,7 +1060,6 @@ public class Manager
 		ResultSet			rs = null;
 		String				ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<backup type=\"" + (fullBackup ? "full" : "partial") + "\" scope=\"" + scope + "\" xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
 		int					defaultActionId;
-		List				actions;
 		Timestamp			timeStamp;
 		String				buf, path;
 
@@ -1093,38 +1147,8 @@ public class Manager
 					}
 
 					// Conditions.
-					Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions = getConditions(rs.getInt("mapping_id"));
-					if (conditions != null && conditions.size() > 0)
-					{
-						ret += "<conditions>";
-						for (csiro.pidsvc.mappingstore.condition.Descriptor condition : conditions)
-						{
-							ret += "<condition>";
-							ret += "<type>" + condition.Type + "</type>";
-							ret += "<match>" + StringEscapeUtils.escapeXml(condition.Match) + "</match>";
-							if (condition.Description != null)
-								ret += "<description>" + StringEscapeUtils.escapeXml(condition.Description) + "</description>";
+					ret += exportConditionsByMappingId(rs.getInt("mapping_id"));
 
-							actions = getActionsByConditionId(condition.ID);
-							if (actions != null && actions.size() > 0)
-							{
-								ret += "<actions>";
-								for (csiro.pidsvc.mappingstore.action.Descriptor action : actions)
-								{
-									ret += "<action>";
-									ret += "<type>" + action.Type + "</type>";
-									if (action.Name != null)
-										ret += "<name>" + StringEscapeUtils.escapeXml(action.Name) + "</name>";
-									if (action.Value != null)
-										ret += "<value>" + StringEscapeUtils.escapeXml(action.Value) + "</value>";
-									ret += "</action>";
-								};
-								ret += "</actions>";
-							}
-							ret += "</condition>";
-						}
-						ret += "</conditions>";
-					}
 					ret += "</mapping>";
 				}
 			}
@@ -1145,6 +1169,55 @@ public class Manager
 				pst.close();
 		}
 		ret += "</backup>";
+		return ret;
+	}
+
+	protected String exportConditionsByMappingId(int mappingId) throws SQLException
+	{
+		return exportConditions(getConditionsByMappingId(mappingId));
+	}
+
+	protected String exportConditionsBySetId(int conditionSetId) throws SQLException
+	{
+		return exportConditions(getConditionsBySetId(conditionSetId));
+	}
+
+	protected String exportConditions(Vector<csiro.pidsvc.mappingstore.condition.Descriptor> conditions) throws SQLException
+	{
+		String		ret = "";
+		List		actions;
+
+		if (conditions != null && conditions.size() > 0)
+		{
+			ret += "<conditions>";
+			for (csiro.pidsvc.mappingstore.condition.Descriptor condition : conditions)
+			{
+				ret += "<condition>";
+				ret += "<type>" + condition.Type + "</type>";
+				ret += "<match>" + StringEscapeUtils.escapeXml(condition.Match) + "</match>";
+				if (condition.Description != null)
+					ret += "<description>" + StringEscapeUtils.escapeXml(condition.Description) + "</description>";
+
+				actions = getActionsByConditionId(condition.ID);
+				if (actions != null && actions.size() > 0)
+				{
+					ret += "<actions>";
+					for (csiro.pidsvc.mappingstore.action.Descriptor action : actions)
+					{
+						ret += "<action>";
+						ret += "<type>" + action.Type + "</type>";
+						if (action.Name != null)
+							ret += "<name>" + StringEscapeUtils.escapeXml(action.Name) + "</name>";
+						if (action.Value != null)
+							ret += "<value>" + StringEscapeUtils.escapeXml(action.Value) + "</value>";
+						ret += "</action>";
+					};
+					ret += "</actions>";
+				}
+				ret += "</condition>";
+			}
+			ret += "</conditions>";
+		}
 		return ret;
 	}
 
@@ -1321,6 +1394,145 @@ public class Manager
 	public boolean isCaseSensitive()
 	{
 		return _caseSensitivity.IsCaseSensitive;
+	}
+
+	/**************************************************************************
+	 *  Condition sets.
+	 */
+
+	public String createConditionSet(InputStream inputStream) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
+		return createConditionSet(Stream.readInputStream(inputStream));
+	}
+
+	public String createConditionSet(String inputData) throws SaxonApiException, SQLException, IOException, ValidationException
+	{
+		return processGenericXmlCommand(inputData, "xsd/backup.xsd", "xslt/import_conditionSet_postgresql.xslt");
+	}
+
+	public boolean deleteConditionSet(String name) throws SQLException
+	{
+		PreparedStatement pst = null;
+		try
+		{
+			pst = _connection.prepareStatement("DELETE FROM condition_set WHERE name = ?;");
+			pst.setString(1, name);
+			return pst.execute();
+		}
+		finally
+		{
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public int getConditionSetId(String name) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT condition_set_id FROM condition_set WHERE name = ?;");
+			pst.setString(1, name);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+					return rs.getInt("condition_set_id");
+			}
+			return -1;
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+	}
+
+	public String importConditionSet(HttpServletRequest request)
+	{
+		return unwrapCompressedBackupFile(request, new ICallback() {
+			@Override
+			public String process(InputStream inputStream) throws Exception
+			{
+				return createConditionSet(inputStream);
+			}
+		});
+	}
+
+	public String exportConditionSet(String name) throws SQLException
+	{
+		String ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+		if (name == null)
+			ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">" + exportConditionSetImpl(null) + "</backup>";
+		else
+			ret += exportConditionSetImpl(name);
+		return ret;
+	}
+
+	protected String exportConditionSetImpl(String name) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null, rsMap = null;
+		String				ret = "";
+
+		try
+		{
+			if (name == null)
+			{
+				// Export all condition sets.
+				pst = _connection.prepareStatement("SELECT * FROM condition_set;");
+			}
+			else
+			{
+				// Export a particular condition set.
+				pst = _connection.prepareStatement("SELECT * FROM condition_set WHERE name = ?;");
+				pst.setString(1, name);
+			}
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				boolean dataAvailable = rs.next();
+
+				// Backups may be empty. Otherwise throw an exception.
+				if (name != null && !dataAvailable)
+					throw new SQLException("Condition set cannot be exported. Data may be corrupted.");
+
+				if (dataAvailable)
+				{
+					do
+					{
+						String setName = rs.getString("name");
+						String setDesc = rs.getString("description");
+
+						ret += "<conditionSet xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">";
+						ret += "<name>" + StringEscapeUtils.escapeXml(setName) + "</name>";
+
+						if (setDesc != null && !setDesc.isEmpty())
+							ret += "<description>" + StringEscapeUtils.escapeXml(setDesc) + "</description>";
+
+						ret += exportConditionsBySetId(rs.getInt("condition_set_id"));
+						ret += "</conditionSet>";
+					}
+					while (rs.next());
+				}
+			}
+		}
+		finally
+		{
+			if (rsMap != null)
+				rsMap.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
 	}
 
 	/**************************************************************************
@@ -1553,7 +1765,7 @@ public class Manager
 	{
 		String ret = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		if (ns == null)
-			ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">" + exportLookupImpl(ns) + "</backup>";
+			ret += "<backup xmlns=\"urn:csiro:xmlns:pidsvc:backup:1.0\">" + exportLookupImpl(null) + "</backup>";
 		else
 			ret += exportLookupImpl(ns);
 		return ret;

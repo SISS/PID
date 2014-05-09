@@ -52,7 +52,8 @@ public abstract class AbstractCondition
 
 	public final int					ID;
 	public final String					Match;
-	public Object						AuxiliaryData = null;
+	public Object						AuxiliaryData = null;	// Condition type specific auxiliary data associated with the match. 
+	public String						Set = null;				// The name of a condition set this condition is part of (for tracing purposes).
 	
 	public AbstractCondition(URI uri, HttpServletRequest request, int id, String match, Object matchAuxiliaryData)
 	{
@@ -67,6 +68,6 @@ public abstract class AbstractCondition
 
 	public String toString()
 	{
-		return "Type=" + getClass().getSimpleName() + "; ID=" + ID + "; Match=" + Match + "; Aux=" + AuxiliaryData + ";";
+		return "Type=" + getClass().getSimpleName() + "; ID=" + ID + "; Match=" + Match + "; Aux=" + AuxiliaryData + ";" + (Set == null ? "" : " Set=" + Set + ";");
 	}
 }

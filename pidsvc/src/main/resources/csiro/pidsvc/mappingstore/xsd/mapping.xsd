@@ -48,7 +48,7 @@
 			</xs:element>
 			<xs:element name="description" type="xs:string" minOccurs="0">
 				<xs:annotation>
-					<xs:documentation>Textual descriptions of the URI mapping (optional).</xs:documentation>
+					<xs:documentation>Textual description of the URI mapping (optional).</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="creator" minOccurs="0">

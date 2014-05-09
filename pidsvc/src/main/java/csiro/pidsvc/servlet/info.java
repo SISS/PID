@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import csiro.pidsvc.core.Settings;
 import csiro.pidsvc.helper.Http;
@@ -70,7 +71,7 @@ public class info extends HttpServlet
 
 			response.setContentType("application/json");
 
-			_logger.info("Processing \"{}\" command -> {}?{}.", cmd, request.getRequestURL(), request.getQueryString());
+			_logger.info("Processing \"{}\" command -> {}?{}", cmd, request.getRequestURL(), request.getQueryString());
 			if (cmd.equalsIgnoreCase("search"))
 			{
 				int page = 1;
@@ -92,7 +93,8 @@ public class info extends HttpServlet
 				int mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
 				String mappingPath = request.getParameter("mapping_path");
 
-				response.getWriter().write(mappingId > 0 ? mgr.getPidConfig(mappingId) : (mappingId == 0 ? mgr.getPidConfig((String)null) : mgr.getPidConfig(mappingPath)));
+				ret = mappingId > 0 ? mgr.getPidConfig(mappingId) : (mappingId == 0 ? mgr.getPidConfig((String)null) : mgr.getPidConfig(mappingPath));
+				response.getWriter().write(ret == null ? null : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("check_mapping_path_exists"))
 			{
@@ -105,6 +107,22 @@ public class info extends HttpServlet
 			}
 			else if (cmd.equalsIgnoreCase("get_settings"))
 				response.getWriter().write(mgr.getSettings().toString());
+			else if (cmd.equalsIgnoreCase("search_condition_set"))
+			{
+				int page = 1;
+				String sPage = request.getParameter("page");
+				if (sPage != null && sPage.matches("\\d+"))
+					page = Integer.parseInt(sPage);
+
+				ret = mgr.getConditionSets(page, request.getParameter("q"));
+				response.getWriter().write(ret == null ? null : ret.toString());
+			}
+			else if (cmd.equalsIgnoreCase("get_condition_set_config"))
+			{
+				String name = request.getParameter("name");
+				ret = mgr.getConditionSetConfig(name);
+				response.getWriter().write(ret == null ? null : ret.toString());
+			}
 			else if (cmd.equalsIgnoreCase("search_lookup"))
 			{
 				int page = 1;
@@ -143,13 +161,15 @@ public class info extends HttpServlet
 			{
 				int			mappingId = Literals.toInt(request.getParameter("mapping_id"), -1);
 				String		mappingPath = request.getParameter("mapping_path");
-				String		jsonThis = request.getParameter("json");
-
+				String		inputJson = request.getParameter("json");
+				JSONObject	jsonThis = (JSONObject)(new JSONParser()).parse(inputJson);
+				
 				if (mappingPath != null && mappingPath.isEmpty())
 					mappingPath = null;
 				if (jsonThis != null && jsonThis.isEmpty())
 					jsonThis = null;
-				response.getWriter().write(mappingId == -1 && jsonThis == null ? "{}" : mgr.getMappingDependencies((Object)(jsonThis == null ? mappingId : jsonThis), mappingPath));
+				ret = mgr.getMappingDependencies((Object)(jsonThis == null ? mappingId : jsonThis), mappingPath);
+				response.getWriter().write(mappingId == -1 && jsonThis == null || ret == null ? "{}" : ret.toString());
 			}
 			else if (cmd.equalsIgnoreCase("echo"))
 			{

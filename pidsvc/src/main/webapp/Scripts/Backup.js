@@ -196,9 +196,9 @@ var Main = Class.construct({
 				else
 				{
 					serverData = serverData
-						.replace(/\[\[\[(.*)?\]\]\]/gim, "<a>$1</a>")	// expand hyperlinks
-						.replace(/^OK:\s/gim, "")						// remove status codes
-						.replace(/\n/gim, "<br/>");						// new line characters
+						.replace(/\[(\w*)\[\[(.*)?\]\]\]/gim, "<a _t=\"$1\">$2</a>")	// expand hyperlinks
+						.replace(/^OK:\s/gim, "")										// remove status codes
+						.replace(/\n/gim, "<br/>");										// new line characters
 					$J("#trfile" + file.id)
 						.find("> td:last > img")
 							.attr("src", "Images/tick.png")
@@ -208,10 +208,22 @@ var Main = Class.construct({
 							.find("a")
 								.each(function() {
 									var jq = $J(this);
-									if (jq.text())
-										jq.attr("href", "mappings.html?mapping_path=" + encodeURIComponent(jq.text()));
-									else
-										jq.attr("href", "mappings.html?mapping_id=0").text("<Catch-all>");
+									switch (jq.attr("_t"))
+									{
+										case "lookup":
+											jq.attr("href", "lookup.html?ns=" + encodeURIComponent(jq.text()));
+											break;
+										case "set":
+											jq.attr("href", "condition_set.html?name=" + encodeURIComponent(jq.text()));
+											break;
+										case "mapping":
+										default:
+											if (jq.text())
+												jq.attr("href", "mappings.html?mapping_path=" + encodeURIComponent(jq.text()));
+											else
+												jq.attr("href", "mappings.html?mapping_id=0").text("<Catch-all>");
+											break;
+									}
 								});
 				}
 			})
