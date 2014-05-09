@@ -88,11 +88,13 @@ public class controller extends HttpServlet
 			else if (cmd.matches("(?i)^(?:full|partial)_backup$"))
 			{
 				String includeDeprecated = request.getParameter("deprecated");
+				String includeConditionSets = request.getParameter("conditionsets");
 				String includeLookupMaps = request.getParameter("lookup");
 				String outputFormat = request.getParameter("format");
 				String serializedConfig = mgr.backupDataStore(
 					cmd.startsWith("full"),
 					includeDeprecated != null && includeDeprecated.equalsIgnoreCase("true"),
+					includeConditionSets == null || includeConditionSets.equalsIgnoreCase("true"),
 					includeLookupMaps == null || includeLookupMaps.equalsIgnoreCase("true")
 				);
 
