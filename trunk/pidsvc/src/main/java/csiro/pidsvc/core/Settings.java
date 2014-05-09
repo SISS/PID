@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 
@@ -55,8 +56,12 @@ public class Settings
 		// Retrieve manifest.
 		if ((_servlet = servlet) != null)
 		{
-			ServletContext application = _servlet.getServletConfig().getServletContext();
-			_manifest = new Manifest(application.getResourceAsStream("/META-INF/MANIFEST.MF"));
+			ServletConfig config = _servlet.getServletConfig();
+			if (config != null)
+			{
+				ServletContext application = config.getServletContext();
+				_manifest = new Manifest(application.getResourceAsStream("/META-INF/MANIFEST.MF"));
+			}
 		}
 
 		// Retrieve settings.
@@ -70,7 +75,7 @@ public class Settings
 		}
 		catch (NamingException ex)
 		{
-			_logger.debug("Using default pidsvc.properties file.", ex);
+			_logger.debug("Using default pidsvc.properties file.");
 			_properties = ResourceBundle.getBundle("pidsvc");
 		}
 		finally
@@ -78,7 +83,7 @@ public class Settings
 			if (fis != null)
 				fis.close();
 		}
-		
+
 		// Get additional system properties.
 		_serverProperties.put("serverJavaVersion", System.getProperty("java.version"));
 		_serverProperties.put("serverJavaVendor", System.getProperty("java.vendor"));

@@ -212,7 +212,7 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String getPidConfig(String mappingPath) throws SQLException
+	public JSONObject getPidConfig(String mappingPath) throws SQLException
 	{
 		String query =
 			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value,\n" +
@@ -224,7 +224,7 @@ public class ManagerJson extends Manager
 		return getPidConfigImpl(query, mappingPath);
 	}
 
-	public String getPidConfig(int mappingId) throws SQLException
+	public JSONObject getPidConfig(int mappingId) throws SQLException
 	{
 		String query =
 			"SELECT m.mapping_id, m.mapping_path, m.original_path, m.title, m.description, m.creator, m.commit_note, m.type, m.default_action_description, CASE WHEN m.date_end IS NULL THEN 0 ELSE 1 END AS ended, a.type AS action_type, a.action_name, a.action_value,\n" +
@@ -236,7 +236,8 @@ public class ManagerJson extends Manager
 		return getPidConfigImpl(query, mappingId);
 	}
 
-	protected String getPidConfigImpl(String query, Object value) throws SQLException
+	@SuppressWarnings("unchecked")
+	protected JSONObject getPidConfigImpl(String query, Object value) throws SQLException
 	{
 //		InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("../pid.json");
 //		byte[] bytes = new byte[inputStream.available()]; 
@@ -245,9 +246,10 @@ public class ManagerJson extends Manager
 //		return s;
 
 		PreparedStatement	pst = null;
-		ResultSet			rsMapping = null, rsCondition = null, rsAction = null, rsHistory = null;
-		String				ret = null;
-		int					mappingId, i, j;
+		ResultSet			rsMapping = null, rsAction = null, rsHistory = null;
+		JSONObject			ret = null;
+		JSONArray			jsonArr = null;
+		int					mappingId;
 		String				mappingPath, parentPath;
 		boolean				isParentActive;
 
@@ -264,7 +266,7 @@ public class ManagerJson extends Manager
 
 			if (pst.execute())
 			{
-				ret = "{";
+				ret = new JSONObject();
 				for (rsMapping = pst.getResultSet(); rsMapping.next();)
 				{
 					String actionType = rsMapping.getString("action_type");
@@ -276,38 +278,39 @@ public class ManagerJson extends Manager
 					parentPath		= rsMapping.getString("parent");
 					isParentActive	= rsMapping.getBoolean("parent_is_active");
 
-					ret +=
-						JSONObject.toString("mapping_id", mappingId) + ", " +
-						JSONObject.toString("mapping_path", mappingPath) + ", " +
-						JSONObject.toString("original_path", rsMapping.getString("original_path")) + ", " +
-						JSONObject.toString("type", mappingPath == null ? "Regex" : rsMapping.getString("type")) + ", " +
-						JSONObject.toString("title", mappingPath == null ? "Catch-all" : rsMapping.getString("title")) + ", " +
-						JSONObject.toString("description", rsMapping.getString("description")) + ", " +
-						JSONObject.toString("creator", rsMapping.getString("creator")) + ", " +
-						JSONObject.toString("commit_note", rsMapping.getString("commit_note")) + ", " +
-						JSONObject.toString("ended", rsMapping.getBoolean("ended")) + ", " +
-						JSONObject.toString("qr_hits", this.getTotalQrCodeHits(mappingPath)) + ", " +
-						"\"parent\": {" +
-							JSONObject.toString("mapping_path", parentPath) + ", " +
-							JSONObject.toString("title", rsMapping.getString("parent_title")) + ", " +
-							(isParentActive ? JSONObject.toString("cyclic", !this.checkNonCyclicInheritance(mappingId)) + ", " : "") +
-							JSONObject.toString("active", isParentActive) + ", " +
-							"\"graph\": " + getMappingDependencies(mappingId, parentPath) +
-						"}," +
-						"\"action\": ";
+					ret.put("mapping_id", mappingId);
+					ret.put("mapping_path", mappingPath);
+					ret.put("original_path", rsMapping.getString("original_path"));
+					ret.put("type", mappingPath == null ? "Regex" : rsMapping.getString("type"));
+					ret.put("title", mappingPath == null ? "Catch-all" : rsMapping.getString("title"));
+					ret.put("description", rsMapping.getString("description"));
+					ret.put("creator", rsMapping.getString("creator"));
+					ret.put("commit_note", rsMapping.getString("commit_note"));
+					ret.put("ended", rsMapping.getBoolean("ended"));
+					ret.put("qr_hits", this.getTotalQrCodeHits(mappingPath));
+
+					// Parent mapping.
+					JSONObject jsonParent = new JSONObject();
+					jsonParent.put("mapping_path", parentPath);
+					jsonParent.put("title", rsMapping.getString("parent_title"));
+					jsonParent.put("active", isParentActive);
+					if (isParentActive)
+						jsonParent.put("cyclic", !this.checkNonCyclicInheritance(mappingId));
+					jsonParent.put("graph", getMappingDependencies(mappingId, parentPath));
+					ret.put("parent", jsonParent);
+
+					// Default action.
 					if (actionType == null)
-						ret += "null";
+						ret.put("action", null);
 					else
 					{
-						ret +=
-							"{" +
-								JSONObject.toString("type", actionType) + ", " +
-								JSONObject.toString("name", rsMapping.getString("action_name")) + ", " +
-								JSONObject.toString("value", rsMapping.getString("action_value")) + ", " +
-								JSONObject.toString("description", rsMapping.getString("default_action_description")) +
-							"}";
+						ret.put("action", JSONObjectHelper.create(
+								"type",			actionType,
+								"name",			rsMapping.getString("action_name"),
+								"value",		rsMapping.getString("action_value"),
+								"description",	rsMapping.getString("default_action_description")
+							));
 					}
-					ret += ",";
 
 					// Serialise change history.
 					pst = _connection.prepareStatement(
@@ -320,93 +323,46 @@ public class ManagerJson extends Manager
 					if (mappingPath != null)
 						pst.setString(1, mappingPath);
 
-					ret += "\"history\": [";
+					// History.
+					jsonArr = new JSONArray();
 					if (pst.execute())
 					{
-						for (rsHistory = pst.getResultSet(), i = 0; rsHistory.next(); ++i)
+						for (rsHistory = pst.getResultSet(); rsHistory.next();)
 						{
-							if (i > 0)
-								ret += ",";
-							ret +=
-								"{" +
-									JSONObject.toString("mapping_id", rsHistory.getInt("mapping_id")) + ", " +
-									JSONObject.toString("creator", rsHistory.getString("creator")) + ", " +
-									JSONObject.toString("commit_note", rsHistory.getString("commit_note")) + ", " +
-									JSONObject.toString("date_start", rsHistory.getString("date_start")) + ", " +
-									JSONObject.toString("date_end", rsHistory.getString("date_end")) +
-								"}";
+							jsonArr.add(JSONObjectHelper.create(
+									"mapping_id",	rsHistory.getInt("mapping_id"),
+									"creator",		rsHistory.getString("creator"),
+									"commit_note",	rsHistory.getString("commit_note"),
+									"date_start",	rsHistory.getString("date_start"),
+									"date_end",		rsHistory.getString("date_end")
+								));
 						}
 					}
-					ret += "],"; // history					
+					ret.put("history", jsonArr);
 
-					// Serialise conditions.
-					pst = _connection.prepareStatement("SELECT * FROM \"condition\" WHERE mapping_id = ? ORDER BY condition_id");
-					pst.setInt(1, rsMapping.getInt("mapping_id"));
-
-					ret += "\"conditions\": [";
-					if (pst.execute())
-					{
-						for (rsCondition = pst.getResultSet(), i = 0; rsCondition.next(); ++i)
-						{
-							if (i > 0)
-								ret += ",";
-							ret +=
-								"{" +
-									JSONObject.toString("type", rsCondition.getString("type")) + ", " +
-									JSONObject.toString("match", rsCondition.getString("match")) + ", " +
-									JSONObject.toString("description", rsCondition.getString("description")) + ", " +
-									"\"actions\": [";
-
-							// Serialise actions.
-							pst = _connection.prepareStatement("SELECT * FROM \"action\" WHERE condition_id = ? ORDER BY action_id");
-							pst.setInt(1, rsCondition.getInt("condition_id"));
-							if (pst.execute())
-							{
-								for (rsAction = pst.getResultSet(), j = 0; rsAction.next(); ++j)
-								{
-									if (j > 0)
-										ret += ",";
-									ret +=
-										"{" +
-											JSONObject.toString("type", rsAction.getString("type")) + ", " +
-											JSONObject.toString("name", rsAction.getString("action_name")) + ", " +
-											JSONObject.toString("value", rsAction.getString("action_value")) +
-										"}";
-								}
-							}
-
-							ret += "]"; // actions
-							ret += "}"; // condition
-						}
-					}
-					ret += "]"; // conditions
+					// Conditions.
+					ret.put("conditions", getConditionsByMappingId(rsMapping.getInt("mapping_id")));
 				}
-				ret += "}";
 
-				if (value == null && ret.equals("{}"))
+				if (value == null && (ret == null || ret.isEmpty()))
 				{
 					// Catch-all mapping is not defined yet. Return default.
-					ret = "{" +
-						JSONObject.toString("mapping_id", 0) + ", " +
-						JSONObject.toString("mapping_path", null) + ", " +
-						JSONObject.toString("original_path", null) + ", " +
-						JSONObject.toString("type", "Regex") + ", " +
-						JSONObject.toString("title", "Catch-all") + ", " +
-						JSONObject.toString("description", null) + ", " +
-						JSONObject.toString("creator", null) + ", " +
-						JSONObject.toString("commit_note", null) + ", " +
-						JSONObject.toString("ended", false) + ", " +
-						JSONObject.toString("qr_hits", 0) + ", " +
-						JSONObject.toString("parent", null) + ", " +
-						"\"action\": {" +
-							JSONObject.toString("type", "404") + ", " +
-							JSONObject.toString("name", null) + ", " +
-							JSONObject.toString("value", null) + ", " +
-							JSONObject.toString("description", null) +
-						"}," +
-						"\"history\": null," + 
-						"\"conditions\": []" +
-					"}";
+					ret = JSONObjectHelper.create(
+							"mapping_id",		0,
+							"mapping_path",		null,
+							"original_path",	null,
+							"type",				"Regex",
+							"title",			"Catch-all",
+							"description",		null,
+							"creator",			null,
+							"commit_note",		null,
+							"ended",			false,
+							"qr_hits",			0,
+							"parent",			null,
+							"action",			JSONObjectHelper.create("type", "404", "name", null, "value", null, "description", null),
+							"history",			null,
+							"conditions",		new JSONArray()
+						);
 				}
 			}
 		}
@@ -414,12 +370,75 @@ public class ManagerJson extends Manager
 		{
 			if (rsMapping != null)
 				rsMapping.close();
-			if (rsCondition != null)
-				rsCondition.close();
 			if (rsAction != null)
 				rsAction.close();
 			if (rsHistory != null)
 				rsHistory.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	private JSONArray getConditionsByMappingId(int mappingId) throws SQLException
+	{
+		return getConditionsImpl("mapping_id", mappingId);
+	}
+
+	private JSONArray getConditionsBySetId(int conditionSetId) throws SQLException
+	{
+		return getConditionsImpl("condition_set_id", conditionSetId);
+	}
+
+	@SuppressWarnings("unchecked")
+	private JSONArray getConditionsImpl(String searchType, int id) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rsCondition = null, rsAction = null;
+		JSONArray			ret = new JSONArray();
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT * FROM \"condition\" WHERE " + searchType + " = ? ORDER BY condition_id");
+			pst.setInt(1, id);
+	
+			if (pst.execute())
+			{
+				for (rsCondition = pst.getResultSet(); rsCondition.next();)
+				{
+					// Serialise actions.
+					pst = _connection.prepareStatement("SELECT * FROM \"action\" WHERE condition_id = ? ORDER BY action_id");
+					pst.setInt(1, rsCondition.getInt("condition_id"));
+	
+					JSONArray jsonActions = new JSONArray();
+					if (pst.execute())
+					{
+						for (rsAction = pst.getResultSet(); rsAction.next();)
+						{
+							jsonActions.add(JSONObjectHelper.create(
+									"type",		rsAction.getString("type"),
+									"name",		rsAction.getString("action_name"),
+									"value",	rsAction.getString("action_value")
+								));
+						}
+					}
+	
+					// Add condition to array.
+					ret.add(JSONObjectHelper.create(
+							"type",			rsCondition.getString("type"),
+							"match",		rsCondition.getString("match"),
+							"description",	rsCondition.getString("description"),
+							"actions",		jsonActions
+						));
+				}
+			}
+		}
+		finally
+		{
+			if (rsCondition != null)
+				rsCondition.close();
+			if (rsAction != null)
+				rsAction.close();
 			if (pst != null)
 				pst.close();
 		}
@@ -457,6 +476,95 @@ public class ManagerJson extends Manager
 		return JSONObjectHelper.create("exists", exists, "mapping_path", mappingPath);
 	}
 
+	@SuppressWarnings("unchecked")
+	public JSONObject getConditionSets(int page, String searchQuery) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		JSONObject			ret = new JSONObject();
+		final int			pageSize = 20;
+		boolean 			isQueryNotEmpty = searchQuery != null && !searchQuery.isEmpty();
+
+		try
+		{
+			String query = "";
+			if (isQueryNotEmpty)
+				query += " AND name ILIKE ?";
+
+			query =
+				"SELECT COUNT(*) FROM condition_set" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + ";\n" +
+				"SELECT * FROM condition_set" + (query.isEmpty() ? "" : " WHERE " + query.substring(5)) + " ORDER BY name LIMIT " + pageSize + " OFFSET " + ((page - 1) * pageSize) + ";";
+
+			pst = _connection.prepareStatement(query);
+			for (int i = 1, j = 0; j < 2; ++j)
+			{
+				// Bind parameters twice to two almost identical queries.
+				if (isQueryNotEmpty)
+					pst.setString(i++, "%" + searchQuery.replace("\\", "\\\\") + "%");
+			}
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				rs.next();
+				ret.put("count", rs.getInt(1));
+				ret.put("page", page);
+				ret.put("pages", (int)Math.ceil(rs.getFloat(1) / pageSize));
+
+				JSONArray jsonArr = new JSONArray();
+				for (pst.getMoreResults(), rs = pst.getResultSet(); rs.next();)
+				{
+					jsonArr.add(JSONObjectHelper.create(
+							"name",			rs.getString("name"),
+							"description",	rs.getString("description")
+						));
+				}
+				ret.put("results", jsonArr);
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+
+	@SuppressWarnings("unchecked")
+	public JSONObject getConditionSetConfig(String name) throws SQLException
+	{
+		PreparedStatement	pst = null;
+		ResultSet			rs = null;
+		JSONObject			ret = new JSONObject();
+
+		try
+		{
+			pst = _connection.prepareStatement("SELECT * FROM condition_set WHERE name = ?;");
+			pst.setString(1, name);
+
+			if (pst.execute())
+			{
+				rs = pst.getResultSet();
+				if (rs.next())
+				{
+					ret.put("name", rs.getString("name"));
+					ret.put("description", rs.getString("description"));
+					ret.put("conditions", getConditionsBySetId(rs.getInt("condition_set_id")));
+				}
+			}
+		}
+		finally
+		{
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+		}
+		return ret;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public JSONObject getLookups(int page, String namespace) throws SQLException
 	{
@@ -648,15 +756,12 @@ public class ManagerJson extends Manager
 			// Catch-all mapping is not defined yet.
 			if (ret == null)
 			{
-				ret = new JSONObject();
-				ret.put("id", 0);
-				ret.put("name", "&lt;Catch-all&gt;");
-				ret.put("data", JSONObjectHelper.create(
-						"$type",		"star",
-						"$color",		"#C72240",
-						"mapping_path",	null
-					));
-				ret.put("children", encodeChartChildren(null));
+				ret = JSONObjectHelper.create(
+						"id",		0,
+						"name", 	"&lt;Catch-all&gt;",
+						"data",		JSONObjectHelper.create("$type", "star", "$color", "#C72240", "mapping_path", null),
+						"children",	encodeChartChildren(null)
+					);
 			}
 		}
 		finally
@@ -726,21 +831,23 @@ public class ManagerJson extends Manager
 		return ret;
 	}
 
-	public String getMappingDependencies(Object thisMapping, String parentPath) throws SQLException
+	@SuppressWarnings("unchecked")
+	public JSONObject getMappingDependencies(Object thisMapping, String parentPath) throws SQLException
 	{
 		Vector<String>		parentsList = new Vector<String>();
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
-		String				ret = null, jsonThis = "", jsonParent = null, jsonParent2 = null;
+		JSONObject			ret = null, jsonThis = null, jsonParent = null, jsonParent2 = null;
+		JSONArray			jsonArr = null;
 		String				mappingPath, title;
 		int					mappingId, inheritors;
 
 		try
 		{
 			// Get current mapping descriptor.
-			if (thisMapping instanceof String)
+			if (thisMapping instanceof JSONObject)
 			{
-				jsonThis = (String)thisMapping;
+				jsonThis = (JSONObject)thisMapping;
 				parentsList.add("__this");
 			}
 			else
@@ -755,7 +862,8 @@ public class ManagerJson extends Manager
 
 				if (pst.execute())
 				{
-					jsonThis = "{";
+					jsonThis = new JSONObject();
+
 					rs = pst.getResultSet();
 					if (rs.next())
 					{
@@ -766,32 +874,27 @@ public class ManagerJson extends Manager
 						// Initial mapping ID is required for detection of cyclic inheritance.
 						parentsList.add(mappingPath);
 
-						jsonThis +=
-							JSONObject.toString("id", "__this") + ", " +
-							JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
-							"\"data\":{" +
-								JSONObject.toString("mapping_path", mappingPath) + ", " + 
-								JSONObject.toString("title", title) + ", " + 
-								JSONObject.toString("description", rs.getString("description")) + ", " +
-								JSONObject.toString("author", rs.getString("creator")) + ", " + 
-								JSONObject.toString("css", "chart_label_current") + ", " + 
-								JSONObject.toString("inheritors", inheritors) + 
-							"}" +
-							(
-								inheritors == 0 ?
-									""
-								:
-									",\"children\":[{" +
-									JSONObject.toString("id", -2) + ", " + 
-									JSONObject.toString("name", inheritors + " inheritor" + (inheritors == 1 ? "" : "s") + "...") + ", " + 
-									"\"data\":{" +
-										JSONObject.toString("css", "chart_label_hidden") + ", " + 
-										JSONObject.toString("inheritors", inheritors) + 
-									"}" +
-								"}]"
-							);
+						jsonThis.put("id", "__this");
+						jsonThis.put("name", title == null ? mappingPath : title);
+						jsonThis.put("data", JSONObjectHelper.create(
+								"mapping_path",		mappingPath,
+								"title",			title,
+								"description",		rs.getString("description"),
+								"author",			rs.getString("creator"),
+								"css",				"chart_label_current",
+								"inheritors",		inheritors
+							));
+						if (inheritors > 0)
+						{
+							jsonArr = new JSONArray();
+							jsonArr.add(JSONObjectHelper.create(
+									"id",			-2,
+									"name",			inheritors + " inheritor" + (inheritors == 1 ? "" : "s") + "...",
+									"data",			JSONObjectHelper.create("css", "chart_label_hidden", "inheritors", inheritors)
+								));
+							jsonThis.put("children", jsonArr);
+						}
 					}
-					jsonThis += "}";
 				}
 			}
 
@@ -818,35 +921,45 @@ public class ManagerJson extends Manager
 						// Prevent cyclic inheritance syndrome.
 						if (parentsList.contains(mappingPath))
 						{
-							jsonParent =
-								"{" +
-									JSONObject.toString("id", -3) + ", " +
-									JSONObject.toString("name", "ERROR") + ", " +
-									"\"data\":{" +
-										JSONObject.toString("description", "Cyclic inheritance encountered!<br/><br/>Please inspect the inheritance chain and rectify the problem. Mappings with detected cyclic inheritance will fall back to Catch-all mapping automatically.") + ", " +
-										JSONObject.toString("css", "chart_label_error") + 
-									"}," +
-									"\"children\":[" + jsonThis + "]" +
-								"}";
+							jsonArr = new JSONArray();
+							jsonArr.add(jsonThis);
+
+							jsonParent = JSONObjectHelper.create(
+									"id",			-3,
+									"name",			"ERROR",
+									"data",			JSONObjectHelper.create("css", "chart_label_error", "description", "Cyclic inheritance encountered!<br/><br/>Please inspect the inheritance chain and rectify the problem. Mappings with detected cyclic inheritance will fall back to Catch-all mapping automatically."),
+									"children",		jsonArr
+								);
 							return jsonParent;
 						}
 
 						// Construct JSON for the first parent.
 						if (jsonParent2 == null)
 						{
-							String buf =
-								JSONObject.toString("id", mappingPath) + ", " +
-								JSONObject.toString("name", title == null ? mappingPath : title) + ", " +
-								"\"data\":{" +
-									JSONObject.toString("mapping_path", mappingPath) + ", " + 
-									JSONObject.toString("title", title) + ", " + 
-									JSONObject.toString("description", rs.getString("description")) + ", " +
-									JSONObject.toString("author", rs.getString("creator")) + 
-								"}";
+							JSONObject tmp = new JSONObject();
+							tmp.put("id", mappingPath);
+							tmp.put("name", title == null ? mappingPath : title);
+							tmp.put("data", JSONObjectHelper.create(
+									"mapping_path",	mappingPath,
+									"title",		title,
+									"description",	rs.getString("description"),
+									"author",		rs.getString("creator")
+								));
+							
 							if (jsonParent == null)
-								jsonParent = "{" + buf + ", \"children\":[" + jsonThis + "]}";
+							{
+								jsonArr = new JSONArray();
+								jsonArr.add(jsonThis);
+								jsonParent = tmp;
+								jsonParent.put("children", jsonArr);
+							}
 							else if (jsonParent2 == null)
-								jsonParent2 = "{" + buf + ", \"children\":[" + jsonParent + "]}";
+							{
+								jsonArr = new JSONArray();
+								jsonArr.add(jsonParent);
+								jsonParent2 = tmp;
+								jsonParent2.put("children", jsonArr);
+							}
 						}
 
 						// Add new parent to the list.
@@ -877,27 +990,27 @@ public class ManagerJson extends Manager
 				jsonParent = jsonParent2;
 			else if (hiddenParents > 1)
 			{
-				jsonParent =
-					"{" +
-						JSONObject.toString("id", -1) + ", " +
-						JSONObject.toString("name", hiddenParents + " more parents...") + ", " +
-						"\"data\":{" +
-							JSONObject.toString("css", "chart_label_hidden") + 
-						"}," +
-						"\"children\":[" + jsonParent + "]" +
-					"}";
+				jsonArr = new JSONArray();
+				jsonArr.add(jsonParent);
+
+				jsonParent = JSONObjectHelper.create(
+						"id",			-1,
+						"name",			hiddenParents + " more parents...",
+						"data",			JSONObjectHelper.create("css", "chart_label_hidden"),
+						"children",		jsonArr
+					);
 			}
-			ret =
-				"{" +
-					JSONObject.toString("id", 0) + ", " +
-					JSONObject.toString("name", "&lt;Catch-all&gt;") + ", " +
-					"\"data\":{" +
-						JSONObject.toString("author", author) + ", " +
-						JSONObject.toString("description", description) + ", " +
-						JSONObject.toString("css", "chart_label_root") + 
-					"}," +
-					"\"children\":[" + jsonParent + "]" +
-				"}";
+
+			// Create return object.
+			jsonArr = new JSONArray();
+			jsonArr.add(jsonParent);
+			ret = JSONObjectHelper.create(
+					"id", 0,
+					"name", "&lt;Catch-all&gt;",
+					"data", JSONObjectHelper.create("author", author, "description", description, "css", "chart_label_root"),
+					"children", jsonArr
+					
+				);
 		}
 		finally
 		{

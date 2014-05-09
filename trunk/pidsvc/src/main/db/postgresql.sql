@@ -16,6 +16,7 @@ DROP TABLE mapping_type CASCADE;
 DROP TABLE condition_type CASCADE;
 DROP TABLE action_type CASCADE;
 DROP TABLE mapping CASCADE;
+DROP TABLE condition_set CASCADE;
 DROP TABLE condition CASCADE;
 DROP TABLE action CASCADE;
 DROP FUNCTION delete_mapping_default_action() CASCADE;
@@ -28,7 +29,7 @@ CREATE TABLE configuration
 (
   name character varying(50) NOT NULL,
   value character varying(255),
-  CONSTRAINT configuration_pkey PRIMARY KEY (name )
+  CONSTRAINT configuration_pkey PRIMARY KEY (name)
 )
 WITH (
   OIDS=FALSE
@@ -40,7 +41,7 @@ ALTER TABLE configuration
 CREATE TABLE mapping_type
 (
   type character varying(50) NOT NULL,
-  CONSTRAINT mapping_type_pkey PRIMARY KEY (type )
+  CONSTRAINT mapping_type_pkey PRIMARY KEY (type)
 )
 WITH (
   OIDS=FALSE
@@ -52,7 +53,7 @@ ALTER TABLE mapping_type
 CREATE TABLE condition_type
 (
   type character varying(50) NOT NULL,
-  CONSTRAINT condition_type_pkey PRIMARY KEY (type )
+  CONSTRAINT condition_type_pkey PRIMARY KEY (type)
 )
 WITH (
   OIDS=FALSE
@@ -65,7 +66,7 @@ CREATE TABLE action_type
 (
   type character varying(50) NOT NULL,
   description character varying(50) NOT NULL,
-  CONSTRAINT action_type_pkey PRIMARY KEY (type )
+  CONSTRAINT action_type_pkey PRIMARY KEY (type)
 )
 WITH (
   OIDS=FALSE
@@ -90,7 +91,10 @@ CREATE TABLE mapping
   date_start timestamp without time zone NOT NULL DEFAULT now(),
   date_end timestamp without time zone,
   qr_hits integer DEFAULT 0 NOT NULL,
-  CONSTRAINT mapping_pkey PRIMARY KEY (mapping_id ),
+  CONSTRAINT mapping_pkey PRIMARY KEY (mapping_id),
+--
+--  The following contraint is added later once "action" table is created.
+--
 --  CONSTRAINT "FK_mapping_default_action_id" FOREIGN KEY (default_action_id)
 --      REFERENCES action (action_id) MATCH SIMPLE
 --      ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -109,7 +113,7 @@ ALTER TABLE mapping
 CREATE INDEX "IX_mapping_mapping_path"
   ON mapping
   USING btree
-  (mapping_path );
+  (mapping_path);
 ALTER TABLE mapping CLUSTER ON "IX_mapping_mapping_path";
 
 -- Index: "IX_mapping_parent"
@@ -117,37 +121,57 @@ ALTER TABLE mapping CLUSTER ON "IX_mapping_mapping_path";
 CREATE INDEX "IX_mapping_parent"
   ON mapping
   USING btree
-  (parent );
+  (parent);
 
 -- Index: "IX_mapping_date_start"
 -- DROP INDEX "IX_mapping_date_start";
 CREATE INDEX "IX_mapping_date_start"
   ON mapping
   USING btree
-  (date_start );
+  (date_start);
 
 -- Index: "IX_mapping_date_end"
 -- DROP INDEX "IX_mapping_date_end";
 CREATE INDEX "IX_mapping_date_end"
   ON mapping
   USING btree
-  (date_end );
+  (date_end);
+
+-- Table: condition_set
+CREATE TABLE condition_set
+(
+  condition_set_id serial NOT NULL,
+  name character varying(50) NOT NULL,
+  description text,
+  CONSTRAINT condition_set_pkey PRIMARY KEY (condition_set_id),
+  CONSTRAINT "IX_condition_set_name" UNIQUE (name)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE condition_set
+  OWNER TO "pidsvc-admin";
 
 -- Table: condition
 CREATE TABLE condition
 (
   condition_id serial NOT NULL,
-  mapping_id smallint NOT NULL,
+  mapping_id integer,
+  condition_set_id integer,
   type character varying(50) NOT NULL,
   match character varying(255) NOT NULL,
-  description text NULL,
-  CONSTRAINT condition_pkey PRIMARY KEY (condition_id ),
+  description text,
+  CONSTRAINT condition_pkey PRIMARY KEY (condition_id),
   CONSTRAINT "FK_condition_mapping_id" FOREIGN KEY (mapping_id)
       REFERENCES mapping (mapping_id) MATCH SIMPLE
       ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT "FK_condition_set_id" FOREIGN KEY (condition_set_id)
+      REFERENCES condition_set (condition_set_id) MATCH SIMPLE
+      ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT "FK_condition_type" FOREIGN KEY (type)
       REFERENCES condition_type (type) MATCH SIMPLE
-      ON UPDATE RESTRICT ON DELETE RESTRICT
+      ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT "CHK_parent" CHECK ((mapping_id IS NOT NULL OR condition_set_id IS NOT NULL) AND NOT (mapping_id IS NOT NULL AND condition_set_id IS NOT NULL))
 )
 WITH (
   OIDS=FALSE
@@ -159,11 +183,11 @@ ALTER TABLE condition
 CREATE TABLE action
 (
   action_id serial NOT NULL,
-  condition_id smallint,
+  condition_id integer,
   type character varying(50) NOT NULL,
   action_name character varying(50),
   action_value character varying(4096),
-  CONSTRAINT "action_pkey" PRIMARY KEY (action_id ),
+  CONSTRAINT "action_pkey" PRIMARY KEY (action_id),
   CONSTRAINT "FK_action_condition_id" FOREIGN KEY (condition_id)
       REFERENCES condition (condition_id) MATCH SIMPLE
       ON UPDATE CASCADE ON DELETE CASCADE,
@@ -235,7 +259,7 @@ CREATE TRIGGER "TR_set_original_mapping_path"
 CREATE TABLE lookup_type
 (
   type character varying(50) NOT NULL,
-  CONSTRAINT lookup_type_pkey PRIMARY KEY (type )
+  CONSTRAINT lookup_type_pkey PRIMARY KEY (type)
 )
 WITH (
   OIDS=FALSE
@@ -248,7 +272,7 @@ ALTER TABLE lookup_type
 CREATE TABLE lookup_behaviour_type
 (
   type character varying(50) NOT NULL,
-  CONSTRAINT lookup_behaviour_type_pkey PRIMARY KEY (type )
+  CONSTRAINT lookup_behaviour_type_pkey PRIMARY KEY (type)
 )
 WITH (
   OIDS=FALSE
@@ -264,7 +288,7 @@ CREATE TABLE lookup_ns
   type character varying(50) NOT NULL,
   behaviour_type character varying(50) NOT NULL,
   behaviour_value character varying(255),
-  CONSTRAINT lookup_ns_pkey PRIMARY KEY (ns ),
+  CONSTRAINT lookup_ns_pkey PRIMARY KEY (ns),
   CONSTRAINT "FK_lookup_ns_type" FOREIGN KEY (type)
       REFERENCES lookup_type (type) MATCH SIMPLE
       ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -286,7 +310,7 @@ CREATE TABLE lookup
   ns character varying(255) NOT NULL,
   key text NOT NULL,
   value text NOT NULL,
-  CONSTRAINT lookup_pkey PRIMARY KEY (lookup_id ),
+  CONSTRAINT lookup_pkey PRIMARY KEY (lookup_id),
   CONSTRAINT "IX_lookup_ns" FOREIGN KEY (ns)
       REFERENCES lookup_ns (ns) MATCH SIMPLE
       ON UPDATE CASCADE ON DELETE CASCADE
@@ -302,7 +326,7 @@ ALTER TABLE lookup
 CREATE INDEX "IX_lookup_key"
   ON lookup
   USING btree
-  (key );
+  (key);
 ALTER TABLE lookup CLUSTER ON "IX_lookup_key";
 
 -- View: vw_latest_mapping
@@ -369,6 +393,7 @@ INSERT INTO "mapping_type" ("type") VALUES ('Regex');
 
 INSERT INTO "condition_type" ("type") VALUES ('Comparator');
 INSERT INTO "condition_type" ("type") VALUES ('ComparatorI');
+INSERT INTO "condition_type" ("type") VALUES ('ConditionSet');
 INSERT INTO "condition_type" ("type") VALUES ('ContentType');
 INSERT INTO "condition_type" ("type") VALUES ('Extension');
 INSERT INTO "condition_type" ("type") VALUES ('HttpHeader');

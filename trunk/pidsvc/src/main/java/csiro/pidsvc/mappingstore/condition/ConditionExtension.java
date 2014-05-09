@@ -34,9 +34,12 @@ public class ConditionExtension extends AbstractCondition
 	{
 		try
 		{
-			Pattern re = Pattern.compile(this.Match, Pattern.CASE_INSENSITIVE);
-			Matcher m = re.matcher(_uri.getExtension());
+			String ext = _uri.getExtension();
+			if (ext == null || ext.isEmpty())
+				return false;
 
+			Pattern re = Pattern.compile(this.Match, Pattern.CASE_INSENSITIVE);
+			Matcher m = re.matcher(ext);
 			if (m.find())
 			{
 				this.AuxiliaryData = m;

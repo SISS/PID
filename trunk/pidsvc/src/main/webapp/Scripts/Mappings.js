@@ -12,6 +12,7 @@ var Main = Class.construct({
 	_conditionTypesPlaceholders: {
 		"Comparator":	"Comparison equation, e.g. $1=string&$2=escaped\&characters",
 		"ComparatorI":	"Comparison equation, e.g. $1=string&$2=escaped\&characters",
+		"ConditionSet":	"Condition set name, e.g. My custom API",
 		"ContentType":	"A regular expression to match an Accept HTTP header, e.g. ^application/html?$",
 		"Extension":	"A regular expression to match an extension, e.g. ^html?$",
 		"HttpHeader":	"Regular expression condition, e.g. accept=^application/(xml|rdf)$",
@@ -1486,8 +1487,15 @@ var Main = Class.construct({
 
 	conditionOnChange: function()
 	{
-		var placeholder = Main._conditionTypesPlaceholders[$J(this).val()];
-		$J(this).parents("table:first").find("INPUT.__conditionMatch").attr("placeholder", placeholder ? placeholder : "");
+		var jqCondition = $J(this).parents("TABLE.__conditionTable:first");
+		var conditionType = $J(this).val();
+
+		// Set a placeholder.
+		var placeholder = Main._conditionTypesPlaceholders[conditionType];
+		jqCondition.find("INPUT.__conditionMatch").attr("placeholder", placeholder ? placeholder : "");
+
+		// Show/hide actions sections for ConditionSet condition type.
+		Main.showActionsSection(jqCondition, conditionType != "ConditionSet");
 	},
 
 	recreateConditionTypes: function()
@@ -1500,7 +1508,7 @@ var Main = Class.construct({
 				if (!Main.isOneToOneMapping() && value == "Extension")
 				{
 					// Remove the condition as this condition type is not supported for pattern based rules.
-					$J(this).parents("table.__conditionTable:first").remove();
+					$J(this).parents("TABLE.__conditionTable:first").remove();
 				}
 				else
 				{
@@ -1514,6 +1522,7 @@ var Main = Class.construct({
 	{
 		return "<option value='Comparator'>Comparator</option>" +
 			"<option value='ComparatorI'>Comparator (case-insensitive)</option>" +
+			"<option value='ConditionSet'>ConditionSet</option>" +
 			"<option value='ContentType'>ContentType</option>" +
 			(Main.isOneToOneMapping() ? "	<option value='Extension'>Extension</option>" : "") +
 			"<option value='HttpHeader'>HttpHeader</option>" +
@@ -1561,7 +1570,7 @@ var Main = Class.construct({
 				"			</div>" +
 				"		</td>" +
 				"	</tr>" +
-				"	<tr " + (json.type == null ? "" : "style='display: none;'") + ">" +
+				"	<tr class='__actionsSection' " + (json.type == null ? "" : "style='display: none;'") + ">" +
 				"		<td colspan='3'>" +
 				"			<div style='margin-left: 21px'>" +
 				"				<div class='caps' style='background: #f2f2f2; border: 2px solid #fff; padding-left: 5px;'>Actions:</div>" +
@@ -1575,8 +1584,8 @@ var Main = Class.construct({
 			)
 			.find("td.__conditionType > select:last")
 				.change(Main.conditionOnChange)
-				.change()
 				.val(json.type)
+				.change()
 			.end()
 			.find("a.__conditionMoveUp:last")
 				.click(Main.conditionMoveUp)
@@ -1714,7 +1723,7 @@ var Main = Class.construct({
 
 		var scrollTop = $J(window).scrollTop();
 		var ret = jq
-			.append("<tr>" +
+			.append("<tr class='__actionRow'>" +
 				(
 						!isDefaultAction ?
 						"<td>" +
@@ -1768,8 +1777,8 @@ var Main = Class.construct({
 				)
 			)
 			.find("td.__actionType > select:last")
-				.val(json.type)
 				.change(Main.actionTypeOnChange)
+				.val(json.type)
 				.change()
 			.end()
 			.find("a.__actionTip:last")
@@ -1818,6 +1827,23 @@ var Main = Class.construct({
 				jq.find("input.__actionValue").val("").attr("disabled", "disabled");
 				break;
 		}
+	},
+
+	showActionsSection: function(jqCondition, show)
+	{
+		if (jqCondition.find("A.__toggleActions").is(":visible") == show)
+			return;
+		if (show)
+		{
+			jqCondition.find("A.__toggleActions").show();
+			jqCondition.find("TR.__actionsSection").show();
+		}
+		else
+		{
+			jqCondition.find("A.__toggleActions").hide();
+			jqCondition.find("TR.__actionsSection").hide();
+		}
+		Main.appendAction(jqCondition.find("TABLE.__actions").empty(), { type: "302" });
 	},
 
 	actionTip: function()
@@ -1935,8 +1961,10 @@ var Main = Class.construct({
 				if (conditionComment)
 					cmdxml += "<description>" + conditionComment.htmlEscape() + "</description>";
 
-				var jqActions = jqCondition.find("table.__actions tr");
-				if (jqActions.size() > 0)
+				var jqActions = jqCondition.find("TABLE.__actions TR.__actionRow");
+				if (jqCondition.find("A.__toggleActions").is(":visible") &&		// action are permitted for this condition type.
+					jqActions.size() > 0										// action collection is not empty.
+					)
 				{
 					cmdxml += "<actions>";
 					jqActions.each(function() {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:pidsvc="urn:csiro:xmlns:pidsvc:backup:1.0" targetNamespace="urn:csiro:xmlns:pidsvc:backup:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
 	<xs:include schemaLocation="mapping.xsd"/>
+	<xs:include schemaLocation="conditionSet.xsd"/>
 	<xs:include schemaLocation="lookup.xsd"/>
 	<xs:element name="backup">
 		<xs:complexType>
@@ -8,6 +9,7 @@
 				<xs:choice>
 					<xs:element name="mapping" type="pidsvc:BackupMappingType"/>
 					<xs:element ref="pidsvc:lookup"/>
+					<xs:element ref="pidsvc:conditionSet"/>
 				</xs:choice>
 			</xs:sequence>
 			<xs:attribute name="type" use="optional">

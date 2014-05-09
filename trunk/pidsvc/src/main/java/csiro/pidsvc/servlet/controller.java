@@ -112,6 +112,17 @@ public class controller extends HttpServlet
 
 				returnAttachment(response, "lookup." + (ns == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
 			}
+			else if (cmd.matches("(?i)export_condition_set$"))
+			{
+				String name = request.getParameter("name");
+				String outputFormat = request.getParameter("format");
+				String serializedConfig = mgr.exportConditionSet(name);
+
+				// Check output format.
+				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psl";
+
+				returnAttachment(response, "conditionSet." + (name == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
+			}
 		}
 		catch (Exception e)
 		{
@@ -194,6 +205,10 @@ public class controller extends HttpServlet
 				mgr.deleteLookup(request.getParameter("ns"));
 			else if (cmd.equalsIgnoreCase("import_lookup"))
 				response.getWriter().write(mgr.importLookup(request)); 
+			else if (cmd.equalsIgnoreCase("create_condition_set"))
+				mgr.createConditionSet(request.getInputStream());
+			else if (cmd.equalsIgnoreCase("delete_condition_set"))
+				mgr.deleteConditionSet(request.getParameter("name"));
 			else
 				response.setStatus(404);
 		}

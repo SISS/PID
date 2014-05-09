@@ -16,7 +16,14 @@ var Main = Class.construct({
 
 	renderVersionTag: function(data)
 	{
-		var jq = $J("#VersionTag");
-		jq.html(jq.html() + " v" + data.manifest["version"].replace(/^(\d+\.\d+)(?:-.*)?$/gi, "$1") + "." + data.manifest["Implementation-Build"]);
+		var jq = $J("#VersionTag")
+		var version, build;
+		if (data.manifest)
+		{
+			version = data.manifest["version"]
+			build = data.manifest["Implementation-Build"];
+		}
+		if (jq && version && build)
+			jq.html(jq.html() + " v" + version.replace(/^(\d+\.\d+)(?:-.*)?$/gi, "$1") + "." + build);
 	}
 });

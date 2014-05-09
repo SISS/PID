@@ -6,14 +6,14 @@
 		<xsl:choose>
 			<xsl:when test="mapping">
 				<!-- Single mapping import -->
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", mapping/path, "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [mapping[[", mapping/path, "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="mapping"/>
 				COMMIT;
 			</xsl:when>
 			<xsl:when test="backup[@type = 'partial' and @scope = 'record']">
 				<!-- Partial mapping import -->
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", backup/mapping[1]/path, "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [mapping[[", backup/mapping[1]/path, "]]].")'/>
 				BEGIN;
 				<xsl:apply-templates select="backup/mapping[1]"/>
 				COMMIT;
@@ -22,7 +22,7 @@
 				<!-- Full mapping import -->
 				<xsl:variable name="_path" select="backup/mapping[1]/path/text()"/>
 				<xsl:variable name="path" select='replace(replace($_path, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
-				<xsl:value-of select='concat("--OK: Successfully imported [[[", $_path, "]]].")'/>
+				<xsl:value-of select='concat("--OK: Successfully imported [mapping[[", $_path, "]]].")'/>
 				BEGIN;
 				<xsl:choose>
 					<xsl:when test="$path = ''">
@@ -40,13 +40,13 @@
 			</xsl:when>
 			<xsl:when test="backup[@scope = 'db' or (not(@type) and not(@scope))]">
 				<!-- Full/Partial db restore -->
-				<xsl:value-of select="concat('--OK: Successfully imported ', count(distinct-values(/backup/mapping/path/text())), ' record(s).')"/>
+				<xsl:value-of select="concat('--OK: Successfully imported ', count(distinct-values(/backup/mapping/path/text())), ' mapping(s).')"/>
 				BEGIN;
 				<xsl:call-template name="cleanup"/>
 				<xsl:apply-templates select="backup/mapping"/>
 				COMMIT;
 			</xsl:when>
-			<xsl:otherwise>--OK: Backup file is empty.</xsl:otherwise>
+			<xsl:otherwise>--OK: No mapping rules found in the backup.</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
 	<xsl:template name="cleanup">
