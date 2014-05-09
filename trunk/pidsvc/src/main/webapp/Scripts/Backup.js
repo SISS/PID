@@ -116,6 +116,7 @@ var Main = Class.construct({
 			.attr("src", "controller" +
 				"?cmd=" + ($J("#BackupTypeFull").is(":checked") ? "full" : "partial") +"_backup" +
 				"&deprecated=" + $J("#IncludeDeprecated").is(":checked").toString().toLowerCase() +
+				"&conditionsets=" + $J("#IncludeConditionSets").is(":checked").toString().toLowerCase() +
 				"&lookup=" + $J("#IncludeLookupMaps").is(":checked").toString().toLowerCase() +
 				"&format=" + $J("#OutputFormat").val());
 	},

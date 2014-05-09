@@ -1027,34 +1027,34 @@ public class Manager
 	 *  Export/import.
 	 */
 
-	public String backupDataStore(boolean fullBackup, boolean includeDeprecated, boolean includeLookupMaps) throws SQLException
+	public String backupDataStore(boolean fullBackup, boolean includeDeprecated, boolean includeConditionSets, boolean includeLookupMaps) throws SQLException
 	{
 		String source;
 		if (includeDeprecated)
 			source = fullBackup ? "mapping" : "vw_latest_mapping";
 		else
 			source = fullBackup ? "vw_full_mapping_activeonly" : "vw_active_mapping";
-		return exportMappingsImpl(null, "db", fullBackup, source, true, includeLookupMaps);
+		return exportMappingsImpl(null, "db", fullBackup, source, true, includeConditionSets, includeLookupMaps);
 	}
 
 	public String exportMapping(int mappingId) throws SQLException
 	{
-		return exportMappingsImpl(mappingId, "record", false, "mapping", false, false);
+		return exportMappingsImpl(mappingId, "record", false, "mapping", false, false, false);
 	}
 
 	public String exportMapping(String mappingPath, boolean fullBackup) throws SQLException
 	{
 		if (mappingPath == null || mappingPath.isEmpty())
 			return exportCatchAllMapping(fullBackup);
-		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
+		return exportMappingsImpl(mappingPath, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false, false);
 	}
 
 	public String exportCatchAllMapping(boolean fullBackup) throws SQLException
 	{
-		return exportMappingsImpl(0, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false);
+		return exportMappingsImpl(0, "record", fullBackup, fullBackup ? "mapping" : "vw_latest_mapping", false, false, false);
 	}
 
-	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings, boolean includeLookupMaps) throws SQLException
+	protected String exportMappingsImpl(Object mappingIdentifier, String scope, boolean fullBackup, String source, boolean preserveDatesForDeprecatedMappings, boolean includeConditionSets, boolean includeLookupMaps) throws SQLException
 	{
 		PreparedStatement	pst = null;
 		ResultSet			rs = null;
@@ -1153,6 +1153,10 @@ public class Manager
 				}
 			}
 
+			// Condition sets.
+			if (includeConditionSets)
+				ret += exportConditionSetImpl(null);
+			
 			// Lookup maps.
 			if (includeLookupMaps)
 				ret += exportLookupImpl(null);
