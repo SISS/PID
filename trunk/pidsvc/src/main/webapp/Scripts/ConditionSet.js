@@ -73,8 +73,6 @@ var Main = Class.construct({
 		var name = location.href.getQueryParam("name");
 		if (name !== false)
 			this.getConfigByName(decodeURIComponent(name));
-
-		this.initializeUploadControl();
 	},
 
 	///////////////////////////////////////////////////////////////////////////
