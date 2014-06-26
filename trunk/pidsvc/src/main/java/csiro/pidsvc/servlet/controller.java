@@ -121,7 +121,7 @@ public class controller extends HttpServlet
 				String serializedConfig = mgr.exportConditionSet(name);
 
 				// Check output format.
-				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psl";
+				outputFormat = outputFormat != null && outputFormat.matches("(?i)^xml$") ? "xml" : "psb";
 
 				returnAttachment(response, "conditionSet." + (name == null ? "backup." : "") + _sdfBackupStamp.format(new Date()) + "." + outputFormat, outputFormat, serializedConfig);
 			}
