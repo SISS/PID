@@ -1156,7 +1156,7 @@ public class Manager
 			// Condition sets.
 			if (includeConditionSets)
 				ret += exportConditionSetImpl(null);
-			
+
 			// Lookup maps.
 			if (includeLookupMaps)
 				ret += exportLookupImpl(null);
