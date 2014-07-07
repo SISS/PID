@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="urn:csiro:xmlns:pidsvc:backup:1.0">
 	<xsl:output method="text" version="1.0" encoding="UTF-8"/>
+	<xsl:param name="AuthorizationName"/>
 
 	<xsl:template match="/">
 		<xsl:choose>
@@ -121,6 +122,11 @@
 		</xsl:variable>
 		<xsl:variable name="creator">
 			<xsl:choose>
+				<xsl:when test="$AuthorizationName">
+					<xsl:text>E'</xsl:text>
+					<xsl:value-of select='replace(replace($AuthorizationName, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>
+					<xsl:text>'</xsl:text>
+				</xsl:when>
 				<xsl:when test="creator">
 					<xsl:text>E'</xsl:text>
 					<xsl:value-of select='replace(replace(creator, "&#39;", "&#39;&#39;"), "\\", "\\\\")'/>

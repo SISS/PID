@@ -42,7 +42,7 @@ import csiro.pidsvc.helper.JSONObjectHelper;
 public class Settings
 {
 	final static String SETTINGS_OPT = "pidsvc.settings";
-	
+
 	private static Logger _logger = LogManager.getLogger(Settings.class.getName());
 
 	private static Settings			_instance = null;

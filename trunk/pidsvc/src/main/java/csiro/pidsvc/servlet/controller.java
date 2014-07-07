@@ -152,7 +152,7 @@ public class controller extends HttpServlet
 		try
 		{
 			Settings.init(this);
-			mgr = new Manager();
+			mgr = new Manager(request);
 
 			_logger.info("Processing \"{}\" command.", cmd);
 			if (cmd.equalsIgnoreCase("create_mapping"))

@@ -57,6 +57,8 @@ import net.sf.saxon.s9api.XsltCompiler;
 import net.sf.saxon.s9api.XsltExecutable;
 import net.sf.saxon.s9api.XsltTransformer;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -87,9 +89,10 @@ import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
  */
 public class Manager
 {
-	private static Logger _logger = LogManager.getLogger(Manager.class.getName());
+	private static Logger	_logger = LogManager.getLogger(Manager.class.getName());
 
-	protected Connection _connection = null;
+	protected Connection	_connection = null;
+	private String 			_authorizationName = null;
 
 	public class MappingMatchResults
 	{
@@ -202,6 +205,27 @@ public class Manager
 		refreshCaseSensitivity();
 	}
 
+	public Manager(HttpServletRequest request) throws NamingException, SQLException, IOException
+	{
+		this();
+
+		// Try to retrieve authentication details using Java API.
+        _authorizationName = request.getRemoteUser();
+
+        // If it fails try to read 'authorization' HTTP header directly.
+        if (_authorizationName == null)
+        {
+	        String authHeader = request.getHeader("authorization");
+	        if (authHeader != null && !authHeader.isEmpty() && authHeader.startsWith("Basic"))
+	        {
+	        	// Extract user name from basic authentication HTTP header.
+	        	authHeader = authHeader.substring(authHeader.indexOf(' '));
+	        	authHeader = StringUtils.newStringUtf8(Base64.decodeBase64(authHeader));
+	        	_authorizationName = authHeader.substring(0, authHeader.indexOf(':'));
+	        }
+        }
+	}
+
 	public void close()
 	{
 		try
@@ -216,6 +240,15 @@ public class Manager
 		{
 			_connection = null;
 		}
+	}
+
+	/**************************************************************************
+	 *  Authentication/authorisation methods.
+	 */
+
+	public String getAuthorizationName()
+	{
+		return _authorizationName;
 	}
 
 	/**************************************************************************
@@ -268,6 +301,7 @@ public class Manager
 		StringWriter swSqlQuery = new StringWriter();
 		transformer.setInitialContextNode(processor.newDocumentBuilder().build(new StreamSource(new StringReader(inputData))));
 		transformer.setDestination(new Serializer(swSqlQuery));
+		transformer.setParameter(new QName("AuthorizationName"), new XdmAtomicValue(getAuthorizationName()));
 		_logger.trace("Generating SQL query.");
 		transformer.transform();
 
