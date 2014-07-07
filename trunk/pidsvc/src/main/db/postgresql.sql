@@ -19,6 +19,10 @@ DROP TABLE mapping CASCADE;
 DROP TABLE condition_set CASCADE;
 DROP TABLE condition CASCADE;
 DROP TABLE action CASCADE;
+DROP TABLE lookup CASCADE;
+DROP TABLE lookup_ns CASCADE;
+DROP TABLE lookup_type CASCADE;
+DROP TABLE lookup_behaviour_type CASCADE;
 DROP FUNCTION delete_mapping_default_action() CASCADE;
 DROP FUNCTION set_original_mapping_path() CASCADE;
 */
