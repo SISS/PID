@@ -38,8 +38,6 @@ public class ManagerJson extends Manager
 {
 	private static Logger _logger = LogManager.getLogger(ManagerJson.class.getName());
 
-	private String _authorizationName = null;
-
 //	protected final SimpleDateFormat _sdfdb = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 //	protected final SimpleDateFormat _sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
@@ -50,14 +48,7 @@ public class ManagerJson extends Manager
 
 	public ManagerJson(HttpServletRequest request) throws NamingException, SQLException, IOException
 	{
-		super();
-
-        _authorizationName = request.getRemoteUser();
-	}
-
-	public String getAuthorizationName()
-	{
-		return _authorizationName;
+		super(request);
 	}
 
 	public JSONObject getGlobalSettings(HttpServletRequest request)
@@ -65,7 +56,7 @@ public class ManagerJson extends Manager
 		return JSONObjectHelper.create(
 				"BaseURI",				getBaseURI(),
 				"CaseSensitiveURI",		isCaseSensitive(),
-				"AuthorizationName",	_authorizationName
+				"AuthorizationName",	getAuthorizationName()
 			);
 	}
 

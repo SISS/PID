@@ -246,7 +246,12 @@ var Main = Class.construct({
 
 		// Tip about Author field behaviour.
 		if (GlobalSettings.AuthorizationName)
+		{
 			$J("#MappingCreator").val(GlobalSettings.AuthorizationName).attr("title", "The author is automatically taken from your access credentials.");
+			$J("#AuthorNote").text("The author field will automatically be stamped with your authentication information (" + GlobalSettings.AuthorizationName + ").");
+		}
+		else
+			$J("#AuthorNote").text("For all authenticated requests the author field will automatically be stamped with your username.");
 	},
 
 	///////////////////////////////////////////////////////////////////////////
