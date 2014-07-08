@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" >
+	<head>
+		<title>Condition Sets</title>
+
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<meta http-equiv="pragma" content="no-cache"/>
+
+		<!-- JavaScript Frameworks and extensions -->
+		<script type="text/javascript" src="Scripts/Prototype/prototype-1.7.1.min.js"></script>
+		<script type="text/javascript" src="Scripts/Prototype/ext_base.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery-1.8.3.min.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/ext_noConflict.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.ui.position.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/contextMenu/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/jquery.blockUI.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/vendor/swfupload.js"></script>
+		<script type="text/javascript" src="Scripts/jQuery/swfupload/src/jquery.swfupload.js"></script>
+
+		<script type="text/javascript" src="Scripts/EnsureFrameset.js"></script>
+		<script type="text/javascript" src="Scripts/ExceptionHandler.js"></script>
+		<script type="text/javascript" src="Scripts/ConditionSet.js"></script>
+
+		<link href="Scripts/jQuery/contextMenu/jquery.contextMenu.css" type="text/css" rel="stylesheet" />
+		<link href="App_Themes/Default/StyleSheet.css" type="text/css" rel="stylesheet" />
+	</head>
+	<body style="margin: 10px;">
+		<div id="TopMenu" style="position: relative; height: 50px;">
+			<div class="MenuButton" style="position: absolute; left: 0; width: 150px; white-space: nowrap; overflow: hidden;">
+				Search <span id="MenuResultsCount"></span>
+			</div>
+			<div class="MenuButton" style="position: absolute; left: 160px; width: 150px; white-space: nowrap; overflow: hidden;">
+				Condition Set
+			</div>
+		</div>
+		<div id="Containers" style="position: relative;">
+			<div style="position: absolute; top: 0;">
+				<h2>Search</h2>
+				<div style="position: relative; top: -25px; width: 715px; height: 5px; text-align: right;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New condition set" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExportAll"><img src="Images/document-export.png" title="Export all condition sets" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="SearchSection" style="background: #fafafa; width: 730px;">
+					<div style="background: #fff; margin-bottom: 5px;">
+						<table border="0" cellpadding="5" cellspacing="1">
+							<tr>
+								<td><input type="text" id="SearchText" maxlength="255" style="width: 610px;"/></td>
+								<td>
+									<input type="button" id="cmdSearch" value="Search" onclick="javascript:Main.search();" style="width: 100px;" />
+								</td>
+							</tr>
+						</table>
+					</div>
+					<div id="SearchResults" style="display: none;">
+						<table id="SearchResultsTable" border="0" cellpadding="5" cellspacing="1" width="730">
+							<tr bgcolor="#e2e2e2">
+								<td>
+									<b>Name</b>
+								</td>
+							</tr>
+						</table>
+						<div id="Pager" class="tip" style="background: #e2e2e2; width: 200px; text-align: center;" title="Use Ctrl+&larr; and Ctrl+&rarr; to navigate">
+							<div style="position: relative; top: -2px;">
+								<a href="javascript:Main.pagerPrev();"><img src="Images/arrow_state_blue_left.png" title="Previous page" width="16" height="16" border="0" style="position: relative; left: -20px; top: 5px;"/></a>
+								Page <input type="text" id="PagerInput" style="width: 40px; font-size: 10px; text-align: center; padding: 0;" maxlength="5"/> / <span></span>
+								<a href="javascript:Main.pagerNext();"><img src="Images/arrow_state_blue_right.png" title="Previous page" width="16" height="16" border="0" style="position: relative; right: -20px; top: 5px;"/></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="display: none; position: absolute; top: 0;">
+				<h2>Condition Set Configuration</h2>
+				<div style="position: relative; top: -25px; width: 715px; height: 5px; text-align: right;">
+					<a href="javascript:Main.create();"><img src="Images/filenew.png" title="New condition sets" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="javascript:Main.delete();"><img src="Images/delete.png" title="Delete condition sets" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+					<a href="#" id="cmdExport"><img src="Images/document-export.png" title="Export condition sets" width="16" height="16" border="0" style="margin-right: 5px;"/></a>
+				</div>
+				<div id="ConfigSection" style="width: 730px;">
+					<table border="0" cellpadding="5" cellspacing="1" width="100%">
+						<tr valign="top">
+							<td width="20%" align="right">
+								Name:
+							</td>
+							<td width="80%">
+								<input type="text" id="SetName" placeholder="Unique condition set name" maxlength="50" style="width: 570px;" />
+							</td>
+						</tr>
+						<tr valign="top">
+							<td width="20%" align="right">
+								Description:
+							</td>
+							<td width="80%">
+								<textarea id="SetDescription" rows="3" style="width: 569px;" placeholder="Condition set description"></textarea>
+							</td>
+						</tr>
+					</table>
+					<table border="0" cellspacing="5" cellpadding="1" width="100%">
+						<tr valign="top">
+							<td>
+								<b>Conditions:</b>
+								<table id="ConditionSection" border="0" cellpadding="5" cellspacing="1" width="100%"></table>
+								<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 5px;">
+									<tr>
+										<td>
+											<a href="javascript:Main.addCondition();" class="tip"><img src="Images/plus_16.png" title="Add condition" width="16" height="16" border="0" align="middle" style="margin-right: 5px;"/>Add condition</a>
+										</td>
+										<td align="right">
+											<input type="button" id="cmdSave" value="Save" onclick="javascript:Main.save();" style="width:100px;" />
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
