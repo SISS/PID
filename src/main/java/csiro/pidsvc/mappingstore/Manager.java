@@ -85,7 +85,7 @@ import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
 /**
  * Manager class encapsulates application/database interaction logic.
  * 
- * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
+ * @author Pavel Golodoniuc, CSIRO Mineral Resources Flagship
  */
 public class Manager
 {
