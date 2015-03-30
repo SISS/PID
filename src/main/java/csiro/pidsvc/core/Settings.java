@@ -37,7 +37,7 @@ import csiro.pidsvc.helper.JSONObjectHelper;
 /**
  * Application settings handling.
  * 
- * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
+ * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering.
  */
 public class Settings
 {
