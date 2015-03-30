@@ -37,7 +37,7 @@ import csiro.pidsvc.helper.JSONObjectHelper;
 /**
  * Application settings handling.
  * 
- * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering.
+ * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
  */
 public class Settings
 {
@@ -173,17 +173,17 @@ public class Settings
 			return false;
 		
 		String		content = Http.simpleGetRequest(getProperty("buildRepository"));
-		Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?.(\\d+).war\"", Pattern.CASE_INSENSITIVE);
+		Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?\\.(.+?)\\.war\"", Pattern.CASE_INSENSITIVE);
 		Matcher		m = re.matcher(content);
 
 		try
 		{
 			if (m.find())
 			{
-				int currentVersion = Integer.parseInt(_manifest.getMainAttributes().getValue("Implementation-Build"));
-				int newVersion = Integer.parseInt(m.group(2));
+				String currentVersion = _manifest.getMainAttributes().getValue("Implementation-Build");
+				String newVersion = m.group(2);
 	
-				if (newVersion > currentVersion)
+				if (!currentVersion.isEmpty() && !newVersion.equalsIgnoreCase(currentVersion))
 					return true;
 			}
 		}
