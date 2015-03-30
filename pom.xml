@@ -6,13 +6,28 @@
 	<version>1.1-SNAPSHOT</version>
 	<name>Persistent Identifiers PID Service (PID Service)</name>
 	<url>https://www.seegrid.csiro.au/wiki/Siss/PIDService</url>
+	<licenses>
+		<license>
+			<name>CSIRO Open Source Software License Agreement</name>
+			<url>https://www.seegrid.csiro.au/wiki/pub/Siss/PIDService/license.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<scm>
-		<connection>scm:svn:https://www.seegrid.csiro.au/subversion/PID/trunk/pidsvc</connection>
-        <developerConnection>scm:svn:https://www.seegrid.csiro.au/subversion/PID/trunk/pidsvc</developerConnection>
-        <url>scm:svn:https://www.seegrid.csiro.au/subversion/PID/trunk/pidsvc</url>
+		<connection>scm:git:git://github.com:SISS/PID.git</connection>
+        <developerConnection>scm:git:git://github.com:SISS/PID.git</developerConnection>
+        <url>scm:git:https://github.com/SISS/PID</url>
 	</scm>
+	<ciManagement>
+		<system>Jenkins</system>
+		<url>https://cgsrv8.arrc.csiro.au/jenkins/job/PidService/</url>
+	</ciManagement>
+	<issueManagement>
+		<system>JIRA</system>
+		<url>https://jira.csiro.au/browse/SISS</url>
+	</issueManagement>
 	<build>
-		<finalName>pidsvc-${project.version}.${buildNumber}</finalName>
+		<finalName>${project.artifactId}-${project.version}.${buildNumber}</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -26,7 +41,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
-				<version>1.1</version>
+				<version>1.3</version>
 				<executions>
 					<execution>
 						<phase>validate</phase>
@@ -38,7 +53,8 @@
 				<configuration>
 					<doCheck>false</doCheck>
 					<doUpdate>false</doUpdate>
-					<timestampFormat>{0,date,dd-MM-yyyy HH:mm}</timestampFormat>
+					<timestampFormat>{0,date,yyyy-MM-dd HH:mm:ss}</timestampFormat>
+					<shortRevisionLength>8</shortRevisionLength>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -65,10 +81,10 @@
 							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 						</manifest>
 						<manifestEntries>
-							<Implementation-Build>${buildNumber}</Implementation-Build>
 							<projectName>${project.name}</projectName>
 							<version>${project.version}</version>
 							<buildDate>${timestamp}</buildDate>
+							<Implementation-Build>${buildNumber}</Implementation-Build>
 							<osName>${os.name}</osName>
 							<osVersion>${os.version}</osVersion>
 							<javaVendor>${java.vendor}</javaVendor>
@@ -92,23 +108,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--plugin>
-				<groupId>org.mortbay.jetty</groupId>
-				<artifactId>maven-jetty-plugin</artifactId>
-				<version>${jetty.version}</version>
-				<dependencies>
-					<dependency>
-						<groupId>log4j</groupId>
-						<artifactId>log4j</artifactId>
-						<version>${log4j.version}</version>
-					</dependency>
-				</dependencies>
-				<configuration>
-					<webApp>${project.build.directory}/${project.build.finalName}</webApp>
-					<scanIntervalSeconds>9999</scanIntervalSeconds>
-					<contextPath>/</contextPath>
-				</configuration>
-			</plugin-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-eclipse-plugin</artifactId>
@@ -225,12 +224,4 @@
             <version>2.5.1</version>
         </dependency>
 	</dependencies>
-	<ciManagement>
-		<system>Jenkins</system>
-		<url>https://cgsrv8.arrc.csiro.au/jenkins/job/PidService/</url>
-	</ciManagement>
-	<issueManagement>
-		<system>JIRA</system>
-		<url>https://jira.csiro.au/browse/SISS</url>
-	</issueManagement>
 </project>
