@@ -220,5 +220,10 @@
             <artifactId>jmock-junit4</artifactId>
             <version>2.5.1</version>
         </dependency>
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.1</version>
+		</dependency>
 	</dependencies>
 </project>
