@@ -28,6 +28,7 @@
 	</issueManagement>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<postgres.jdbc.scope>provided</postgres.jdbc.scope>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}-${project.version}.${buildNumber}</finalName>
@@ -183,7 +184,7 @@
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>9.1-901.jdbc4</version>
-			<scope>provided</scope>
+			<scope>${postgres.jdbc.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
