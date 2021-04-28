@@ -68,6 +68,9 @@
 					<parallel>methods</parallel>
 					<threadCount>10</threadCount>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<systemPropertyVariables>
+						<catalina.base>${project.build.directory}</catalina.base>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<plugin>

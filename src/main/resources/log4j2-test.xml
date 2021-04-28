@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration status="debug">
 	<properties>
-		<property name="path">C:\Temp\pidsvc\logs\</property>
+		<property name="path">${sys:catalina.base}/logs/</property>
 		<property name="filename">pidsvc</property>
 	</properties>
 	<appenders>
@@ -24,7 +24,7 @@
 	<loggers>
 		<root level="trace">
 			<appender-ref ref="Console"/>
-			<!--appender-ref ref="File"/-->
+			<appender-ref ref="File"/>
 		</root>
 	</loggers>
 </configuration>

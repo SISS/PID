@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration status="off">
 	<properties>
-		<property name="path">logs/</property>
+		<property name="path">${sys:catalina.base}/logs/</property>
 		<property name="filename">pidsvc</property>
 	</properties>
 	<appenders>
