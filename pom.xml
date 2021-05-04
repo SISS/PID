@@ -29,6 +29,7 @@
 	<properties>
 		<jdk.release.version>11</jdk.release.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.repository>https://cgsrv1.arrc.csiro.au/swrepo/PidService/jenkins/master/</project.build.repository>
 		<postgres.jdbc.scope>provided</postgres.jdbc.scope>
 	</properties>
 	<build>
@@ -73,6 +74,7 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
 				<version>3.2.0</version>
 			</plugin>
