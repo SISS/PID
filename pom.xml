@@ -5,11 +5,11 @@
 	<packaging>war</packaging>
 	<version>1.2-SNAPSHOT</version>
 	<name>Persistent Identifiers PID Service (PID Service)</name>
-	<url>https://www.seegrid.csiro.au/wiki/Siss/PIDService</url>
+	<url>https://confluence.csiro.au/x/9ZMKGg</url>
 	<licenses>
 		<license>
 			<name>CSIRO Open Source Software License Agreement</name>
-			<url>https://www.seegrid.csiro.au/wiki/pub/Siss/PIDService/license.txt</url>
+			<url>https://github.com/SISS/PID/blob/master/license.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
