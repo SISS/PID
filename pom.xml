@@ -29,8 +29,8 @@
 	<properties>
 		<jdk.release.version>11</jdk.release.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.build.repository>https://cgsrv1.arrc.csiro.au/swrepo/PidService/jenkins/master/</project.build.repository>
 		<postgres.jdbc.scope>provided</postgres.jdbc.scope>
+		<version.check.repository>https://cgsrv1.arrc.csiro.au/swrepo/PidService/jenkins/master/</version.check.repository>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}-${project.version}.${buildNumber}</finalName>
@@ -77,6 +77,9 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
 				<version>3.2.0</version>
+				<configuration>
+					<propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -125,6 +128,22 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/pidsvc.properties</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/pidsvc.properties</exclude>
+				</excludes>
+			</resource>
+		</resources>
 	</build>
 	<repositories>
     </repositories>
