@@ -1,9 +1,9 @@
 /*
  * CSIRO Open Source Software License Agreement (variation of the BSD / MIT License)
- * 
+ *
  * Copyright (c) 2013, Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
- * 
+ *
  * All rights reserved. This code is licensed under CSIRO Open Source Software
  * License Agreement license, available at the root application directory.
  */
@@ -37,7 +37,7 @@ import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.XMLConstants;
-import javax.xml.bind.ValidationException;
+import jakarta.xml.bind.ValidationException;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -84,7 +84,7 @@ import csiro.pidsvc.mappingstore.condition.SpecialConditionType;
 
 /**
  * Manager class encapsulates application/database interaction logic.
- * 
+ *
  * @author Pavel Golodoniuc, CSIRO Mineral Resources Flagship
  */
 public class Manager
@@ -271,7 +271,7 @@ public class Manager
 			Schema schema = schemaFactory.newSchema(new StreamSource(getClass().getResourceAsStream(xmlSchemaResourcePath)));
 			Validator validator = schema.newValidator();
 			_logger.trace("Validating XML Schema.");
-			validator.validate(new StreamSource(new StringReader(inputData))); 
+			validator.validate(new StreamSource(new StringReader(inputData)));
 		}
 		catch (SAXException ex)
 		{
@@ -369,7 +369,7 @@ public class Manager
 						ret = callback.process(item.getInputStream());
 					}
 					else
-						throw ex; 
+						throw ex;
 				}
 
 				// Process the first uploaded file only.
@@ -428,7 +428,7 @@ public class Manager
 		{
 			boolean noMappings = ret.equalsIgnoreCase("OK: No mapping rules found in the backup.");
 			String otherRestoreStatus = "";
-			
+
 			// Restore condition sets.
 			String retSubset = createConditionSet(inputData);
 			if (retSubset.startsWith("OK: Success"))
@@ -774,7 +774,7 @@ public class Manager
 		{
 			if (pst != null)
 				pst.close();
-		}		
+		}
 	}
 
 	private MappingMatchResults findMatchImpl(PreparedStatement pst, URI uri, HttpServletRequest request, boolean patternBased) throws SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException
@@ -851,7 +851,7 @@ public class Manager
 						{
 							// Set a flag that one-to-one mapping has been found but neither matching conditions nor
 							// default actions defined.
-							matchAuxiliaryData = true; 
+							matchAuxiliaryData = true;
 						}
 					}
 				}
@@ -935,7 +935,7 @@ public class Manager
 				/*
 				 * Once ContentType condition is encountered process all
 				 * ContentType conditions in one go as a group.
-				 * 
+				 *
 				 * Skip if ContentType conditions have already been processed.
 				 */
 				if (prioritizedConditions == null && descriptor.Type.equalsIgnoreCase("ContentType"))
@@ -1307,7 +1307,7 @@ public class Manager
 	public boolean saveSettings(Map<?, ?> settings) throws SQLException
 	{
 		String sqlQuery = "BEGIN;\n", value;
-		HashMap<String, String> params = new HashMap<String, String>(); 
+		HashMap<String, String> params = new HashMap<String, String>();
 		for (Object key : settings.keySet())
 		{
 			if (key.equals("cmd"))

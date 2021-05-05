@@ -1,9 +1,9 @@
 /*
  * CSIRO Open Source Software License Agreement (variation of the BSD / MIT License)
- * 
+ *
  * Copyright (c) 2013, Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
- * 
+ *
  * All rights reserved. This code is licensed under CSIRO Open Source Software
  * License Agreement license, available at the root application directory.
  */
@@ -36,7 +36,7 @@ import csiro.pidsvc.helper.JSONObjectHelper;
 
 /**
  * Application settings handling.
- * 
+ *
  * @author Pavel Golodoniuc, CSIRO Earth Science and Resource Engineering
  */
 public class Settings
@@ -171,25 +171,31 @@ public class Settings
 	{
 		if (_manifest == null)
 			return false;
-		
-		String		content = Http.simpleGetRequest(getProperty("buildRepository"));
-		Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?\\.(.+?)\\.war\"", Pattern.CASE_INSENSITIVE);
-		Matcher		m = re.matcher(content);
 
-		try
-		{
-			if (m.find())
-			{
-				String currentVersion = _manifest.getMainAttributes().getValue("Implementation-Build");
-				String newVersion = m.group(2);
-	
-				if (!currentVersion.isEmpty() && !newVersion.equalsIgnoreCase(currentVersion))
-					return true;
-			}
+		String      buildRepository = getProperty("buildRepository");
+		if (buildRepository == null || buildRepository.trim().isEmpty()){
+			_logger.debug("buildRepository property is not set: skipping new version check.");
 		}
-		catch (Exception e)
-		{
-			_logger.debug(e);
+		else {
+			String		content = Http.simpleGetRequest(getProperty("buildRepository"));
+			Pattern		re = Pattern.compile("href=\"pidsvc-(\\d+\\.\\d+)(?:-SNAPSHOT)?\\.(.+?)\\.war\"", Pattern.CASE_INSENSITIVE);
+			Matcher		m = re.matcher(content);
+			try
+			{
+				if (m.find())
+				{
+					String currentVersion = _manifest.getMainAttributes().getValue("Implementation-Build");
+					String newVersion = m.group(2);
+
+					if (!currentVersion.isEmpty() && !newVersion.equalsIgnoreCase(currentVersion)){
+						return true;
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				_logger.debug(e);
+			}
 		}
 		return false;
 	}

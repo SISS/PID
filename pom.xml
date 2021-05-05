@@ -3,13 +3,13 @@
 	<groupId>csiro.pidsvc</groupId>
 	<artifactId>pidsvc</artifactId>
 	<packaging>war</packaging>
-	<version>1.1-SNAPSHOT</version>
+	<version>1.2-SNAPSHOT</version>
 	<name>Persistent Identifiers PID Service (PID Service)</name>
-	<url>https://www.seegrid.csiro.au/wiki/Siss/PIDService</url>
+	<url>https://confluence.csiro.au/x/9ZMKGg</url>
 	<licenses>
 		<license>
 			<name>CSIRO Open Source Software License Agreement</name>
-			<url>https://www.seegrid.csiro.au/wiki/pub/Siss/PIDService/license.txt</url>
+			<url>https://github.com/SISS/PID/blob/master/license.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -27,24 +27,26 @@
 		<url>https://jira.csiro.au/browse/SISS</url>
 	</issueManagement>
 	<properties>
+		<jdk.release.version>11</jdk.release.version>
+		<log4j.version>2.14.1</log4j.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<postgres.jdbc.scope>provided</postgres.jdbc.scope>
+		<version.check.repository>https://cgsrv1.arrc.csiro.au/swrepo/PidService/jenkins/master/</version.check.repository>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}-${project.version}.${buildNumber}</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.4</version>
+				<version>3.8.1</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-					<compilerVersion>1.6</compilerVersion>
+					<release>${jdk.release.version}</release>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
-				<version>1.3</version>
+				<version>1.4</version>
 				<executions>
 					<execution>
 						<phase>validate</phase>
@@ -62,21 +64,28 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.10</version>
+				<version>3.0.0-M5</version>
 				<configuration>
 					<parallel>methods</parallel>
 					<threadCount>10</threadCount>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<systemPropertyVariables>
+						<catalina.base>${project.build.directory}</catalina.base>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.6</version>
+				<version>3.2.0</version>
+				<configuration>
+					<propertiesEncoding>${project.build.sourceEncoding}</propertiesEncoding>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
-				<version>2.4</version>
+				<version>3.3.1</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -96,20 +105,8 @@
 							<javaVmVendor>${java.vm.vendor}</javaVmVendor>
 						</manifestEntries>
 					</archive>
-					<goals>
-						<goal>manifest</goal>
-					</goals>
 					<packagingExcludes>WEB-INF/classes/log4j2-test.xml</packagingExcludes>
 				</configuration>
-				<!-- This is needed to create ${basedir}/src/main/webapp/META-INF/MANIFEST.MF file -->
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>manifest</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -125,13 +122,29 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>2.9.1</version>
+				<version>3.1.2</version>
 				<configuration>
 					<configLocation>checkstyle.xml</configLocation>
 					<cacheFile>checkstyle.cache</cacheFile>
 				</configuration>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/pidsvc.properties</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/pidsvc.properties</exclude>
+				</excludes>
+			</resource>
+		</resources>
 	</build>
 	<repositories>
     </repositories>
@@ -162,12 +175,12 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
-			<version>2.0-beta4</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.0-beta4</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.saxon</groupId>
@@ -183,7 +196,7 @@
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>9.1-901.jdbc4</version>
-			<scope>provided</scope>
+			<scope>${postgres.jdbc.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
@@ -220,5 +233,12 @@
             <artifactId>jmock-junit4</artifactId>
             <version>2.5.1</version>
         </dependency>
+
+		<!-- Replace JDK8 JAXB with Jakarta EE equivalents -->
+		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+			<version>3.0.0</version>
+		</dependency>
 	</dependencies>
 </project>
