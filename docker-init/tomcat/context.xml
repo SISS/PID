@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Context>
+    <Resource name="jdbc/pidsvc"
+      accessToUnderlyingConnectionAllowed="true"
+      auth="Container"
+      closeMethod="close"
+      driverClassName="org.postgresql.Driver"
+      factory="org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory"
+      maxIdle="10"
+      maxOpenPreparedStatements="100"
+      maxTotal="-1"
+      maxWaitMillis="10000"
+      minEvictableIdleTimeMillis="300000"
+      minIdle="0"
+      numTestsPerEvictionRun="20"
+      password="pidsvc123"
+      poolPreparedStatements="true"
+      scope="Shareable"
+      singleton="true"
+      testOnBorrow="true"
+      timeBetweenEvictionRunsMillis="300000"
+      type="javax.sql.DataSource"
+      url="jdbc:postgresql://pidsvc-db:5432/pidsvc"
+      username="pidsvc-admin"
+      validationQuery="select version()"
+    />
+</Context>

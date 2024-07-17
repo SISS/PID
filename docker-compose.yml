@@ -1,0 +1,40 @@
+#-------------------------------------------------------------------------------
+# Docker Environment Composition for a PIDSvc development environment.
+#-------------------------------------------------------------------------------
+x-postgres-common: &postgres-common
+  POSTGRES_DB: "${POSTGRES_DB:-pidsvc}"
+  POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-pidsvc123}"
+  POSTGRES_USER: "${POSTGRES_USER:-pidsvc-admin}"
+
+volumes:
+    dbdata:
+
+services:
+    # PostgreSQL database for the PIDSvc Database
+    pidsvc-db:
+        container_name: pidsvc-db
+        image: postgres:14-alpine
+        environment:
+            <<: [ *postgres-common ]
+            POSTGRES_DUMP_FILE: "${POSTGRES_DUMP_FILE:-}"
+            POSTGRES_DUMP_FORMAT: "${POSTGRES_DUMP_FORMAT:-tar}"
+        volumes:
+            - dbdata:/var/lib/postgresql/data
+            - ./docker-init/postgresql/:/docker-entrypoint-initdb.d/
+
+
+    # Run this service in the foreground to launch the PIDSvc
+    # application in a tomcat servlet container.
+    pidsvc-tomcat:
+        build:
+            context: .
+            #target: builder
+        container_name: pidsvc-tomcat
+        depends_on:
+            - pidsvc-db
+        environment:
+            <<: [ *postgres-common ]
+            POSTGRES_HOST: 'pidsvc-db'
+        image: onaci/pidsvc:dev
+        ports:
+            - 8080:8080

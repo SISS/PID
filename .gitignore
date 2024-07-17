@@ -1,0 +1,6 @@
+.env
+docker-init/postgresql/*
+!docker-init/postgresql/00_create*
+!docker-init/postgresql/99_restore*
+src/main/webapp/META-INF
+target

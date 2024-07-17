@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Derive some useful variables from the build environment
+# (Automated dockerhub builds may provide some of these)
+DOCKER_TAG="${DOCKER_TAG:-latest}"
+DOCKERFILE_PATH="${DOCKERFILE_PATH:-Dockerfile}"
+DOCKER_CONTEXT="."
+DOCKER_REPO="${DOCKER_REPO:-onaci/pidsvc}"
+if [ -z "${IMAGE_NAME}" ]; then
+    IMAGE_NAME="${DOCKER_REPO}:${DOCKER_TAG}"
+fi
+
+echo "Building ${IMAGE_NAME} with ${DOCKERFILE_PATH} from $(pwd) with context=${DOCKER_CONTEXT}"
+
+# Custom docker tags can be used to configure the
+# target Java and Tomcat versions
+JAVA_VERSION="${JAVA_VERSION:-11}"
+TOMCAT_VERSION="${TOMCAT_VERSION:-9.0}"
+if [[ -n "${DOCKER_TAG:-}" ]] && [[ "${DOCKER_TAG:-}" =~ ^[0-9\.]+-jdk[0-9]+$ ]]; then
+    TOMCAT_VERSION=$(echo "${DOCKER_TAG}" | echo "${DOCKER_TAG}" | awk -F '-jdk' '{print $1}')
+    JAVA_VERSION=$(echo "${DOCKER_TAG}" | echo "${DOCKER_TAG}" | awk -F '-jdk' '{print $2}')
+fi
+echo "Targetting Java runtime ${JAVA_VERSION} and Tomcat ${TOMCAT_VERSION}"
+
+# Derive the build properties from the repository state and contents
+BUILD_REVISION=$(cat pom.xml | grep '<revision>' | sed 's|.*<revision>\(.*\)</revision>.*|\1|')
+BUILD_TIMESTAMP="$(date --rfc-3339=seconds)"
+SAFE_TIMESTAMP="$(echo $BUILD_TIMESTAMP | sed 's/ /T/g' | sed 's/:/-/g' | sed 's/\+.*//')"
+
+if [ -z "${SOURCE_BRANCH}" ]; then
+    SOURCE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+fi
+if [ -z "${SOURCE_COMMIT}" ]; then
+    SOURCE_COMMIT="$(git rev-parse --short HEAD)"
+fi
+if [ -z "${SOURCE_URL}" ]; then
+    SOURCE_URL="$(git remote get-url origin || true)"
+fi
+
+BUILD_NUMBER="${SAFE_TIMESTAMP}-${SOURCE_COMMIT}"
+VERSION_TAG="${TOMCAT_VERSION}-jdk${JAVA_VERSION}_v${BUILD_REVISION}.${BUILD_NUMBER}"
+
+# Build the docker image with Open Containers-style labels
+# See: https://github.com/opencontainers/image-spec/blob/main/annotations.md
+docker build --pull \
+    --build-arg "BUILD_REVISION=${BUILD_REVISION}" \
+    --build-arg "BUILD_NUMBER=${BUILD_NUMBER}" \
+    --build-arg "JAVA_VERSION=${JAVA_VERSION}" \
+    --build-arg "TOMCAT_VERSION=${TOMCAT_VERSION}" \
+    --label "org.opencontainers.image.authors=${BUILD_AUTHORS:-CSIRO Coastal Informatics Team}" \
+    --label "org.opencontainers.image.branch=${SOURCE_BRANCH}" \
+    --label "org.opencontainers.image.created=${BUILD_TIMESTAMP}" \
+    --label "org.opencontainers.image.licenses=BSD-3-Clause" \
+    --label "org.opencontainers.image.revision=${SOURCE_COMMIT}" \
+    --label "org.opencontainers.image.source=${SOURCE_URL}" \
+    --label "org.opencontainers.image.title=${IMAGE_NAME}" \
+    --label "org.opencontainers.image.url=${DOCKER_REPO:-onaci/pidsvc}" \
+    --label "org.opencontainers.image.vendor=CSIRO" \
+    --label "org.opencontainers.image.version=${VERSION_TAG}" \
+    -f ${DOCKERFILE_PATH} \
+    -t ${IMAGE_NAME} \
+    .
